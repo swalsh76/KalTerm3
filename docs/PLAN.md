@@ -117,7 +117,7 @@ runs Python. Where the port is deliberately stricter or different, the vector sa
 | 2.3 | Token-bucket rate limiter on `TimeProvider`, then the coverage gate (90% lines, `tools/ci/check-coverage.ps1`) | done |
 | 2.4 | Config and environments (demo default, URLs only here); creates `KalTerm.Kalshi` | done |
 | 2.5 | Ed25519 signer (NSec) against the 21 S-3 vectors | done |
-| 2.6 | Clock-skew estimator | |
+| 2.6 | Clock-skew estimator | done |
 | 2.7 | REST read client and models (GET-only, retries, pagination) | |
 | 2.8 | WebSocket client (reconnect, resubscribe, sequence-gap recovery) | |
 

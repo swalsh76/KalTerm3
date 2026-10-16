@@ -11,7 +11,12 @@ python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```
+
+`generate_clock.py` imports the reference `clock.py` directly (standard library only). It drops generated cases
+where float noise could legitimately flip a status or tip a two-decimal rounding tie, and records the count
+(`dropped`) in the file; choose round-trip times that avoid ties, or whole families of cases vanish.
 
 `generate_ed25519.py` is the one generator that needs a third-party package: `cryptography` (`pip install
 cryptography`), because the reference signs with it. Use a throwaway venv outside the repo. It runs the
