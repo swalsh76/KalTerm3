@@ -10,16 +10,22 @@ public sealed class AutoAdvanceTimeProvider : TimeProvider
     private readonly Queue<(TimeSpan Due, TimerCallback Callback, object? State)> _pending = new();
     private readonly Lock _sync = new();
     private readonly bool _autoFire;
+    private readonly DateTimeOffset _utcStart;
     private long _ticks;
 
     /// <param name="autoFire">
     /// True (the default): a timer fires at once. False: timers wait in a queue until the test calls
     /// <see cref="FireNext"/>, so a test can step waiters one at a time and observe their order.
     /// </param>
-    public AutoAdvanceTimeProvider(bool autoFire = true)
+    /// <param name="utcStart">The wall-clock time at the start (default: 1,700,000,000,000 ms after the Unix epoch).</param>
+    public AutoAdvanceTimeProvider(bool autoFire = true, DateTimeOffset? utcStart = null)
     {
         _autoFire = autoFire;
+        _utcStart = utcStart ?? DateTimeOffset.FromUnixTimeMilliseconds(1_700_000_000_000);
     }
+
+    /// <summary>The wall-clock time: the start plus the time elapsed on this clock.</summary>
+    public override DateTimeOffset GetUtcNow() => _utcStart + Elapsed;
 
     public override long TimestampFrequency => TimeSpan.TicksPerSecond;
 

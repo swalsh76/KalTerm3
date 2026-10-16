@@ -14,16 +14,12 @@ does not use it, so that one module is stubbed here to keep the generator standa
 import argparse
 import asyncio
 import random
-import sys
-import types
 from pathlib import Path
 
-from common import default_output, load_reference_module, write_vectors
+from common import default_output, load_reference_module, stub_settings_module, write_vectors
 
 # Settings-based factories are exercised in the KalTerm.Kalshi tests, not here.
-_stub = types.ModuleType("kalshi_core.config")
-_stub.KalshiSettings = object  # type: ignore[attr-defined]
-sys.modules.setdefault("kalshi_core.config", _stub)
+stub_settings_module()
 
 
 class FakeTime:

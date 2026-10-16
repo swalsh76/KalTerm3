@@ -246,3 +246,35 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   excluded.
 - Verification: 2,513 tests pass, build with 0 warnings, `dotnet format` clean. Merged coverage: `KalTerm.Core`
   98.4% (244 of 248 lines), `KalTerm.Kalshi` 96.0% (95 of 99).
+
+### 3.5 Ed25519 signer (2026-10-16): done
+
+- `KalTerm.Kalshi.Auth`: `Ed25519PrivateKey` (loads an unencrypted PKCS#8 PEM; wraps NSec; `IDisposable`),
+  `KalshiSigner` (`Sign`, `Headers`, `FromSettings`; the three `KALSHI-ACCESS-*` headers) and `AuthException`.
+  NSec.Cryptography 26.4.0 is the only new package (decided in S-3); all library-specific code sits in
+  `Ed25519PrivateKey`, so the BouncyCastle fallback would touch one class.
+- Message is `timestamp-ms + METHOD + path-without-query`, UTF-8, signed and base64-encoded, as in the reference.
+  The default timestamp comes from the injected `TimeProvider`.
+- Key handling: the key is imported **non-exportable** (a test proves `Export` of the private key throws) and is
+  held in libsodium protected memory; `Dispose` wipes it and further use throws `ObjectDisposedException`;
+  `ToString()` of both classes never shows key material; error messages never echo PEM text. Signing is
+  thread-safe (2,000 parallel signatures agree). This closes the S-3 item "key-memory protection not tested",
+  except for page-locking of the memory itself, which is NSec's own behaviour and is not tested here.
+- Error parity: NSec only says "bad format" for an RSA key, so the algorithm OID is read from the PKCS#8
+  header with the built-in `System.Formats.Asn1` and the key is named as the reference does: RSA, EC, Ed448,
+  X25519, DSA, or "algorithm <oid>". Encrypted, public-key, wrongly labelled, truncated, mis-encoded and empty
+  PEMs are all "is not an unencrypted PEM private key"; a missing or unreadable file is "cannot read private
+  key file <path>". Whitespace, CRLF and text around the PEM block are accepted exactly as the reference does.
+- Parity: `tools/vectors/generate_ed25519.py` loads the reference `auth.py` (pydantic-dependent `config` stubbed
+  through the shared `common.stub_settings_module`) and records: 21 raw signatures (identical to the 21 S-3
+  vectors, checked against the spike branch), 19 key-file texts with the reference's outcome, and 168 header sets
+  from the reference's real `KalshiSigner.headers()` (4 methods x 7 paths x 2 timestamps x 3 keys, including
+  queries, non-ASCII and empty paths). All match byte for byte. The generator needs Python's `cryptography`
+  package (dev-only; the vectors are committed).
+- Test support: `AutoAdvanceTimeProvider` now also answers `GetUtcNow` (start 1,700,000,000,000 ms).
+- Deferred to M6: the trading signer, key-file permission/ACL checks on Windows, and `~` expansion in key paths.
+- Evidence for S-4: this slice loads and runs `libsodium.dll` through NSec on GitHub's `windows-latest` runner (a
+  clean machine, no SQL Server or dev tools beyond the SDK) as part of CI; S-4 still has to prove it on a clean
+  server VM.
+- Verification: 2,752 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core`
+  98.4% (244 of 248 lines), `KalTerm.Kalshi` 94.6% (176 of 186).
