@@ -161,13 +161,15 @@ public sealed record OrderbookDeltaMsg(
 /// <param name="Seq">The per-subscription sequence number, used to detect gaps.</param>
 /// <param name="SendingTsMs">When the server sent it, in epoch milliseconds.</param>
 /// <param name="Msg">The raw payload.</param>
+/// <param name="ReceivedAt">Local time the client read it off the socket; never sent or received on the wire.</param>
 public sealed record WsMessage(
     string Type,
     int? Id = null,
     int? Sid = null,
     long? Seq = null,
     long? SendingTsMs = null,
-    JsonElement? Msg = null)
+    JsonElement? Msg = null,
+    [property: JsonIgnore] DateTimeOffset? ReceivedAt = null)
 {
     /// <summary>
     /// The typed payload for a known public data channel, else <see langword="null"/> (read <see cref="Msg"/>). Throws

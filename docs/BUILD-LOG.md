@@ -460,3 +460,28 @@ the marker `IWsPayload`. Same rules as the REST models: exact fixed-point, unkno
   for them; `WsMessageTests` pins that they yield no typed payload.
 - **Verification:** 4,045 tests (4,037 pass, 8 live skipped), build 0 warnings, format clean, coverage `KalTerm.Core` 98.3%,
   `KalTerm.Kalshi` 96.2% (606 of 630 lines).
+
+### 3.8b WebSocket client core (2026-10-16): done
+
+`KalTerm.Kalshi.WebSocket`: `KalshiWebSocket` (connect, `SubscribeAsync`, `UnsubscribeAsync`, `UpdateSubscriptionAsync`, `Messages`,
+`CloseAsync`), `KalshiWebSocketOptions`, `WsSubscription`, `KalshiWsException` (carries Kalshi's error code), and two internal seams,
+`IWsConnector` / `IWsConnection`, with the one real implementation `ClientWebSocketConnector` over `ClientWebSocket`.
+
+- **Ported from the reference `ws.py`:** headers signed fresh on each connect over the URL's path; increasing command ids with a
+  `TaskCompletionSource` per command; error replies become exceptions carrying the code (`[6] Already subscribed`); a command times
+  out on `TimeProvider`; the link closing fails waiting commands at once; a reply that carried `sid` and `seq` leaves a `control`
+  marker in the stream so gap detection can count the sequence number it used; unparseable frames are logged and dropped; an
+  unmatched `error` reply is passed on, an unmatched `ok` is only logged; channel names pass through unchecked.
+- **Not ported:** reconnect and resubscribe (2.8c), overflow-by-reconnect and stats (2.8d), `request_snapshot` (M3). `WsMessage`
+  gains `ReceivedAt` (never serialised), stamped from `TimeProvider`.
+- **Stream:** a bounded `Channel<WsMessage>` (default 500,000). A lost link or a full queue delivers what is already queued and then
+  throws `KalshiWsException` from `Messages`; a deliberate close ends it normally. A full queue closes the connection.
+- **Public surface pinned:** an allow-list test, as for REST. The only commands are subscribe, unsubscribe and update_subscription.
+- **Tests (40 new):** 32 over a scriptable in-memory connection and a manual-fire fake clock, 8 over a real socket against an
+  in-process Kestrel server on a loopback port (headers arrive, text round-trips, fragments are joined, binary and oversize messages
+  refused, a drop without a close handshake reads as a close, a refused upgrade fails, and the whole client end to end). The test
+  project alone references `Microsoft.AspNetCore.App`; no product project does. Repeated 10 times: no flakes.
+- **Bug found by the real-socket tests:** sending after dispose threw `ObjectDisposedException` from the send lock instead of
+  `KalshiWsException`; fixed.
+- **Verification:** 4,085 tests (4,077 pass, 8 live skipped), build 0 warnings, format clean, coverage `KalTerm.Core` 98.3%,
+  `KalTerm.Kalshi` 97.0% (835 of 861 lines).
