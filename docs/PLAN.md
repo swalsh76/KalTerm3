@@ -119,7 +119,7 @@ runs Python. Where the port is deliberately stricter or different, the vector sa
 | 2.5 | Ed25519 signer (NSec) against the 21 S-3 vectors | done |
 | 2.6 | Clock-skew estimator | done |
 | 2.7a | REST models: exact fixed-point JSON converters, strict date-times, `Level`; pydantic-oracle vectors | done |
-| 2.7b | REST client core: GET-only guard, rate limiting, signing, retry/backoff, pagination, production banner; exchange status and markets | |
+| 2.7b | REST client core: GET-only guard, rate limiting, signing, retry/backoff, pagination, production banner; exchange status and markets | done |
 | 2.7c | Remaining read endpoints (trades, events, multivariate events, market/event/series, order book), clock-skew sampling, opt-in live smoke test (production, read-only key) | |
 | 2.8 | WebSocket client (reconnect, resubscribe, sequence-gap recovery) | |
 
