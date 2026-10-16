@@ -90,5 +90,45 @@ depth 1. The A1 and A2 baselines agree.
   alone does not close the gap (a crash or reset still loses the cache).
 - Limits: one drive, one run per state, a busy workstation. This is a measurement of acknowledgement
   latency, not a power-loss test; S-1d on the target server is the gate.
-- Housekeeping: the cache was restored to on. Max server memory stays capped at 16 GB until S-1b
-  ends, then goes back to the default.
+- Housekeeping: the cache was restored to on. Max server memory was capped at 16 GB for the tests
+  and restored to the default when S-1b ended.
+
+### 2.3 S-1b crash consistency, workstation (2026-10-16): done, passed
+
+Question: do acknowledged commits survive a hard crash of `sqlservr.exe`, and is the database left
+consistent? Code: branch `spike/s1-durability` (0106a4c, not merged), `S1.CrashTest`. Same machine
+and database settings as 2.2 (device cache on). A process kill never loses the drive's cache, so
+this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
+
+- Table `dbo.S1Rows (Id bigint PK, Payload binary(32))`, payload = SHA-256 of the big-endian id.
+- Writer: 8 threads, each with its own id range; every operation is a single-row autocommit or a
+  100-row transaction. An id counts as acknowledged only when SQL Server returns success.
+- Loop: load for 3 to 8 s at a random moment, `Process.Kill()` on `sqlservr.exe`, wait for the
+  writers to fail, restart the service (bounded 180 s wait), then verify.
+- Verifier: `DBCC CHECKDB (all errors, EXTENDED_LOGICAL_CHECKS)` must report nothing; for each
+  writer every id from its first to its last acknowledged id is present; no row fails
+  `HASHBYTES('SHA2_256', CONVERT(binary(8), Id))`; the total never falls between cycles.
+- Self-test first (the test of the test): the verifier passes a clean database and detects a deleted
+  acknowledged row, a corrupted payload, and a wholly zeroed data page.
+- The SQL error log confirms real crash recovery each time (for example "2980 transactions rolled
+  forward, 1 transactions rolled back").
+
+| Result over 10 cycles | |
+|---|---|
+| Cycles passed | 10 of 10 |
+| Rows acknowledged | 2.5 to 6.4 million per cycle; 42.5 million in total |
+| Acknowledged rows missing | 0 in every cycle |
+| Rows failing their checksum | 0 in every cycle |
+| `CHECKDB` | clean in every cycle |
+| Kill to database online | 2.0 to 5.1 s |
+| Unacknowledged in-flight rows | 0 to 202 per cycle (allowed either way) |
+
+- Conclusion: SQL Server's own crash recovery is sound under this load. The M2 gate (S-1a and S-1b)
+  is met; M3 still waits for S-1d.
+- For S-1d: the writer and verifier are reusable, but need (a) an acknowledgement ledger on another
+  machine, (b) a way to run the writer against SQL on the server, which needs a temporary TCP
+  listener and firewall rule on the server (a spike-only exception to the shared-memory-only rule,
+  removed afterwards), and (c) a power-cut orchestrator instead of the process kill.
+- Dependency note for M3: `Microsoft.Data.SqlClient` 7.1.1 brought in
+  `System.Security.Cryptography.Pkcs` 9.0.18, which carries known advisories. Irrelevant for a local
+  spike; pin a patched version when the real client dependency is chosen.

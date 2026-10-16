@@ -1,6 +1,6 @@
 # KalTerm plan
 
-**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0. M1 spikes done: S-3, S-1a.
+**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0. M1 spikes done: S-3, S-1a, S-1b. M2 may start; M3 waits for S-1d (server on order).
 
 ## 1. Goal
 

@@ -18,8 +18,9 @@ oracle. No code is shared.
 ## Status
 
 M0 (scaffold) is done and merged; CI is green on GitHub. **Next: M1 spikes**
-(PLAN.md §6). S-3 is done. Do not start M2 until S-1a and S-1b have passed, and do not start M3
-until S-1d (real power cuts) has passed on the target server (PLAN.md §6.1).
+(PLAN.md §6). S-3, S-1a and S-1b are done, so M2 may start. Do not start M3 until S-1d (real
+power cuts) has passed on the target server (PLAN.md §6.1). S-1a found that this workstation's
+consumer NVMe acknowledges write-through writes from volatile cache (BUILD-LOG §2.2).
 
 ## Non-negotiables
 
