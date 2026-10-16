@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>KalTerm.Kalshi.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.MTP">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KalTerm.Kalshi\KalTerm.Kalshi.csproj" />
+    <ProjectReference Include="..\KalTerm.TestSupport\KalTerm.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="System.Globalization" />
+    <Using Include="KalTerm.TestSupport" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Vectors\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

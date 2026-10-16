@@ -1,0 +1,71 @@
+{
+ "generator": "tools/vectors/generate_config.py",
+ "referenceCommit": "3d19d501c84ddf89e9b7df63185e5d17eecec320",
+ "python": "3.14.7",
+ "variablePrefix": "KALSHI_",
+ "environments": {
+  "demo": {
+   "rest": "https://external-api.demo.kalshi.co/trade-api/v2",
+   "webSocket": "wss://external-api-ws.demo.kalshi.co/trade-api/ws/v2"
+  },
+  "production": {
+   "rest": "https://external-api.kalshi.com/trade-api/v2",
+   "webSocket": "wss://external-api-ws.kalshi.com/trade-api/ws/v2"
+  }
+ },
+ "defaults": {
+  "env": "demo",
+  "read_tokens_per_second": "200",
+  "write_tokens_per_second": "100",
+  "rate_limit_margin": "0.9"
+ },
+ "constraints": {
+  "read_tokens_per_second": {
+   "gt": "0"
+  },
+  "write_tokens_per_second": {
+   "gt": "0"
+  },
+  "rate_limit_margin": {
+   "gt": "0",
+   "le": "1"
+  }
+ },
+ "budgets": [
+  {
+   "tokens": "200",
+   "margin": "0.9",
+   "budget": "180.0"
+  },
+  {
+   "tokens": "600",
+   "margin": "0.9",
+   "budget": "540.0"
+  },
+  {
+   "tokens": "100",
+   "margin": "0.9",
+   "budget": "90.0"
+  },
+  {
+   "tokens": "200",
+   "margin": "1",
+   "budget": "200"
+  },
+  {
+   "tokens": "150",
+   "margin": "0.85",
+   "budget": "127.5"
+  },
+  {
+   "tokens": "50.5",
+   "margin": "0.5",
+   "budget": "25.25"
+  },
+  {
+   "tokens": "1000",
+   "margin": "0.1",
+   "budget": "100.0"
+  }
+ ]
+}

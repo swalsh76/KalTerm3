@@ -1,10 +1,10 @@
-namespace KalTerm.Core.Tests.Support;
+namespace KalTerm.TestSupport;
 
 /// <summary>
 /// A deterministic <see cref="TimeProvider"/> whose sleeps cost no real time: creating a timer moves the clock
 /// forward by its delay and fires it at once. The same idea as the reference's FakeTime, whose sleep advances time.
 /// </summary>
-internal sealed class AutoAdvanceTimeProvider : TimeProvider
+public sealed class AutoAdvanceTimeProvider : TimeProvider
 {
     private readonly List<TimeSpan> _delays = [];
     private readonly Queue<(TimeSpan Due, TimerCallback Callback, object? State)> _pending = new();
