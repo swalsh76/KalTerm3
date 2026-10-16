@@ -32,6 +32,9 @@ namespace KalTerm.Kalshi.Models.Json;
 [JsonSerializable(typeof(EventsPage))]
 [JsonSerializable(typeof(SeriesList))]
 [JsonSerializable(typeof(OrderBook))]
+[JsonSerializable(typeof(MarketEnvelope))]
+[JsonSerializable(typeof(EventEnvelope))]
+[JsonSerializable(typeof(SeriesEnvelope))]
 internal sealed partial class KalshiJsonContext : JsonSerializerContext
 {
 }

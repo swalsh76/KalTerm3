@@ -384,3 +384,36 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   Kalshi suite showed no failure or hang.
 - Verification: 3,587 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core` 98.3%,
   `KalTerm.Kalshi` 95.1% (462 of 486 lines).
+
+### 3.7c Remaining read endpoints, clock-skew sampling, live test (2026-10-16): done (live run pending)
+
+- `KalshiRestClient` gains (still no portfolio, no writes): `IterateTradesAsync`, `EventsPageAsync` / `IterateEventsAsync`,
+  `MultivariateEventsPageAsync` / `IterateMultivariateEventsAsync` (their own endpoint; the ordinary one is never touched),
+  `MarketAsync`, `EventAsync`, `SeriesAsync` (each unwrapped from its envelope; a missing wrapper is a
+  `KalshiResponseException` naming what was asked), `SeriesListAsync`, `OrderBookAsync(ticker, depth = 0)` (always sends
+  `depth=`, as the reference does) and `ClockSkewAsync(samples = 5, spacing = 250 ms, threshold = 2 s)`. Tickers are
+  URL-escaped, and the signature covers the escaped path actually sent.
+- **The read-only guarantee is now an allow-list.** The first guard against write methods was a blocklist of write-sounding
+  words in method names; it tripped over `OrderBookAsync` (an order *book* is a read). It is replaced by an exact allow-list of
+  the 15 approved public methods: adding any public method, a write method above all, fails the test until someone extends
+  the list on purpose.
+- **Clock sampling.** Each sample is built by the 2.6 code from the response's `Date` and `Age`, read exactly as sent
+  (`HttpHeaders.NonValidated`; the typed accessor would re-format the date), and timed around the attempt that succeeded, not
+  around rate-limit waits or earlier retries (a test pins that `Sent` is the time of the second attempt after a 503 and its
+  500 ms backoff). That is a deliberate improvement on the reference, which times the whole call; the interval it gives is
+  still guaranteed to contain the true offset, and is tighter. Sleeps happen between samples only (4 samples, 3 sleeps).
+- Core change: `GetResponseAsync` (internal) returns the body, the winning attempt's send/receive times and the raw `Date` and
+  `Age`; `GetStringAsync` wraps it, so all existing behaviour is unchanged.
+- Tests: the reference's trade, events, multivariate and clock-skew tests ported (a 4 s-ahead local clock is `Skewed` and
+  contains the true offset; a good clock is `Ok`; the `Age` header rescues a cached reply, with the control that without it the
+  same reply looks skewed; a missing or unparseable `Date` is a clear error), plus envelope unwrapping, escaping, depth, and
+  validation. 15 consecutive runs of the Kalshi suite showed no failure or hang.
+- **Live test** (`LiveKalshiTests`, seven tests): gated by `KALSHI_INTEGRATION=1` (the same switch as the reference); the target
+  comes from `KALSHI_ENV` (production only when set explicitly) and the read-only key from `KALSHI_KEY_ID` /
+  `KALSHI_PRIVATE_KEY_PATH`; without them it skips. It reads: the signed exchange status; 1,000 ordinary open markets (more than
+  100, none multivariate, every price between $0 and $1); combo markets (all multivariate, with legs); the series list and a
+  combo events page; the busiest market's order book (positive quantities, sane prices); an hour of recent trades (yes + no =
+  $1.00 on each); and a clock reading (not `Skewed`). About a dozen GETs. It cannot place or change an order, and it never
+  prints the key id, the key path or key material. Without the variable the seven tests show as skipped, in CI too.
+- Verification: 3,619 tests (3,612 pass, 7 live skipped), build with 0 warnings, `dotnet format` clean; merged coverage
+  `KalTerm.Core` 98.3%, `KalTerm.Kalshi` 95.5% (510 of 534 lines).

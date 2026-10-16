@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 using KalTerm.Core;
+using KalTerm.Core.Clock;
 using KalTerm.Core.RateLimiting;
 using KalTerm.Kalshi.Auth;
 using KalTerm.Kalshi.Configuration;
@@ -102,6 +103,104 @@ public sealed partial class KalshiRestClient : IDisposable
     public IAsyncEnumerable<Market> IterateMarketsAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default) =>
         IterateAsync("/markets", query, KalshiJsonContext.Default.MarketsPage, page => page.Markets, page => page.Cursor, cancellationToken);
 
+    /// <summary>
+    /// Executed trades across all markets, combos included. Filter with <c>min_ts</c> / <c>max_ts</c> (epoch seconds) and
+    /// optionally <c>ticker</c>; used to backfill what a disconnect missed.
+    /// </summary>
+    public IAsyncEnumerable<Trade> IterateTradesAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default) =>
+        IterateAsync("/markets/trades", query, KalshiJsonContext.Default.TradesPage, page => page.Trades, page => page.Cursor, cancellationToken);
+
+    /// <summary>One page of ordinary events (Kalshi excludes multivariate events here).</summary>
+    public async Task<EventsPage> EventsPageAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default) =>
+        KalshiJson.Parse(
+            await GetStringAsync("/events", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.EventsPage,
+            "events");
+
+    /// <summary>Every ordinary event matching the query.</summary>
+    public IAsyncEnumerable<KalshiEvent> IterateEventsAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default) =>
+        IterateAsync("/events", query, KalshiJsonContext.Default.EventsPage, page => page.Events, page => page.Cursor, cancellationToken);
+
+    /// <summary>One page of multivariate (combo) events; filter by <c>series_ticker</c> or <c>collection_ticker</c> (not both).</summary>
+    public async Task<EventsPage> MultivariateEventsPageAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default) =>
+        KalshiJson.Parse(
+            await GetStringAsync("/events/multivariate", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.EventsPage,
+            "multivariate events");
+
+    /// <summary>Every multivariate (combo) event matching the query. Never touches the ordinary events endpoint.</summary>
+    public IAsyncEnumerable<KalshiEvent> IterateMultivariateEventsAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default) =>
+        IterateAsync("/events/multivariate", query, KalshiJsonContext.Default.EventsPage, page => page.Events, page => page.Cursor, cancellationToken);
+
+    /// <summary>One market by ticker.</summary>
+    public async Task<Market> MarketAsync(string ticker, CancellationToken cancellationToken = default) =>
+        KalshiJson.Parse(
+            await GetStringAsync($"/markets/{Segment(ticker)}", null, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.MarketEnvelope,
+            $"market {ticker}").Market;
+
+    /// <summary>One event by ticker.</summary>
+    public async Task<KalshiEvent> EventAsync(string eventTicker, CancellationToken cancellationToken = default) =>
+        KalshiJson.Parse(
+            await GetStringAsync($"/events/{Segment(eventTicker)}", null, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.EventEnvelope,
+            $"event {eventTicker}").Event;
+
+    /// <summary>One series by ticker.</summary>
+    public async Task<Series> SeriesAsync(string seriesTicker, CancellationToken cancellationToken = default) =>
+        KalshiJson.Parse(
+            await GetStringAsync($"/series/{Segment(seriesTicker)}", null, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.SeriesEnvelope,
+            $"series {seriesTicker}").Series;
+
+    /// <summary>The list of series, optionally filtered.</summary>
+    public async Task<IReadOnlyList<Series>> SeriesListAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default) =>
+        KalshiJson.Parse(
+            await GetStringAsync("/series", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.SeriesList,
+            "series list").Series;
+
+    /// <summary>A market's order book. <paramref name="depth"/> limits the levels per side; 0 asks for all of them.</summary>
+    public async Task<OrderBook> OrderBookAsync(string ticker, int depth = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(depth);
+
+        return OrderBook.FromResponse(
+            await GetStringAsync($"/markets/{Segment(ticker)}/orderbook", KalshiQuery.Empty.With("depth", depth), cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Estimates how far this machine's clock is from Kalshi's. Signed requests embed a timestamp, so a badly skewed clock makes every
+    /// request fail. Kalshi publishes no time endpoint, so this takes <paramref name="samples"/> readings of the HTTP <c>Date</c>
+    /// header from <c>/exchange/status</c>, spaced by <paramref name="spacing"/> (between samples only), and combines them with
+    /// <see cref="ClockSkewEstimator"/>. Each sample is timed around the attempt that succeeded, not around any rate-limit wait
+    /// or retry, which keeps the interval as tight as it can be.
+    /// </summary>
+    public async Task<ClockSkew> ClockSkewAsync(
+        int samples = 5,
+        TimeSpan? spacing = null,
+        TimeSpan? threshold = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(samples, 1);
+        var gap = spacing ?? TimeSpan.FromMilliseconds(250);
+        ArgumentOutOfRangeException.ThrowIfLessThan(gap, TimeSpan.Zero, nameof(spacing));
+
+        var taken = new List<ClockSample>(samples);
+        for (var i = 0; i < samples; i++)
+        {
+            if (i > 0)
+            {
+                await Task.Delay(gap, _time, cancellationToken).ConfigureAwait(false);
+            }
+
+            var response = await GetResponseAsync("/exchange/status", null, cancellationToken).ConfigureAwait(false);
+            taken.Add(ClockSample.FromHeaders(response.Sent, response.Received, response.DateHeader, response.AgeHeader));
+        }
+
+        return ClockSkewEstimator.Estimate(taken, threshold);
+    }
+
     public void Dispose()
     {
         _http.Dispose();
@@ -111,11 +210,15 @@ public sealed partial class KalshiRestClient : IDisposable
         }
     }
 
+    /// <summary>The body of a 200 response, which is all most endpoints need.</summary>
+    internal async Task<string> GetStringAsync(string path, KalshiQuery? query, CancellationToken cancellationToken) =>
+        (await GetResponseAsync(path, query, cancellationToken).ConfigureAwait(false)).Body;
+
     /// <summary>
-    /// Sends a GET and returns the body of the 200 response. This is the single place requests leave the client: it paces,
-    /// signs, sends and retries.
+    /// Sends a GET and returns the 200 response with its timing and the headers the clock check needs. This is the single place
+    /// requests leave the client: it paces, signs, sends and retries.
     /// </summary>
-    internal async Task<string> GetStringAsync(string path, KalshiQuery? query, CancellationToken cancellationToken)
+    internal async Task<KalshiResponse> GetResponseAsync(string path, KalshiQuery? query, CancellationToken cancellationToken)
     {
         var url = new Uri(_baseUrl + path + (query ?? KalshiQuery.Empty).ToQueryString(), UriKind.Absolute);
 
@@ -136,11 +239,13 @@ public sealed partial class KalshiRestClient : IDisposable
             string reason;
             try
             {
+                var sent = _time.GetUtcNow();
                 using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                var received = _time.GetUtcNow();
                 var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
-                    return body;
+                    return new KalshiResponse(body, sent, received, RawHeader(response, "Date"), RawHeader(response, "Age"));
                 }
 
                 if (!IsRetryable(response.StatusCode) || isLast)
@@ -164,6 +269,16 @@ public sealed partial class KalshiRestClient : IDisposable
             await Task.Delay(delay, _time, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private static string Segment(string ticker)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ticker);
+        return Uri.EscapeDataString(ticker);
+    }
+
+    /// <summary>A header exactly as the server sent it (the typed accessors would re-format a date).</summary>
+    private static string? RawHeader(HttpResponseMessage response, string name) =>
+        response.Headers.NonValidated.TryGetValues(name, out var values) ? values.ToString() : null;
 
     private static bool IsRetryable(HttpStatusCode status) =>
         status is HttpStatusCode.TooManyRequests or HttpStatusCode.InternalServerError or HttpStatusCode.BadGateway
@@ -209,3 +324,11 @@ public sealed partial class KalshiRestClient : IDisposable
     [LoggerMessage(Level = LogLevel.Information, Message = "Kalshi GET {Path} attempt {Attempt} failed ({Reason}); retrying in {DelaySeconds:F2}s")]
     private static partial void LogRetry(ILogger logger, string path, int attempt, string reason, double delaySeconds);
 }
+
+/// <summary>A 200 response: its body, when the winning attempt was sent and answered, and the raw <c>Date</c> and <c>Age</c> headers.</summary>
+/// <param name="Body">The response body.</param>
+/// <param name="Sent">Local time just before the successful attempt was sent.</param>
+/// <param name="Received">Local time just after its response arrived.</param>
+/// <param name="DateHeader">The <c>Date</c> header exactly as sent, or null.</param>
+/// <param name="AgeHeader">The <c>Age</c> header exactly as sent, or null.</param>
+internal readonly record struct KalshiResponse(string Body, DateTimeOffset Sent, DateTimeOffset Received, string? DateHeader, string? AgeHeader);
