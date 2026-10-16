@@ -97,6 +97,7 @@ python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install cryptography
+python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```
 
 CI fails if any production assembly is under 90% line coverage, judged on the union of all test

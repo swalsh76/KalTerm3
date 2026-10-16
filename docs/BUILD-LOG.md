@@ -278,3 +278,40 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   server VM.
 - Verification: 2,752 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core`
   98.4% (244 of 248 lines), `KalTerm.Kalshi` 94.6% (176 of 186).
+
+### 3.6 Clock-skew estimator (2026-10-16): done
+
+- `KalTerm.Core.Clock` (pure, no I/O): `ClockSample`, `ClockSkew` (record with `Status` and `Describe()`),
+  `ClockSkewStatus` (Ok / Skewed / Uncertain), `ClockSkewEstimator.Estimate`, `HttpDate`, `ClockCheckException`.
+  No new packages.
+- Method as in the reference: each sample gives an interval `[sent - server - 1 s, received - server]` for
+  `local - server` (the `Date` header is truncated to whole seconds); the samples' intervals are intersected;
+  disagreeing samples fall back to the median of the midpoints with the widest half-width and are flagged
+  low-confidence. `Skewed` only when even the nearest edge is beyond the threshold (default 2 s, our own choice);
+  `Ok` when the whole interval is inside; otherwise `Uncertain`, never a guess.
+- **Exact arithmetic**: instants are `DateTimeOffset` and offsets `TimeSpan` (100 ns ticks); the reference's floats
+  carry about 0.2 microseconds of noise at today's epoch. Boundaries are exact (an edge equal to the threshold is
+  not "beyond" it); tests pin this to the tick. A sample received before it was sent is refused (not in the
+  reference; a monotonic clock cannot produce one).
+- `ClockSample.FromHeaders(sent, received, date, age)` holds the rule the reference's REST client does inline:
+  server time is `Date` plus `Age` (an `Age` that is not plain digits counts as zero; a huge one is a clear error),
+  and a missing or unparseable `Date` is a `ClockCheckException`. The sampling loop (spacing, count) belongs to
+  slice 2.7.
+- `HttpDate` accepts exactly the three formats HTTP requires receivers to take (standard, RFC 850, asctime), case
+  insensitive, GMT only, a real weekday name that is not cross-checked against the date, two-digit years pivoting at
+  69 as in the reference. The reference's Python parser is far more lenient: it also accepts numeric zones, no zone,
+  `UTC`, any word ending in a comma in place of a weekday, a four-digit year in RFC 850, and surrounding
+  whitespace. Those are refused here, each recorded in the vectors as `csharp: error`.
+- `Describe()` formats two decimals rounding half to even on the exact tick value. Python rounds exact binary ties
+  by the binary value, so a handful of values (x.xx5) can print a different last digit; the vectors drop such
+  cases and the unit test pins the exact-tie behaviour (0.125 -> 0.12).
+- Parity: `tools/vectors/generate_clock.py` imports the reference `clock.py` and records 306 sample sets built like
+  the reference test's `simulate` (offsets from -10 to +60 s, five round-trip times, three thresholds, one to eight
+  samples, 40 inconsistent sets), 6 description cases, the no-samples error and 70 date strings. Estimates agree
+  within 2 microseconds (float noise); status, consistency and description text match exactly. 2 cases were
+  dropped as rounding ties.
+- **Lesson from the vectors:** my first generator run had zero inconsistent cases. The test that checks the file's
+  breadth failed, and the cause was that every inconsistent set had a half-width of exactly 0.525 s, a rounding tie
+  my own filter removed. Round-trip times are now chosen to avoid ties, so the fallback path is covered.
+- Verification: 3,208 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core`
+  98.2% (333 of 339 lines), `KalTerm.Kalshi` 94.6% (176 of 186).
