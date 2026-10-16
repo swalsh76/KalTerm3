@@ -20,5 +20,10 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="System.Globalization" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Vectors\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
