@@ -1,0 +1,1309 @@
+{
+ "generator": "tools/vectors/generate_fixedpoint.py",
+ "referenceCommit": "3d19d501c84ddf89e9b7df63185e5d17eecec320",
+ "python": "3.14.7",
+ "cases": [
+  {
+   "scale": "e6",
+   "input": "0",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "1",
+   "expect": "1000000"
+  },
+  {
+   "scale": "e6",
+   "input": "-1",
+   "expect": "-1000000"
+  },
+  {
+   "scale": "e6",
+   "input": "+1",
+   "expect": "1000000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.0",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "00.00",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "-0",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "-0.000000",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "+0.5",
+   "expect": "500000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.4100",
+   "expect": "410000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.41",
+   "expect": "410000"
+  },
+  {
+   "scale": "e6",
+   "input": ".5",
+   "expect": "500000"
+  },
+  {
+   "scale": "e6",
+   "input": "1.",
+   "expect": "1000000"
+  },
+  {
+   "scale": "e6",
+   "input": "-.5",
+   "expect": "-500000"
+  },
+  {
+   "scale": "e6",
+   "input": "000123.4500",
+   "expect": "123450000"
+  },
+  {
+   "scale": "e6",
+   "input": "7",
+   "expect": "7000000"
+  },
+  {
+   "scale": "e6",
+   "input": "104.24",
+   "expect": "104240000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.03",
+   "expect": "30000"
+  },
+  {
+   "scale": "e6",
+   "input": "118.7499",
+   "expect": "118749900"
+  },
+  {
+   "scale": "e6",
+   "input": "-3.5",
+   "expect": "-3500000"
+  },
+  {
+   "scale": "e6",
+   "input": "100",
+   "expect": "100000000"
+  },
+  {
+   "scale": "e6",
+   "input": "99.99",
+   "expect": "99990000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.99",
+   "expect": "990000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.01",
+   "expect": "10000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.0001",
+   "expect": "100"
+  },
+  {
+   "scale": "e6",
+   "input": "0.000001",
+   "expect": "1"
+  },
+  {
+   "scale": "e6",
+   "input": "0.01",
+   "expect": "10000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.000010",
+   "expect": "10"
+  },
+  {
+   "scale": "e6",
+   "input": "0.010000",
+   "expect": "10000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.1234567",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "0.0000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "0.001",
+   "expect": "1000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.123",
+   "expect": "123000"
+  },
+  {
+   "scale": "e6",
+   "input": "1.0000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-0.0000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "9223372036854.775807",
+   "expect": "9223372036854775807"
+  },
+  {
+   "scale": "e6",
+   "input": "9223372036854.775808",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-9223372036854.775807",
+   "expect": "-9223372036854775807"
+  },
+  {
+   "scale": "e6",
+   "input": "-9223372036854.775808",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "92233720368547758.07",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "92233720368547758.08",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-92233720368547758.07",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-92233720368547758.08",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "9000000000000",
+   "expect": "9000000000000000000"
+  },
+  {
+   "scale": "e6",
+   "input": "10000000000000",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "9223372036854775807",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "99999999999999999999",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1.000000000000000000000000000",
+   "expect": "1000000"
+  },
+  {
+   "scale": "e6",
+   "input": "0.100000000000000000000000000",
+   "expect": "100000"
+  },
+  {
+   "scale": "e6",
+   "input": "123456789012345678.00",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "0.000000000000000000000000000000000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1e2",
+   "expect": "100000000"
+  },
+  {
+   "scale": "e6",
+   "input": "1E2",
+   "expect": "100000000"
+  },
+  {
+   "scale": "e6",
+   "input": "1e-6",
+   "expect": "1"
+  },
+  {
+   "scale": "e6",
+   "input": "1e-7",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "5e-1",
+   "expect": "500000"
+  },
+  {
+   "scale": "e6",
+   "input": "12345e-3",
+   "expect": "12345000"
+  },
+  {
+   "scale": "e6",
+   "input": "1.5e1",
+   "expect": "15000000"
+  },
+  {
+   "scale": "e6",
+   "input": "-2.5e-1",
+   "expect": "-250000"
+  },
+  {
+   "scale": "e6",
+   "input": "1e0",
+   "expect": "1000000"
+  },
+  {
+   "scale": "e6",
+   "input": "0e5",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "0e-5",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "+1e+2",
+   "expect": "100000000"
+  },
+  {
+   "scale": "e6",
+   "input": "1e30",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1e-30",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1e999999999",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-1e999999999",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1e-999999999",
+   "expect": "0",
+   "csharp": "refuse",
+   "note": "reference returns 0: Decimal underflows, a nonzero value silently becomes zero"
+  },
+  {
+   "scale": "e6",
+   "input": "0e999999999",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "0e-999999999",
+   "expect": "0"
+  },
+  {
+   "scale": "e6",
+   "input": "9.223372036854775807e12",
+   "expect": "9223372036854775807"
+  },
+  {
+   "scale": "e6",
+   "input": "9.223372036854775808e12",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": " ",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "abc",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "NaN",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "nan",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "Infinity",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-Infinity",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "inf",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-inf",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "sNaN",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1.2.3",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "--1",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "+-1",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1e",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "e5",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1e+",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": ".",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "+",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "0x10",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1,000",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1 000",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "$1",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1$",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1f",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1d",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": " 1",
+   "expect": "1000000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1 ",
+   "expect": "1000000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": " 1.5 ",
+   "expect": "1500000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1_000",
+   "expect": "1000000000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "1_0.5",
+   "expect": "10500000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "\u0661\u0662",
+   "expect": "12000000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "\uff11\uff12.\uff15",
+   "expect": "12500000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "1",
+   "expect": "100"
+  },
+  {
+   "scale": "e2",
+   "input": "-1",
+   "expect": "-100"
+  },
+  {
+   "scale": "e2",
+   "input": "+1",
+   "expect": "100"
+  },
+  {
+   "scale": "e2",
+   "input": "0.0",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "00.00",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "-0",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "-0.000000",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "+0.5",
+   "expect": "50"
+  },
+  {
+   "scale": "e2",
+   "input": "0.4100",
+   "expect": "41"
+  },
+  {
+   "scale": "e2",
+   "input": "0.41",
+   "expect": "41"
+  },
+  {
+   "scale": "e2",
+   "input": ".5",
+   "expect": "50"
+  },
+  {
+   "scale": "e2",
+   "input": "1.",
+   "expect": "100"
+  },
+  {
+   "scale": "e2",
+   "input": "-.5",
+   "expect": "-50"
+  },
+  {
+   "scale": "e2",
+   "input": "000123.4500",
+   "expect": "12345"
+  },
+  {
+   "scale": "e2",
+   "input": "7",
+   "expect": "700"
+  },
+  {
+   "scale": "e2",
+   "input": "104.24",
+   "expect": "10424"
+  },
+  {
+   "scale": "e2",
+   "input": "0.03",
+   "expect": "3"
+  },
+  {
+   "scale": "e2",
+   "input": "118.7499",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-3.5",
+   "expect": "-350"
+  },
+  {
+   "scale": "e2",
+   "input": "100",
+   "expect": "10000"
+  },
+  {
+   "scale": "e2",
+   "input": "99.99",
+   "expect": "9999"
+  },
+  {
+   "scale": "e2",
+   "input": "0.99",
+   "expect": "99"
+  },
+  {
+   "scale": "e2",
+   "input": "0.01",
+   "expect": "1"
+  },
+  {
+   "scale": "e2",
+   "input": "0.0001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.01",
+   "expect": "1"
+  },
+  {
+   "scale": "e2",
+   "input": "0.000010",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.010000",
+   "expect": "1"
+  },
+  {
+   "scale": "e2",
+   "input": "0.1234567",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.0000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.123",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1.0000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-0.0000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "9223372036854.775807",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "9223372036854.775808",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-9223372036854.775807",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-9223372036854.775808",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "92233720368547758.07",
+   "expect": "9223372036854775807"
+  },
+  {
+   "scale": "e2",
+   "input": "92233720368547758.08",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-92233720368547758.07",
+   "expect": "-9223372036854775807"
+  },
+  {
+   "scale": "e2",
+   "input": "-92233720368547758.08",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "9000000000000",
+   "expect": "900000000000000"
+  },
+  {
+   "scale": "e2",
+   "input": "10000000000000",
+   "expect": "1000000000000000"
+  },
+  {
+   "scale": "e2",
+   "input": "9223372036854775807",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "99999999999999999999",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1.000000000000000000000000000",
+   "expect": "100"
+  },
+  {
+   "scale": "e2",
+   "input": "0.100000000000000000000000000",
+   "expect": "10"
+  },
+  {
+   "scale": "e2",
+   "input": "123456789012345678.00",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.000000000000000000000000000000000001",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1e2",
+   "expect": "10000"
+  },
+  {
+   "scale": "e2",
+   "input": "1E2",
+   "expect": "10000"
+  },
+  {
+   "scale": "e2",
+   "input": "1e-6",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1e-7",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "5e-1",
+   "expect": "50"
+  },
+  {
+   "scale": "e2",
+   "input": "12345e-3",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1.5e1",
+   "expect": "1500"
+  },
+  {
+   "scale": "e2",
+   "input": "-2.5e-1",
+   "expect": "-25"
+  },
+  {
+   "scale": "e2",
+   "input": "1e0",
+   "expect": "100"
+  },
+  {
+   "scale": "e2",
+   "input": "0e5",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "0e-5",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "+1e+2",
+   "expect": "10000"
+  },
+  {
+   "scale": "e2",
+   "input": "1e30",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1e-30",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1e999999999",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-1e999999999",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1e-999999999",
+   "expect": "0",
+   "csharp": "refuse",
+   "note": "reference returns 0: Decimal underflows, a nonzero value silently becomes zero"
+  },
+  {
+   "scale": "e2",
+   "input": "0e999999999",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "0e-999999999",
+   "expect": "0"
+  },
+  {
+   "scale": "e2",
+   "input": "9.223372036854775807e12",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "9.223372036854775808e12",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": " ",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "abc",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "NaN",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "nan",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "Infinity",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-Infinity",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "inf",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-inf",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "sNaN",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1.2.3",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "--1",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "+-1",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1e",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "e5",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1e+",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": ".",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "+",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "-",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0x10",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1,000",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1 000",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "$1",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1$",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1f",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1d",
+   "expect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": " 1",
+   "expect": "100",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1 ",
+   "expect": "100",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": " 1.5 ",
+   "expect": "150",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1_000",
+   "expect": "100000",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "1_0.5",
+   "expect": "1050",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "\u0661\u0662",
+   "expect": "1200",
+   "csharp": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "\uff11\uff12.\uff15",
+   "expect": "1250",
+   "csharp": "refuse"
+  }
+ ],
+ "roundTrips": [
+  {
+   "scale": "e6",
+   "scaled": "0",
+   "decimal": "0"
+  },
+  {
+   "scale": "e6",
+   "scaled": "1",
+   "decimal": "0.000001"
+  },
+  {
+   "scale": "e6",
+   "scaled": "-1",
+   "decimal": "-0.000001"
+  },
+  {
+   "scale": "e6",
+   "scaled": "99",
+   "decimal": "0.000099"
+  },
+  {
+   "scale": "e6",
+   "scaled": "100",
+   "decimal": "0.0001"
+  },
+  {
+   "scale": "e6",
+   "scaled": "101",
+   "decimal": "0.000101"
+  },
+  {
+   "scale": "e6",
+   "scaled": "410000",
+   "decimal": "0.41"
+  },
+  {
+   "scale": "e6",
+   "scaled": "999999",
+   "decimal": "0.999999"
+  },
+  {
+   "scale": "e6",
+   "scaled": "1000000",
+   "decimal": "1"
+  },
+  {
+   "scale": "e6",
+   "scaled": "1000001",
+   "decimal": "1.000001"
+  },
+  {
+   "scale": "e6",
+   "scaled": "-1000000",
+   "decimal": "-1"
+  },
+  {
+   "scale": "e6",
+   "scaled": "118749900",
+   "decimal": "118.7499"
+  },
+  {
+   "scale": "e6",
+   "scaled": "9223372036854775807",
+   "decimal": "9223372036854.775807"
+  },
+  {
+   "scale": "e6",
+   "scaled": "-9223372036854775807",
+   "decimal": "-9223372036854.775807"
+  },
+  {
+   "scale": "e6",
+   "scaled": "10424",
+   "decimal": "0.010424"
+  },
+  {
+   "scale": "e6",
+   "scaled": "3",
+   "decimal": "0.000003"
+  },
+  {
+   "scale": "e6",
+   "scaled": "700",
+   "decimal": "0.0007"
+  },
+  {
+   "scale": "e2",
+   "scaled": "0",
+   "decimal": "0"
+  },
+  {
+   "scale": "e2",
+   "scaled": "1",
+   "decimal": "0.01"
+  },
+  {
+   "scale": "e2",
+   "scaled": "-1",
+   "decimal": "-0.01"
+  },
+  {
+   "scale": "e2",
+   "scaled": "99",
+   "decimal": "0.99"
+  },
+  {
+   "scale": "e2",
+   "scaled": "100",
+   "decimal": "1"
+  },
+  {
+   "scale": "e2",
+   "scaled": "101",
+   "decimal": "1.01"
+  },
+  {
+   "scale": "e2",
+   "scaled": "410000",
+   "decimal": "4100"
+  },
+  {
+   "scale": "e2",
+   "scaled": "999999",
+   "decimal": "9999.99"
+  },
+  {
+   "scale": "e2",
+   "scaled": "1000000",
+   "decimal": "10000"
+  },
+  {
+   "scale": "e2",
+   "scaled": "1000001",
+   "decimal": "10000.01"
+  },
+  {
+   "scale": "e2",
+   "scaled": "-1000000",
+   "decimal": "-10000"
+  },
+  {
+   "scale": "e2",
+   "scaled": "118749900",
+   "decimal": "1187499"
+  },
+  {
+   "scale": "e2",
+   "scaled": "9223372036854775807",
+   "decimal": "92233720368547758.07"
+  },
+  {
+   "scale": "e2",
+   "scaled": "-9223372036854775807",
+   "decimal": "-92233720368547758.07"
+  },
+  {
+   "scale": "e2",
+   "scaled": "10424",
+   "decimal": "104.24"
+  },
+  {
+   "scale": "e2",
+   "scaled": "3",
+   "decimal": "0.03"
+  },
+  {
+   "scale": "e2",
+   "scaled": "700",
+   "decimal": "7"
+  }
+ ],
+ "unsupported": [
+  {
+   "scale": "e6",
+   "input": "0.41",
+   "pythonExpect": "410000"
+  },
+  {
+   "scale": "e2",
+   "input": "0.41",
+   "pythonExpect": "41"
+  },
+  {
+   "scale": "e6",
+   "input": "0.30000000000000004",
+   "pythonExpect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "0.30000000000000004",
+   "pythonExpect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "inf",
+   "pythonExpect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "inf",
+   "pythonExpect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "nan",
+   "pythonExpect": "refuse"
+  },
+  {
+   "scale": "e2",
+   "input": "nan",
+   "pythonExpect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "118.7499",
+   "pythonExpect": "118749900"
+  },
+  {
+   "scale": "e2",
+   "input": "118.7499",
+   "pythonExpect": "refuse"
+  },
+  {
+   "scale": "e6",
+   "input": "-3.5",
+   "pythonExpect": "-3500000"
+  },
+  {
+   "scale": "e2",
+   "input": "-3.5",
+   "pythonExpect": "-350"
+  }
+ ]
+}

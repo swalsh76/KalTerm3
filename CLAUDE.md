@@ -17,10 +17,10 @@ oracle. No code is shared.
 
 ## Status
 
-M0 (scaffold) is done and merged; CI is green on GitHub. **Next: M1 spikes**
-(PLAN.md §6). S-3, S-1a and S-1b are done, so M2 may start. Do not start M3 until S-1d (real
-power cuts) has passed on the target server (PLAN.md §6.1). S-1a found that this workstation's
-consumer NVMe acknowledges write-through writes from volatile cache (BUILD-LOG §2.2).
+M0 is done. **M2 Core is in progress**, one slice at a time (PLAN.md §6.2). Spikes S-3, S-1a and
+S-1b are done. Do not start M3 until S-1d (real power cuts) has passed on the target server
+(PLAN.md §6.1). S-1a found that this workstation's consumer NVMe acknowledges write-through writes
+from volatile cache (BUILD-LOG §2.2).
 
 ## Non-negotiables
 
@@ -86,4 +86,11 @@ dotnet restore KalTerm.sln
 dotnet format KalTerm.sln --verify-no-changes
 dotnet build KalTerm.sln -c Release
 dotnet test --solution KalTerm.sln -c Release --coverlet --coverlet-output-format cobertura --report-trx --results-directory TestResults
+```
+
+Regenerate golden vectors from the Python reference (only when the reference changes; the output is
+committed and CI never runs Python; see `tools/vectors/README.md`):
+
+```powershell
+python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```

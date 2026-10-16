@@ -132,3 +132,28 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
 - Dependency note for M3: `Microsoft.Data.SqlClient` 7.1.1 brought in
   `System.Security.Cryptography.Pkcs` 9.0.18, which carries known advisories. Irrelevant for a local
   spike; pin a patched version when the real client dependency is chosen.
+
+## 3. M2 Core
+
+### 3.1 Fixed-point money (2026-10-16): done
+
+- `KalTerm.Core.Money`: `Dollars` (10^-6) and `Contracts` (10^-2), `readonly record struct` over a
+  `long`; `PrecisionException`; an internal exact parser. Parse, `TryParse`, `FromDecimal`,
+  `ToDecimal`, invariant `ToString`, checked add/subtract/negate, ordering. `long.MinValue` is not a
+  valid value, so the range is ±(2^63 - 1) as in the reference.
+- No `double` or `float` anywhere in the public surface (a reflection test enforces it). Deliberate
+  deviation from the reference, which accepts floats via their shortest decimal form.
+- The parser is exact integer arithmetic (no BigInteger, no floating point): significant digits are
+  stripped of leading and trailing zeros, so any remaining negative shift means "too precise".
+- Parity: `tools/vectors/generate_fixedpoint.py` loads the reference `fixedpoint.py` by path as the
+  oracle (reference commit 3d19d50) and writes 210 parse cases (102 refusals), 34 round trips and 12
+  float inputs that are unsupported by design. Committed at
+  `tests/KalTerm.Core.Tests/Vectors/fixedpoint.json`; CI never runs Python.
+- Where KalTerm is deliberately stricter than the reference (whitespace, underscores, non-ASCII
+  digits) the vector records `csharp: refuse`.
+- **Finding in the reference** (reported, not edited): `to_e6("1e-999999999")` returns 0. Python's
+  `Decimal` underflows at extreme exponents, so a nonzero value silently becomes zero and passes the
+  exactness check, which breaks the reference's own "refuse, never round" rule. No practical impact
+  (Kalshi never sends such values). The port refuses it; the vector carries a `note`.
+- Verification: 278 tests pass (244 from vectors), build with 0 warnings, `dotnet format` clean;
+  coverage 98.1% lines and 95.8% branches (`Dollars` and `Contracts` 100%).
