@@ -99,6 +99,7 @@ python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTer
 python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install cryptography
 python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
+python tools/vectors/generate_ws_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
 ```
 
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in

@@ -38,7 +38,7 @@ reference commit, writing the JSON). Expectation strings: an integer, `refuse` (
 or `overflow` (the reference's unbounded integer does not fit a signed 64-bit long).
 
 Requirements: Python 3.11+ and the standard library only, except `generate_ed25519.py` (`cryptography`) and
-`generate_models.py` (`pydantic`), both dev-only in a throwaway venv. The reference clone is read, never edited.
+`generate_models.py` and `generate_ws_models.py` (`pydantic`), both dev-only in a throwaway venv. The reference clone is read, never edited.
 
 Where the C# port is deliberately stricter or different from the reference, the vector says so
 (`csharp` or `unsupported`), so every deviation is visible in the data rather than hidden in a test.
