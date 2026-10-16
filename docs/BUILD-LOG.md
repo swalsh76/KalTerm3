@@ -21,4 +21,4 @@ How each slice was built and verified. Section numbers follow PLAN.md milestones
 - Local verification: `dotnet format --verify-no-changes`, Release build (0 warnings), 2 of 2 tests
   passing, TRX and Cobertura coverage files produced.
 - CI (`.github/workflows/ci.yml`): windows-latest, actions pinned to commit SHAs, same steps as above.
-  Not yet verified on GitHub.
+  Verified on GitHub: PR #1, `build-test` passed in 1m12s, merged to `main` (7056292). M0 gate met.

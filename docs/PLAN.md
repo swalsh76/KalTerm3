@@ -1,6 +1,6 @@
 # KalTerm plan
 
-**Status: PROPOSAL (2026-10-15).** Source of truth once the owner approves it.
+**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0.
 
 ## 1. Goal
 
