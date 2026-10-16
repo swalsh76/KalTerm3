@@ -1,6 +1,6 @@
 # KalTerm plan
 
-**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0. M1 spikes done: S-3.
+**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0. M1 spikes done: S-3, S-1a.
 
 ## 1. Goal
 
@@ -100,7 +100,10 @@ instance recovers without manual repair across all 3 cuts. Watch recovery with a
 
 - **Durability is unproven.** The premise of SQL Server is a hypothesis; M1 S-1 tests it first.
   The workstation's drive (WD Blue SN580, consumer NVMe) reports no power-loss protection and its
-  write cache on. S-1d runs on the target server's drive, which may differ.
+  write cache on. S-1d runs on the target server's drive, which may differ. **S-1a found** that
+  with the device cache on, this drive acknowledges write-through writes (SQL's commit path) from
+  volatile cache, about 10 times faster than the flash can commit (BUILD-LOG §2.2). The server needs
+  either a power-loss-protected drive or its device cache disabled and verified; decide after S-1d.
 - **Rewrite cost.** KalshiTerm2 phases 0 to 6 are complete; this repeats them. Keep milestones tight.
 - **Ed25519** is not in the .NET 10 base library (confirmed by S-3). Decision: NSec.Cryptography
   (libsodium; ships one native `libsodium.dll`). BouncyCastle is the managed fallback. Remaining
