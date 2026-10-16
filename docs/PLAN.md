@@ -120,7 +120,8 @@ runs Python. Where the port is deliberately stricter or different, the vector sa
 | 2.6 | Clock-skew estimator | done |
 | 2.7a | REST models: exact fixed-point JSON converters, strict date-times, `Level`; pydantic-oracle vectors | done |
 | 2.7b | REST client core: GET-only guard, rate limiting, signing, retry/backoff, pagination, production banner; exchange status and markets | done |
-| 2.7c | Remaining read endpoints (trades, events, multivariate events, market/event/series, order book), clock-skew sampling, opt-in live smoke test (production, read-only key) | done (live run needs the owner's go-ahead each time) |
+| 2.7c | Remaining read endpoints (trades, events, multivariate events, market/event/series, order book), clock-skew sampling, opt-in live smoke test (production, read-only key) | done; live run passed 2026-10-16 (the owner runs it; each run needs the owner's go-ahead) |
+| 2.7d | One-off live check that the real server accepts our signature: an unsigned account read must be refused, the signed one accepted (added at the owner's request; account values are never printed) | done; passed 2026-10-16 (401 unsigned, 200 signed) |
 | 2.8 | WebSocket client (reconnect, resubscribe, sequence-gap recovery) | |
 
 ## 7. Risks
