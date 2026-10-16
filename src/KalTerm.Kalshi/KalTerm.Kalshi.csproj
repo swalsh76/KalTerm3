@@ -4,6 +4,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NSec.Cryptography" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\KalTerm.Core\KalTerm.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KalTerm.Kalshi.Tests" />
   </ItemGroup>
 </Project>

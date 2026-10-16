@@ -10,7 +10,13 @@ python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\Kalsh
 python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```
+
+`generate_ed25519.py` is the one generator that needs a third-party package: `cryptography` (`pip install
+cryptography`), because the reference signs with it. Use a throwaway venv outside the repo. It runs the
+reference's real `load_private_key` and `KalshiSigner.headers()` as the oracle, and reproduces the 21 signing
+vectors of spike S-3 exactly.
 
 `generate_config.py` reads the reference `config.py` statically with `ast` (it cannot be imported without
 pydantic): the URL maps, field defaults, constraints and variable prefix come from the source itself.
@@ -20,7 +26,8 @@ Vectors are written into the project that tests the code (`tests/<project>/Vecto
 reference commit, writing the JSON). Expectation strings: an integer, `refuse` (outside the domain),
 or `overflow` (the reference's unbounded integer does not fit a signed 64-bit long).
 
-Requirements: Python 3.11+ and the standard library only. The reference clone is read, never edited.
+Requirements: Python 3.11+ and the standard library only (except `generate_ed25519.py`, below). The
+reference clone is read, never edited.
 
 Where the C# port is deliberately stricter or different from the reference, the vector says so
 (`csharp` or `unsupported`), so every deviation is visible in the data rather than hidden in a test.

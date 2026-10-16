@@ -1,0 +1,2345 @@
+{
+ "generator": "tools/vectors/generate_ed25519.py",
+ "referenceCommit": "3d19d501c84ddf89e9b7df63185e5d17eecec320",
+ "python": "3.14.7",
+ "headerNames": [
+  "KALSHI-ACCESS-KEY",
+  "KALSHI-ACCESS-TIMESTAMP",
+  "KALSHI-ACCESS-SIGNATURE"
+ ],
+ "rawSign": [
+  {
+   "name": "rfc8032-test1",
+   "seedHex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+   "publicHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIJ1hsZ3v/VpguoRK9JLsLMREScVpezJpGXA7rAMcrn9g\n-----END PRIVATE KEY-----\n",
+   "messageHex": "",
+   "signatureHex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+   "signatureBase64": "5VZDAMNgrHKQhuLMgG6CioSHfx645dl02HPgZSJJAVVfuIIVkKM7rMYeOXAc+bRr0lv18FlbviRlUUFDjnoQCw=="
+  },
+  {
+   "name": "rfc8032-test2",
+   "seedHex": "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
+   "publicHex": "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIEzNCJso/5banbbDRuwRTg9bijGfNaumJNqM9u1PuKb7\n-----END PRIVATE KEY-----\n",
+   "messageHex": "72",
+   "signatureHex": "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00",
+   "signatureBase64": "kqAJqfDUyrhyDoILX2QlQKKye1QWUD+Ps3YiI+vbadoIWsHkPhWZbkWPNhPQ8R2MOHsurrQwKu6wDSkWErsMAA=="
+  },
+  {
+   "name": "rfc8032-test3",
+   "seedHex": "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
+   "publicHex": "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIMWqjfQ/n4N77bdELzHct7Fm04U1B28JS4XOOi4LRFj3\n-----END PRIVATE KEY-----\n",
+   "messageHex": "af82",
+   "signatureHex": "6291d657deec24024827e69c3abe01a30ce548a284743a445e3680d7db5ac3ac18ff9b538d16f290ae67f760984dc6594a7c15e9716ed28dc027beceea1ec40a",
+   "signatureBase64": "YpHWV97sJAJIJ+acOr4BowzlSKKEdDpEXjaA19taw6wY/5tTjRbykK5n92CYTcZZSnwV6XFu0o3AJ77O6h7ECg=="
+  },
+  {
+   "name": "kalshi-get-balance-seed1",
+   "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+   "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f706f7274666f6c696f2f62616c616e6365",
+   "signatureHex": "49171cb6308b1a111b562ca7710342b23002d0a331128c4723b37bf501b50d5d98aa206ff313f7642acd3cf3f4ce2c0052eda6a312029c078791134e6e32b50c",
+   "signatureBase64": "SRcctjCLGhEbViyncQNCsjAC0KMxEoxHI7N79QG1DV2YqiBv8xP3ZCrNPPP0ziwAUu2moxICnAeHkRNObjK1DA=="
+  },
+  {
+   "name": "kalshi-get-query-stripped-seed1",
+   "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+   "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b657473",
+   "signatureHex": "5b948ab87be63492156416b505696d73484a2b3bc618137e69c7d1ce53479a8d85b76aaadd792873f3b5e494bd76ea0be76fba86f0f0e3832b0a5e9cd993ee0c",
+   "signatureBase64": "W5SKuHvmNJIVZBa1BWltc0hKKzvGGBN+acfRzlNHmo2Ft2qq3Xkoc/O15JS9duoL52+6hvDw44MrCl6c2ZPuDA=="
+  },
+  {
+   "name": "kalshi-post-order-seed1",
+   "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+   "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+   "messageHex": "31373030303030303030303030504f53542f74726164652d6170692f76322f706f7274666f6c696f2f6f7264657273",
+   "signatureHex": "0fb2446607384b1a30f4468be10871475b357a14479995c36b9a7ca1d60606437caa8ea980ba8a87992ab4622d2536f191224a8c9f0a4d9dd2b69b3485920400",
+   "signatureBase64": "D7JEZgc4Sxow9EaL4QhxR1s1ehRHmZXDa5p8odYGBkN8qo6pgLqKh5kqtGItJTbxkSJKjJ8KTZ3Stps0hZIEAA=="
+  },
+  {
+   "name": "kalshi-delete-order-seed1",
+   "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+   "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+   "messageHex": "3137303030303030303030303044454c4554452f74726164652d6170692f76322f706f7274666f6c696f2f6f72646572732f6162632d313233",
+   "signatureHex": "3bbe362761c6579152c3b61f36c3bb463f085a08c193a99c7159a3e40a298b862fad3911d37634e97fc23c4f561b12f996222ec3d23972aec94060edfabe3807",
+   "signatureBase64": "O742J2HGV5FSw7YfNsO7Rj8IWgjBk6mccVmj5Aopi4YvrTkR03Y06X/CPE9WGxL5liIuw9I5cq7JQGDt+r44Bw=="
+  },
+  {
+   "name": "kalshi-empty-path-seed1",
+   "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+   "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+   "messageHex": "31373030303030303030303030474554",
+   "signatureHex": "c6a174336de641fadb6bd91e0d35f8465b9f09d4adb44ae9bece3b4df31761aaead523dfdacf3523b30ababfc7adb452f1f8fc75ce71e8e7c888a4f3bc946908",
+   "signatureBase64": "xqF0M23mQfrba9keDTX4RlufCdSttErpvs47TfMXYarq1SPf2s81I7MKur/HrbRS8fj8dc5x6OfIiKTzvJRpCA=="
+  },
+  {
+   "name": "kalshi-non-ascii-seed1",
+   "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+   "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b6574732f636166c3a9",
+   "signatureHex": "31dbf8dd785134ab47643af078d5e2852f1db92ddf33fa3fe1953ab00b7dd85d3c225405efa1dbacc78fcf7a9a1193ba23d6f9973657f56519c88aef3272230e",
+   "signatureBase64": "Mdv43XhRNKtHZDrweNXihS8duS3fM/o/4ZU6sAt92F08IlQF76HbrMePz3qaEZO6I9b5lzZX9WUZyIrvMnIjDg=="
+  },
+  {
+   "name": "kalshi-get-balance-seed2",
+   "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+   "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f706f7274666f6c696f2f62616c616e6365",
+   "signatureHex": "66dbf12d0e4ba6c792a0ecb80a3946d1d8a8330ec00bb653a4056cb1d1cc3d4f2666fb3a5e77e3b5f4ef2bf035d8aa4a11989533744160b414fc1436d402d401",
+   "signatureBase64": "ZtvxLQ5LpseSoOy4CjlG0dioMw7AC7ZTpAVssdHMPU8mZvs6XnfjtfTvK/A12KpKEZiVM3RBYLQU/BQ21ALUAQ=="
+  },
+  {
+   "name": "kalshi-get-query-stripped-seed2",
+   "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+   "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b657473",
+   "signatureHex": "015c1f38f2340c4c1d81260cc5517ab52b531e78ad89f668998e85ebe9c5a0b9f0f9e58fc0a4a91202bcaf207f8820b9b1fe063bdc17683a83c741d903392206",
+   "signatureBase64": "AVwfOPI0DEwdgSYMxVF6tStTHnitifZomY6F6+nFoLnw+eWPwKSpEgK8ryB/iCC5sf4GO9wXaDqDx0HZAzkiBg=="
+  },
+  {
+   "name": "kalshi-post-order-seed2",
+   "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+   "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+   "messageHex": "31373030303030303030303030504f53542f74726164652d6170692f76322f706f7274666f6c696f2f6f7264657273",
+   "signatureHex": "151825126c70ab98fcc8f87fe71a93b4a3cb63831b38c3dce2d17d0aab20419696266d5b34a2a4b237471ec5563e9fb2f9a74b12a75e1e40aa3e243ac26f760a",
+   "signatureBase64": "FRglEmxwq5j8yPh/5xqTtKPLY4MbOMPc4tF9CqsgQZaWJm1bNKKksjdHHsVWPp+y+adLEqdeHkCqPiQ6wm92Cg=="
+  },
+  {
+   "name": "kalshi-delete-order-seed2",
+   "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+   "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+   "messageHex": "3137303030303030303030303044454c4554452f74726164652d6170692f76322f706f7274666f6c696f2f6f72646572732f6162632d313233",
+   "signatureHex": "2c7d1b364d1a414281d908a159e53c7a3178c1bcb2ba9945ebc2feeb15ddf50491a74de0b9321c866d326f644e0a0a80d64ec3153361494b093e9de2504b5e08",
+   "signatureBase64": "LH0bNk0aQUKB2QihWeU8ejF4wbyyuplF68L+6xXd9QSRp03guTIchm0yb2ROCgqA1k7DFTNhSUsJPp3iUEteCA=="
+  },
+  {
+   "name": "kalshi-empty-path-seed2",
+   "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+   "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+   "messageHex": "31373030303030303030303030474554",
+   "signatureHex": "8279bb13afa1ddd3a8e059470345804652387e19226fa12d51d7935308a51ab9ac150408dd1791585ac6d9e0cd9e6aaa0caacb9de2813f8d86530123d9beb505",
+   "signatureBase64": "gnm7E6+h3dOo4FlHA0WARlI4fhkib6EtUdeTUwilGrmsFQQI3ReRWFrG2eDNnmqqDKrLneKBP42GUwEj2b61BQ=="
+  },
+  {
+   "name": "kalshi-non-ascii-seed2",
+   "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+   "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b6574732f636166c3a9",
+   "signatureHex": "073fc1ad12b7d805345223f189f8921ecc6c419ff9d35880c96eab9eaebd62f001ee2636d5fe9d6b1632bdb3a49744532182746a68a9f75b1f8b70ebbb2db205",
+   "signatureBase64": "Bz/BrRK32AU0UiPxifiSHsxsQZ/501iAyW6rnq69YvAB7iY21f6daxYyvbOkl0RTIYJ0amip91sfi3Druy2yBQ=="
+  },
+  {
+   "name": "kalshi-get-balance-seed255",
+   "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f706f7274666f6c696f2f62616c616e6365",
+   "signatureHex": "332b8eac097cff749b056fe8a95424bc15b85b7e1e1a99f646d8b233190bbaab08f1a704be19aa2e46147fd1d742d9284b80fd43ca3d59c147bcaa6285b9690b",
+   "signatureBase64": "MyuOrAl8/3SbBW/oqVQkvBW4W34eGpn2RtiyMxkLuqsI8acEvhmqLkYUf9HXQtkoS4D9Q8o9WcFHvKpihblpCw=="
+  },
+  {
+   "name": "kalshi-get-query-stripped-seed255",
+   "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b657473",
+   "signatureHex": "324b6906b0c45d133f8d83fea8624966aac4ef5fac94be2f3fd9f4d6fd411c50a81b43800e4fe2551a06b253419b38d8b8e2a8da7988fade5dd0b6e67b314b0d",
+   "signatureBase64": "MktpBrDEXRM/jYP+qGJJZqrE71+slL4vP9n01v1BHFCoG0OADk/iVRoGslNBmzjYuOKo2nmI+t5d0LbmezFLDQ=="
+  },
+  {
+   "name": "kalshi-post-order-seed255",
+   "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+   "messageHex": "31373030303030303030303030504f53542f74726164652d6170692f76322f706f7274666f6c696f2f6f7264657273",
+   "signatureHex": "b2377d54db028e526dadbccade9df893e0abdd425f25c25365f45f1da83450394243b960637939f28ca4cb15e286b323dffe3b1c5c4fff7362a6a53d444d1806",
+   "signatureBase64": "sjd9VNsCjlJtrbzK3p34k+Cr3UJfJcJTZfRfHag0UDlCQ7lgY3k58oykyxXihrMj3/47HFxP/3NipqU9RE0YBg=="
+  },
+  {
+   "name": "kalshi-delete-order-seed255",
+   "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+   "messageHex": "3137303030303030303030303044454c4554452f74726164652d6170692f76322f706f7274666f6c696f2f6f72646572732f6162632d313233",
+   "signatureHex": "3b43eccd3a0bc630fb29c5d1b0873ce15023444aa91e3a8c8f993f1595ef25625c50bb5d1d89c430dcbb6ab141cd4908b518ed9ae49e24c720490fbbd8430704",
+   "signatureBase64": "O0PszToLxjD7KcXRsIc84VAjREqpHjqMj5k/FZXvJWJcULtdHYnEMNy7arFBzUkItRjtmuSeJMcgSQ+72EMHBA=="
+  },
+  {
+   "name": "kalshi-empty-path-seed255",
+   "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+   "messageHex": "31373030303030303030303030474554",
+   "signatureHex": "6dc85dfbc4b45f64dc68bf069d7f8c7ea81372d09db938dd734583cad8b78efeb42270d66b29c985f4c4c496903eb3c604d25ed244a053336b57f31730bd3a0b",
+   "signatureBase64": "bchd+8S0X2TcaL8GnX+MfqgTctCduTjdc0WDyti3jv60InDWaynJhfTExJaQPrPGBNJe0kSgUzNrV/MXML06Cw=="
+  },
+  {
+   "name": "kalshi-non-ascii-seed255",
+   "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+   "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b6574732f636166c3a9",
+   "signatureHex": "7bec7eabf5e4259409bbdcf8bf74c3bdc69b36224bcf738a2e918cf5f233d3151f967c8604cc26297b4ce98246d276568f3a275b10ef1357cf5cc82c4e724206",
+   "signatureBase64": "e+x+q/XkJZQJu9z4v3TDvcabNiJLz3OKLpGM9fIz0xUflnyGBMwmKXtM6YJG0nZWjzonWxDvE1fPXMgsTnJCBg=="
+  }
+ ],
+ "keyFiles": [
+  {
+   "name": "plain",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----\n",
+   "expect": "ok",
+   "publicHex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c"
+  },
+  {
+   "name": "crlf-line-endings",
+   "pem": "-----BEGIN PRIVATE KEY-----\r\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\r\n-----END PRIVATE KEY-----\r\n",
+   "expect": "ok",
+   "publicHex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c"
+  },
+  {
+   "name": "leading-blank-lines",
+   "pem": "\n\n-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----\n",
+   "expect": "ok",
+   "publicHex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c"
+  },
+  {
+   "name": "text-before-the-block",
+   "pem": "# my data key\n-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----\n",
+   "expect": "ok",
+   "publicHex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c"
+  },
+  {
+   "name": "text-after-the-block",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----\n# end\n",
+   "expect": "ok",
+   "publicHex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c"
+  },
+  {
+   "name": "no-trailing-newline",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----",
+   "expect": "ok",
+   "publicHex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c"
+  },
+  {
+   "name": "rsa",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCgJKyh7IXaJS0q\nM4LDkZ0Ly42M/Fs31v7Q8k7HgfjJegcFq0kPXlBsFLPcOR0Q7cc6cEGiIk7CWhfW\nbDSrWT3EY8rPodfjqryeqZSTNcBzWYpg1ltmCjbOl+rp9rvibql3kylo0HtXlHgQ\nvUb4bUqfA55h2n37Nzep1oAcTOx3HoguJrS3GwpFPmb841dC+1oVbngcnivUboE9\nDRhRf5lbcEC6oRCQ6y/J8yA8kneuPtwrnPSGdWiPBv0AZJFFHpToaWXkjC81GE5H\nE5VWuMBXsiXhc73fKZLN/1cpqpCqia6jZTcdmL1Sh2LDw5ltNd+ADK8ihiwuIUlg\nkJRfqpiPAgMBAAECggEAASZ+ENvH9x9KCUH3ZKKgmESzIfb7xMNQlf+yKUoLx78H\nbkyscSvgXOJ4DfJ0hC9Z1ZGmkGemfy8/gwqFCgkB3kwFN4acOsKI+QvIM5x5Suzx\nreLt0RyQ9GkJo6hYst0UEsDblo6AOqjr0koOT+icPmhKOnWIEylty77GPZuwh9b3\nXZRw27ib+TUgtnJ1JDkdBsm3EETwJHJRCQQN3JPEWMvvUXyfqAmAjePpHZCCYe8e\n728MxfQhQa7xTysd8N0m0LeBpjuhxwa6UJS8dAJSI5oO1y+NMQicnA1cDTApsCH+\nvY9WadD32VQx35i22SbZxb4HuYmsXbtxnReH+HTi4QKBgQDfS7cE5VOEEzxqSY97\ni3cZ5rPPvtnsikhBP7mVhYi66RMWW8iN6jIiMUXdt5P7L28fjssoM2wEkAMs1Ed/\n8IqwIA/sF4micFimbdyam9iz6DREAXf9VLZnoxZK2K7ewbPWIW77UTPKoQkFxxim\nHQqHho5LKSsWgIXV0ONQKX75PwKBgQC3mRwljvfCRot0VB0OmJEf8pdsUoVIZY0F\nHvjJLSUUqZhF57IkSe/BqdM9WLh1hgxSapgV1gykQRBTAqq7LSjMd0NpkUGKkvVo\nWEyxFoyNpwEvx+J4o0ihGGr6H/eI/t84d1n8lZUjGmkDyUNbxbqtdRocWOBdTIbd\nwnUcFKq8sQKBgQC/586PQpgYNoAByN6rixz9Aa0fqiKYi++1RBM3UeBE4vMokBE5\nBkG36SjmeFOR2R5jvNEU57y53xsbeAVLC2vmGmgUu9Xp6SwHPPwPVElVtQbWO3zo\nF9n8D8mk4bzIbSklqu46x3r/do7OjGG+wc6+0wGPzv3dBPAA5tm1lzQs+QKBgFQq\noLinHfW2GWAu31M9peobcEd8XRWfWFKsrCitxX3/cYs6eHQiYQNLM0fAUG+wEB4I\nN8hq5Ei4ex9S7an5PebeFc1jhcRdMpuvPxk/2RdnJCgfXjcnw7f2VbRsyzHGhdaB\nAIPGnyQEi3fs4DBGKRozwNCV/eVHm9w1tTI2Vz9BAoGBAKMXubFZ1CZC1gyFf85v\nMISdUwicDKj/BQJskJhd4kmPLpa4Pk0IjtdCVEIkCRASXGSF5H9Elzbd/agjEYjL\n7BlK06Z7U4C6JtIwYkvZuVf3Xr9Ol2gE4EZ3cnEmzho6QuVDhbZVoK3sivXJCiZw\nHQcF0SN5BOoFi+oDfGi+5nF3\n-----END PRIVATE KEY-----\n",
+   "expect": "unsupported-type",
+   "pythonType": "RSAPrivateKey",
+   "family": "RSA"
+  },
+  {
+   "name": "ec-p256",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgTo6RDG25XlROwKIK\nour8dkqfjZoQjXSNsO6CeE3vO2WhRANCAAQ1NHUR/bPIevzA4u7GJu4y1Y4wcOov\n1XHJZUhFm0GIh3lkA2aOlfrGNeev1n+4hNP38jNPR65i7P5P/thq+YVR\n-----END PRIVATE KEY-----\n",
+   "expect": "unsupported-type",
+   "pythonType": "ECPrivateKey",
+   "family": "EC"
+  },
+  {
+   "name": "ed448",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMEcCAQAwBQYDK2VxBDsEOepL5R7mFN/S80gfm/S8mOYs81g0fXIs3zngNpanO1zK\nJKd6gOkOQlx0r/PVqJ88bjTKh6pjSgPiAQ==\n-----END PRIVATE KEY-----\n",
+   "expect": "unsupported-type",
+   "pythonType": "Ed448PrivateKey",
+   "family": "Ed448"
+  },
+  {
+   "name": "x25519",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VuBCIEILhlNHsfmgrwG0wMMZY3q8dBlmAPijmmLlUSGGZtqiR2\n-----END PRIVATE KEY-----\n",
+   "expect": "unsupported-type",
+   "pythonType": "X25519PrivateKey",
+   "family": "X25519"
+  },
+  {
+   "name": "encrypted-ed25519",
+   "pem": "-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIGjMF8GCSqGSIb3DQEFDTBSMDEGCSqGSIb3DQEFDDAkBBASzTSpIK2O10D5urxE\n8sGZAgIIADAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQBKgQQqbnzOTAYCo9/Qu1V\nPsmdiARAWAkZLPsBj6J2iDigGFW1XxYCd+Akze+jO89vtlqsi3V/ADLryteHI0F9\nKS3V8SlON5IHDqNAfoxfAiTDD78jag==\n-----END ENCRYPTED PRIVATE KEY-----\n",
+   "expect": "not-pem"
+  },
+  {
+   "name": "garbage",
+   "pem": "not a key",
+   "expect": "not-pem"
+  },
+  {
+   "name": "empty",
+   "pem": "",
+   "expect": "not-pem"
+  },
+  {
+   "name": "whitespace-only",
+   "pem": "  \n\t\n",
+   "expect": "not-pem"
+  },
+  {
+   "name": "public-key-only",
+   "pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=\n-----END PUBLIC KEY-----\n",
+   "expect": "not-pem"
+  },
+  {
+   "name": "traditional-label",
+   "pem": "-----BEGIN RSA PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END RSA PRIVATE KEY-----\n",
+   "expect": "not-pem"
+  },
+  {
+   "name": "broken-base64",
+   "pem": "-----BEGIN PRIVATE KEY-----\n!!!!!!!!!!!!!!!!!!!!!AcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----\n",
+   "expect": "not-pem"
+  },
+  {
+   "name": "truncated-body",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----\n",
+   "expect": "not-pem"
+  },
+  {
+   "name": "single-line-body",
+   "pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcH\n-----END PRIVATE KEY-----\n",
+   "expect": "ok",
+   "publicHex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c"
+  }
+ ],
+ "signers": [
+  {
+   "name": "seed1",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n"
+  },
+  {
+   "name": "seed2",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n"
+  },
+  {
+   "name": "seed255",
+   "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n"
+  }
+ ],
+ "headers": [
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "SRcctjCLGhEbViyncQNCsjAC0KMxEoxHI7N79QG1DV2YqiBv8xP3ZCrNPPP0ziwAUu2moxICnAeHkRNObjK1DA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "czDmJcgGXdOgdc5l6DDpU524YvcMvBAIPnmYS80+vTYSkPYqmmiLAWkjCG0Fr29Dnn0ZNLH3jmz3Mt7g8iJ3Bw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "W5SKuHvmNJIVZBa1BWltc0hKKzvGGBN+acfRzlNHmo2Ft2qq3Xkoc/O15JS9duoL52+6hvDw44MrCl6c2ZPuDA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "TaJIOTtEJTNI1dxyiPEEcAsxDWDKM1AjsVnjkHJjUt5FhC9HadYEO5zkuOGc4W70osBMcwWa6ZkZ/oG0TH07Cw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "Mdv43XhRNKtHZDrweNXihS8duS3fM/o/4ZU6sAt92F08IlQF76HbrMePz3qaEZO6I9b5lzZX9WUZyIrvMnIjDg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Dtei2eEkL1EtKvNJtjRgJrlx/3/z2kQgxNZEXT72rGMnidqCpXS6ieGW3C0UGcshH0RxJqS7ETmws0OLgdg+AQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "xqF0M23mQfrba9keDTX4RlufCdSttErpvs47TfMXYarq1SPf2s81I7MKur/HrbRS8fj8dc5x6OfIiKTzvJRpCA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "u2ogAqKj18EcmWp3ulJ4O1kf3JRdKBSqjUgxsiWrG+/raKbFf8dHgouBMnYqeZnmNpkxxnhRBoVIlYn38UUwBg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "JIxs+k2I/fezYU4/9uA6foLlaHH5Aa0AlmRjfQHgFKnzAKEdn/WfGtniSK2PQeqnSqeoVTaLJj11rDvYMUEmCg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "zDhTfDbeTM6UyUPzWN+5E13yfS9E/dKcLso3Q/ETxxaOKXfZm8XDDAXRh7kXGHD3PooQph36cmW2+IGuOIrDCA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "xqF0M23mQfrba9keDTX4RlufCdSttErpvs47TfMXYarq1SPf2s81I7MKur/HrbRS8fj8dc5x6OfIiKTzvJRpCA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "u2ogAqKj18EcmWp3ulJ4O1kf3JRdKBSqjUgxsiWrG+/raKbFf8dHgouBMnYqeZnmNpkxxnhRBoVIlYn38UUwBg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "HaSHry4BAI9nTjvTcvZJlN5CU3BTOugJ5su9eqxqEwh8LxbgYIohL5GBPsWVjmafOjLThA1bPni3vfaLFVuvDw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Q6kdv/voruGWfev9ibfh60SlwEbtvs20yCanIx/WK5LBeRCJRsqkBNdgqBb2XEbm/EytT2JaIxnU5CXNrbBeDQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "SRcctjCLGhEbViyncQNCsjAC0KMxEoxHI7N79QG1DV2YqiBv8xP3ZCrNPPP0ziwAUu2moxICnAeHkRNObjK1DA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "czDmJcgGXdOgdc5l6DDpU524YvcMvBAIPnmYS80+vTYSkPYqmmiLAWkjCG0Fr29Dnn0ZNLH3jmz3Mt7g8iJ3Bw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "W5SKuHvmNJIVZBa1BWltc0hKKzvGGBN+acfRzlNHmo2Ft2qq3Xkoc/O15JS9duoL52+6hvDw44MrCl6c2ZPuDA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "TaJIOTtEJTNI1dxyiPEEcAsxDWDKM1AjsVnjkHJjUt5FhC9HadYEO5zkuOGc4W70osBMcwWa6ZkZ/oG0TH07Cw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "Mdv43XhRNKtHZDrweNXihS8duS3fM/o/4ZU6sAt92F08IlQF76HbrMePz3qaEZO6I9b5lzZX9WUZyIrvMnIjDg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Dtei2eEkL1EtKvNJtjRgJrlx/3/z2kQgxNZEXT72rGMnidqCpXS6ieGW3C0UGcshH0RxJqS7ETmws0OLgdg+AQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "xqF0M23mQfrba9keDTX4RlufCdSttErpvs47TfMXYarq1SPf2s81I7MKur/HrbRS8fj8dc5x6OfIiKTzvJRpCA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "u2ogAqKj18EcmWp3ulJ4O1kf3JRdKBSqjUgxsiWrG+/raKbFf8dHgouBMnYqeZnmNpkxxnhRBoVIlYn38UUwBg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "JIxs+k2I/fezYU4/9uA6foLlaHH5Aa0AlmRjfQHgFKnzAKEdn/WfGtniSK2PQeqnSqeoVTaLJj11rDvYMUEmCg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "zDhTfDbeTM6UyUPzWN+5E13yfS9E/dKcLso3Q/ETxxaOKXfZm8XDDAXRh7kXGHD3PooQph36cmW2+IGuOIrDCA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "xqF0M23mQfrba9keDTX4RlufCdSttErpvs47TfMXYarq1SPf2s81I7MKur/HrbRS8fj8dc5x6OfIiKTzvJRpCA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "u2ogAqKj18EcmWp3ulJ4O1kf3JRdKBSqjUgxsiWrG+/raKbFf8dHgouBMnYqeZnmNpkxxnhRBoVIlYn38UUwBg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "HaSHry4BAI9nTjvTcvZJlN5CU3BTOugJ5su9eqxqEwh8LxbgYIohL5GBPsWVjmafOjLThA1bPni3vfaLFVuvDw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Q6kdv/voruGWfev9ibfh60SlwEbtvs20yCanIx/WK5LBeRCJRsqkBNdgqBb2XEbm/EytT2JaIxnU5CXNrbBeDQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "fMNwWCPzXQpIGlGdgnbVAZeFP7lXVQhQSjWv2OgOyr5Vl0oNXWsJv7JPv+1fJlXmwZpTn+c76OOwb4QtUWqtBA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Ck2RxOEUaDmSsdFp+SyZlpg02AeLrlap1H+ri0ZPvBmyLgpAMbDP7mfgKcLyoM1eHbqM5zOWuAq2TfYEku5GAw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "fIHT37k5HvlPNPwJaqE9DgozFGvflEh+YxZOLOLNtIUZgFSO8EbF3dcQzyb7V9E8diedIdZZ+c+yRAP2tcEKAA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "yhYvsbc8WSxYCHZQQ7Cc6pLpcIWKoCnDe7nnAYSfcLKBQV8NKIAuq14W4unqr36sgr3weZkoAZe2rXPa4WD9AA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "5GVSRYDhZWlMdaYYlWEfT6+Pc4Y0w0GixNhC7W/demZGja93iYW6nq5dNqGazg+E0raBMg4fUzITljF70RqnBQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "9PGVeQE/PTQFSAlqfMRTPTiCsqvZ93IM4BKj4rYKJjDAX7Or9hNDK7rdvwEVxLELsJEooDnbRM2hMAaDi508CA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "51cNtHZ2G+MZbOSFHepk0DY/8TS47UX7stzSFDHLvPEFOKlNCJgw8WBJ77pemZ20uXe0hUqL0FRqshwR8SyOAw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "RPw79A99ABietOphLJOM8/5CyXZD+7g6WM9hritCsfsqm7bkrGxi5O/pcb/kyH9ui+gHSrmI4yV9oNaK/btuBw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "jl4D5j1ZmHSqPNlHCi/Bb1mfOHc+T84Rf8o1O/ZXPEhrK2+zqMx8sAMGfQ2x411Swp8V0blShXmtz5hjbiYbAg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "mrpBouY/hCVFaL0Kk26KW0HLavKGul50qEh01VyjAl3OYmjmU1un6VESr64n0kuV+P9JXGKyqavAmGVNavanCw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "51cNtHZ2G+MZbOSFHepk0DY/8TS47UX7stzSFDHLvPEFOKlNCJgw8WBJ77pemZ20uXe0hUqL0FRqshwR8SyOAw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "RPw79A99ABietOphLJOM8/5CyXZD+7g6WM9hritCsfsqm7bkrGxi5O/pcb/kyH9ui+gHSrmI4yV9oNaK/btuBw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "tGl2nd5xBK/tMVaBDVggoNG55hcIDoqGQF9LofaUxD+DruLPp0T6AOGBYrRNp3jjukcNzNn/2/Z7TiU8owrrDg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "D2+4RKiag+ZnCkpZumqGhHM+UwKBb/kdQmBHtPAVgFhZXvjo6y/xprnuRQZOaAaboDXQ6dW7K3jEGbnEXCW0AQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "Tj8fDV61x13x55rROXPD8jSQjq3Vi4fSyDll8KxxlRC3WzQNi8KeokXELrn4a6R2pIsPBh+fBGNkVXLZ4qqRBw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "LnVDlQP9aSWKBU1LjyXFrgdpn/hQyN8dM/HCSrnaw1PVmgIo60Gu4NVJyZ+biaU5uXK0sSE0h6FWRg+Zh/fjBg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "26iamevoeG84+7yssG3jDCAcT18qfiUOj0t9iI7KE5qc253uyjfnikDHdFI9OyoiuCq4+KAizflDMk+4BRqWBw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "p85iV8Bpuq9quWmzUW4aQV+hhjjTb5XLhYtj6MlxhX5Py3ouUOU7m+k4dhI6HlAkYfOJEe/WQpmwxRXTf2KbDA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "SS0ZDgdlQ9PVt0oLoOxknZvP7tx5rOQ4zMDRsqSYSULDeHVqCK1VKU6sIebPA/cLWRnVyc9Adrabska0wageCw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "UonHsk689esFFD+FDudGF07rNA/HUbVIO8TLfX9B+o2LIxrw3DGjXNqb60AoovEFZDAGOoKT7L48WBto6xIBBA=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "Hms6Kb824WiYqkRSm5oRm/XDIVyYsdWbLuTyTLoXD5jhXX6yUhd7BoaOQvtC9lhgIzMJvJR+Q6EKNcgxe7DGBw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "dNnQCFheqgIMrcoL9t4hzc/CFlz/FaALk7ImxjFL7D0/RvgjkeSLMjSO7Y0mRn375SxNhu/Os5Qyw/l5aIm9Cw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "q+/3aBsxy5nu0BiFvr4M9qGDw/YDA0YRgI1/sDU5Gh10Al2I7Y6PhOsca7hOqc/FEbp/zYv34mStsemvMcomCQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "mV0e7zxctZTB3C/E85fwrkNFbxwgh8Yjg7/BOyjaaigx6jMQQ44qvcD24NRPGkZ2f3PizzKeG9byo54Q4DOaCg=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "Hms6Kb824WiYqkRSm5oRm/XDIVyYsdWbLuTyTLoXD5jhXX6yUhd7BoaOQvtC9lhgIzMJvJR+Q6EKNcgxe7DGBw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "dNnQCFheqgIMrcoL9t4hzc/CFlz/FaALk7ImxjFL7D0/RvgjkeSLMjSO7Y0mRn375SxNhu/Os5Qyw/l5aIm9Cw=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "bJuTlYtTmyerZbcWYkek5X303LZkWl9nwykIkhXUy303AiLUcgkvHuz5oju/xrYh0LYeS376/9a+Q5GvQb6EBQ=="
+   }
+  },
+  {
+   "signer": "seed1",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "aP/Hj72xarJKmn+Z18w/HGGAHTjxWOAEPc164gCQCV25xCcEAAysVR9xsX5i+MdwsahoEdW+R51RkQ/2DKSJDg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "ZtvxLQ5LpseSoOy4CjlG0dioMw7AC7ZTpAVssdHMPU8mZvs6XnfjtfTvK/A12KpKEZiVM3RBYLQU/BQ21ALUAQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "hJtQ256AE5pSmVoviwnLh4uEcxdVlEDzqc8VETqMe5Zx4bIpl0lf0eLRk30XMsvJRlwMzP0N8Tixsg4LDcgtDg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "AVwfOPI0DEwdgSYMxVF6tStTHnitifZomY6F6+nFoLnw+eWPwKSpEgK8ryB/iCC5sf4GO9wXaDqDx0HZAzkiBg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "J43yjuKGPtKrRLsVsRKw3U6itsXgvGzQDvoqTcAO5IlfDko93WZ/t4XUtOAImbu+6+dD3bdNu6mBHSN2ZG6hCA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "Bz/BrRK32AU0UiPxifiSHsxsQZ/501iAyW6rnq69YvAB7iY21f6daxYyvbOkl0RTIYJ0amip91sfi3Druy2yBQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "4rxjIFauOaxn6evgaMDwnIIXYsY2gMK5JbQLOAxOu2z2nrqWWgmZ/xlUMTdNV/qg3ckcmt39csDw8AblFkgeBg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "gnm7E6+h3dOo4FlHA0WARlI4fhkib6EtUdeTUwilGrmsFQQI3ReRWFrG2eDNnmqqDKrLneKBP42GUwEj2b61BQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "yWnurAPomZGaYxC2nYfuQNgcO/ri94RUamuN8e56U/cLWpy4FBwGI+LCBXhEVocsnTIfd3G4kHXdZW7/5X7lDw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "va9XEVEFioSMR5JdmjdygR+MTliSUndhHIg/pqW+G2eq79bqlWlILa1Dd/lzcOGaqq1Vv8ZK0BD1dhgJEdy9Dw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "GI2nDiJ6cpEXVOtE9AmbpuqGxZh1UBePXx0cG49j5jnomAB5SwSGdha0vcrYGPhgiwGAD6mwDE1On3FSMn8HBQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "gnm7E6+h3dOo4FlHA0WARlI4fhkib6EtUdeTUwilGrmsFQQI3ReRWFrG2eDNnmqqDKrLneKBP42GUwEj2b61BQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "yWnurAPomZGaYxC2nYfuQNgcO/ri94RUamuN8e56U/cLWpy4FBwGI+LCBXhEVocsnTIfd3G4kHXdZW7/5X7lDw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "QhMuH0LOH7i9foC9luwiZ5JFsUnEnmkrawa3SUTa2hbiza20TeMwYAPoRVxISkUJin+yTESZ00izi6uRJT18Bg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "6mgJz+6AH2iRYtiZn3gpk3EDnTGg1+NMazxYcUrVcj9L0935Vv2POGB1GwoSvhooYFP3xKxHFzz1qcVGynPRAA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "ZtvxLQ5LpseSoOy4CjlG0dioMw7AC7ZTpAVssdHMPU8mZvs6XnfjtfTvK/A12KpKEZiVM3RBYLQU/BQ21ALUAQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "hJtQ256AE5pSmVoviwnLh4uEcxdVlEDzqc8VETqMe5Zx4bIpl0lf0eLRk30XMsvJRlwMzP0N8Tixsg4LDcgtDg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "AVwfOPI0DEwdgSYMxVF6tStTHnitifZomY6F6+nFoLnw+eWPwKSpEgK8ryB/iCC5sf4GO9wXaDqDx0HZAzkiBg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "J43yjuKGPtKrRLsVsRKw3U6itsXgvGzQDvoqTcAO5IlfDko93WZ/t4XUtOAImbu+6+dD3bdNu6mBHSN2ZG6hCA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "Bz/BrRK32AU0UiPxifiSHsxsQZ/501iAyW6rnq69YvAB7iY21f6daxYyvbOkl0RTIYJ0amip91sfi3Druy2yBQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "4rxjIFauOaxn6evgaMDwnIIXYsY2gMK5JbQLOAxOu2z2nrqWWgmZ/xlUMTdNV/qg3ckcmt39csDw8AblFkgeBg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "gnm7E6+h3dOo4FlHA0WARlI4fhkib6EtUdeTUwilGrmsFQQI3ReRWFrG2eDNnmqqDKrLneKBP42GUwEj2b61BQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "yWnurAPomZGaYxC2nYfuQNgcO/ri94RUamuN8e56U/cLWpy4FBwGI+LCBXhEVocsnTIfd3G4kHXdZW7/5X7lDw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "va9XEVEFioSMR5JdmjdygR+MTliSUndhHIg/pqW+G2eq79bqlWlILa1Dd/lzcOGaqq1Vv8ZK0BD1dhgJEdy9Dw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "GI2nDiJ6cpEXVOtE9AmbpuqGxZh1UBePXx0cG49j5jnomAB5SwSGdha0vcrYGPhgiwGAD6mwDE1On3FSMn8HBQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "gnm7E6+h3dOo4FlHA0WARlI4fhkib6EtUdeTUwilGrmsFQQI3ReRWFrG2eDNnmqqDKrLneKBP42GUwEj2b61BQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "yWnurAPomZGaYxC2nYfuQNgcO/ri94RUamuN8e56U/cLWpy4FBwGI+LCBXhEVocsnTIfd3G4kHXdZW7/5X7lDw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "QhMuH0LOH7i9foC9luwiZ5JFsUnEnmkrawa3SUTa2hbiza20TeMwYAPoRVxISkUJin+yTESZ00izi6uRJT18Bg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "6mgJz+6AH2iRYtiZn3gpk3EDnTGg1+NMazxYcUrVcj9L0935Vv2POGB1GwoSvhooYFP3xKxHFzz1qcVGynPRAA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "oIUKphXKhZ6/WkNh+V6wyxkJiWOuD97tESGrfzRjJdXtPdHCsVWo2WD/aKx4RJVWkRPKIoOa7nh3Sf4VGtCfDA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "ayy5K1Yb8ZtDxAMTPWybs5KtGLB9/krnWJRB8HEDqOLCiF0s7bDL3eaX/G9lNWIz+rp/s+YifwH3QRBX9yx0Ag=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "vmgSdHKlikl00hvg4Eyz+nbKFFv6CzwuEJBtiL2vftusDGGJOnKUKdTmDdoGphH26dlxClye7gqTp2KN93+IAQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "3loqxn03QABXjzUDkpjJBNK7+8j6WSV5Q74/nCphNMlbNmV/0afKpVnsFk41jQl8RAeUg0vN9Cp3HSBhb5QtBg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "+Gwo6f41lDDNfB1gWtRjvSngK7MN8encWxElOuJymxNMXbu2XHYChXENJBOWrV1iafTkm0LMGNSQ4xs5M9ZlBQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "6RO7YhdySI5La3MNeUHw7K5eW7yy1x7xDaxCnPvLaFh2TjNa43RTfHFkoaZkXmP4KFk4WKvtuVp2/UtdkygeDw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "5h9G+PIku3ybVrglwycvqKEpbPdXnAWj64wwAzsoCUKXALU1dfY9ur2QDQ8HOTPlXNSTv3QfVyBBz6f19NTVDg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "JGi+ZnbHZEoxKkYLqW8TNFy/gOoHsRGlUlbYN83HwjKfmWuDBX9GQ9TR2dt+P0EXbfOY5H/mzXhYRM5x9wGAAw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "wY6sVrh7c+j1QLq1ODeZNm5xUCSrgHhTNF/aFyINdtz/WxM2wDMp0IAwgeldOBZ4r7XD1ZRoPLJoIVcif19CCQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "0JkIrNuH3uvaoPgBxf/46xEV/mmR77OAQJyx5hhMNf/Ig32jjCFD4eLnaCu3/XAlMgGMndgp4cLaVe1z286lAQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "5h9G+PIku3ybVrglwycvqKEpbPdXnAWj64wwAzsoCUKXALU1dfY9ur2QDQ8HOTPlXNSTv3QfVyBBz6f19NTVDg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "JGi+ZnbHZEoxKkYLqW8TNFy/gOoHsRGlUlbYN83HwjKfmWuDBX9GQ9TR2dt+P0EXbfOY5H/mzXhYRM5x9wGAAw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "L4K6szztcp1a7ImRl08LM3CSLpwKESeA9hIr265dVghC9rXrPyURzU5h9iHh1EEm346xyNBucKWyh5cC399WBw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "bs0z+8vRCNo6vwWK77nT9lDHIp4jKTMBXD4PerRkTuuYApXmTXqjASjrr7Mi808CgyIlE4KwqB/IjrcO927oCA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "S4B01xlv6q72htZ1cmKJFmCMqKMnuPUDkqquHisOdCQG4xMP3Ks8a+OXvH+HmDBDosVVkYvDZsPOr42meiBlCg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "7MSJTPTX/YJBiKz5gYpHXl8YrgQH0dW2/bHuPrkLAZaiTjfTAYCh+KicesDxTGvpeYRtvdZTHsGtzjKhlKl3AA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "fz82Ju+iuBLEPxPpuxeC6AENOkKNtK0AOInqpMbiHWD6WcAz8NQFHEjX4bjyxW6BTS/PyKeey+HLTfR3ebo0DQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "bu+ERqfyIw12Dh7K6Xn6tV5yso+6L5mM3BpJ20kBNuRT3yOdAece52jmrxxzdmMXcN0z0i19hQKa85SGKIajDw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "evBgrvqWrjKVX3H6KPA0zUvDcmnLn4Oj3dTejpl+1X7zHrygY2S6IuuZ7h0pZYc09gpNtlFV/1naISB4KjH/BQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "gJx4kaxEZtZU/CdpfjXAEDS7SGp5MfmOHRqiu0iE5bFvdTZuYFzvvgU0omBmgOvqNZvECmSibXG9Gxz/bG4YDA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "hmZ8CMifLylZCPjG6f6DsiEMR0ZcJqvJuyZ925ECSmwO0mMXOQzFhvQU2v2gDApnvq4fI5B3Ct6qHvPnbOWdAA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "2QlfPX2F1iDICK73kuWbe1sQOLozMqywUtzSAvC6WQ22F+UCH/qYD7YeC0tPGpGiZKZ3bhvy7G2ePA5khVIMCQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "k+TyqMLuIiqtGN7pO3wRoK0rCG2OqExLqDR/+o3ps32JE/5iFQvoUQWQKsSO+eBlkXkGiLpYzsjt7zjbhNZHCg=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "56FDVMnUCE0zGFXU+AQ/ZNlZIWiEwF4no6sLlXhBw31GnuqV0Ulb2XDq5J/EqGAk3yJVbQAmNBPOmGlIvA7cBw=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "hmZ8CMifLylZCPjG6f6DsiEMR0ZcJqvJuyZ925ECSmwO0mMXOQzFhvQU2v2gDApnvq4fI5B3Ct6qHvPnbOWdAA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "2QlfPX2F1iDICK73kuWbe1sQOLozMqywUtzSAvC6WQ22F+UCH/qYD7YeC0tPGpGiZKZ3bhvy7G2ePA5khVIMCQ=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "VxGtEAqu8PdfExE8RpcnXUQxFw8pmdEKehQes1cHAgoRWFxikDJWp7EsdpMygqzd5Opu5NkyIErJ4k8gwMTHAA=="
+   }
+  },
+  {
+   "signer": "seed2",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "nnYX7Pl+WM4IUja2GftW2k6HVW0+7GNHuSFH9WR9qLWhuatZKqe5zQuMf/jxt9AIPtySvDagj5xRUwPBY0XNDw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "MyuOrAl8/3SbBW/oqVQkvBW4W34eGpn2RtiyMxkLuqsI8acEvhmqLkYUf9HXQtkoS4D9Q8o9WcFHvKpihblpCw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "N3cPDUu+TibuwdmJoWEOn11OA9b3fgZgVQaNYQS7jnjVCv4g/pB7qdoHH/oJEmsl4kp+4auYWrZtGLZzBCPIBw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "MktpBrDEXRM/jYP+qGJJZqrE71+slL4vP9n01v1BHFCoG0OADk/iVRoGslNBmzjYuOKo2nmI+t5d0LbmezFLDQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "MMmhW4BmQX37DKgskNGaWLFbKXB2EvdXFz9DXk+pDuunspxGUw3dZ23kLGVOPANuG4jNO8XN8PpLcrsqkybGAA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "e+x+q/XkJZQJu9z4v3TDvcabNiJLz3OKLpGM9fIz0xUflnyGBMwmKXtM6YJG0nZWjzonWxDvE1fPXMgsTnJCBg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "FCuqYEjPUq5qGkwon1tSnzk7kuXLV4qYYbhLehQht5NNZrqqWGczORXz0lZvk3xoLPR8sb3DZK2ZnrwPtHnhBA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "bchd+8S0X2TcaL8GnX+MfqgTctCduTjdc0WDyti3jv60InDWaynJhfTExJaQPrPGBNJe0kSgUzNrV/MXML06Cw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Kd8ADcP5AdjD05Aa1ae3qiX/VsvyR4Q6nBU+QVEdylcM8OZl1zsveC2fg5uuiZrY/SQV0+lkDSVRxEBQP2O2AA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "U2nYVhjRcyN/3mSKpFDKmnHW2DR/fdwmaugHIY35mj3Zjn4D8/JK4sZSzrZXrB5qcx6DMSF9XKlolFFhKAToCg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "hHf3hH5+KQmGFZu4raqCAsgk1u1TcgxlC5nXLRFZpPiicI9hZY6KvIFQk7bGVnSEN03Gst2w6Frl2AA5acPNAQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "bchd+8S0X2TcaL8GnX+MfqgTctCduTjdc0WDyti3jv60InDWaynJhfTExJaQPrPGBNJe0kSgUzNrV/MXML06Cw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Kd8ADcP5AdjD05Aa1ae3qiX/VsvyR4Q6nBU+QVEdylcM8OZl1zsveC2fg5uuiZrY/SQV0+lkDSVRxEBQP2O2AA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "XIc4ea0H06Eva+3PW8tfXSCCQcjHaEdFdiBK9a4qTSA0i3WLY58PoXOR8wwyosGD40decbMa/xXiyseGrztpBg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "GET",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "z0lUj2TRZG/ezwWo2eh34Vw8xe+ickhffs8XALmMbzhZ2eNQS3kGb+9SXI7C1uLJHmQ7I4UUTHc5Bd0QUsdXDA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "MyuOrAl8/3SbBW/oqVQkvBW4W34eGpn2RtiyMxkLuqsI8acEvhmqLkYUf9HXQtkoS4D9Q8o9WcFHvKpihblpCw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "N3cPDUu+TibuwdmJoWEOn11OA9b3fgZgVQaNYQS7jnjVCv4g/pB7qdoHH/oJEmsl4kp+4auYWrZtGLZzBCPIBw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "MktpBrDEXRM/jYP+qGJJZqrE71+slL4vP9n01v1BHFCoG0OADk/iVRoGslNBmzjYuOKo2nmI+t5d0LbmezFLDQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "MMmhW4BmQX37DKgskNGaWLFbKXB2EvdXFz9DXk+pDuunspxGUw3dZ23kLGVOPANuG4jNO8XN8PpLcrsqkybGAA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "e+x+q/XkJZQJu9z4v3TDvcabNiJLz3OKLpGM9fIz0xUflnyGBMwmKXtM6YJG0nZWjzonWxDvE1fPXMgsTnJCBg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "FCuqYEjPUq5qGkwon1tSnzk7kuXLV4qYYbhLehQht5NNZrqqWGczORXz0lZvk3xoLPR8sb3DZK2ZnrwPtHnhBA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "bchd+8S0X2TcaL8GnX+MfqgTctCduTjdc0WDyti3jv60InDWaynJhfTExJaQPrPGBNJe0kSgUzNrV/MXML06Cw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Kd8ADcP5AdjD05Aa1ae3qiX/VsvyR4Q6nBU+QVEdylcM8OZl1zsveC2fg5uuiZrY/SQV0+lkDSVRxEBQP2O2AA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "U2nYVhjRcyN/3mSKpFDKmnHW2DR/fdwmaugHIY35mj3Zjn4D8/JK4sZSzrZXrB5qcx6DMSF9XKlolFFhKAToCg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "hHf3hH5+KQmGFZu4raqCAsgk1u1TcgxlC5nXLRFZpPiicI9hZY6KvIFQk7bGVnSEN03Gst2w6Frl2AA5acPNAQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "bchd+8S0X2TcaL8GnX+MfqgTctCduTjdc0WDyti3jv60InDWaynJhfTExJaQPrPGBNJe0kSgUzNrV/MXML06Cw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Kd8ADcP5AdjD05Aa1ae3qiX/VsvyR4Q6nBU+QVEdylcM8OZl1zsveC2fg5uuiZrY/SQV0+lkDSVRxEBQP2O2AA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "XIc4ea0H06Eva+3PW8tfXSCCQcjHaEdFdiBK9a4qTSA0i3WLY58PoXOR8wwyosGD40decbMa/xXiyseGrztpBg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "get",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "z0lUj2TRZG/ezwWo2eh34Vw8xe+ickhffs8XALmMbzhZ2eNQS3kGb+9SXI7C1uLJHmQ7I4UUTHc5Bd0QUsdXDA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "7k27sRamDAcXZjKNpysSTY7Z3SA5QBpXIq6mwxi9jx8coepaXOeXsagZogpWN4l0jZO09oiMH092W2xbGD4aCA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "A5gTvrlMJtKYizMMuHijaUGuxIBWLnNklWqi0fIo/DlkBCRHrMxW9AU0eNV7StTsUmpjaHOOrANRLP26bsMeCw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "+S05D+a4YkdUAI2jNe16d2UK7SfYCPy3tmqhkP8JKHZWj6l5AdPq2Zq2sazuzexfPDjDc1DRsgo1SAtfYPRzAA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "TsngISJpo4ItYMSD+TkGIvQwz9z0hQpXGmysW/GIGNVWYyWoJ7nvyg8/ghYk1eDqwu2cdls31UVoPy2j4uavBA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "r7MZMcmbz/7PrsnY9thb6WRbqS9G8RVSrL9TcBl4Uvc4LclfrteiD0zgjZX484t9MMAFGMQsUXJ9VEyzpdNdDA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "YfG08IxC69V7GMc6QAskZU+Ibl+YrL/xYDpn51GDbdly110ojXjadB7RkOZh3zDem5do6DCbMc1O3aoH18mkCA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "xTpIile2kGDQGw06qjO9O8WoOOCn3rtFrRWbpzrrm4oml0VBmusjn7Bvf7rvdWh+Xz9p3KW5CdRIZKJ5BOlTDA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "+lCEAxkXaogtAui9U0OAimM1rUqA4o7eJGRJBtdSb8O8K+rE/RARb+a5PGFbzlsJBHIgdjd6asHAVSKZLkAlDA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "rNqIwt2Ph88fHNqhIRRtvjWSDzrZeLmgjdysw4rHLOJtxCJAg2veCh0WJ65KT0sidsJZeOVIfentdOg4bGWMBg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "cgv/wtwCmac2HIpetyXSTCq/yeqhE+YMPlJdfxDUyN2hYu89Mk0ikG1oZJ5o0XE2zlcYRYLP3ItGLM9M283ZCg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "xTpIile2kGDQGw06qjO9O8WoOOCn3rtFrRWbpzrrm4oml0VBmusjn7Bvf7rvdWh+Xz9p3KW5CdRIZKJ5BOlTDA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "+lCEAxkXaogtAui9U0OAimM1rUqA4o7eJGRJBtdSb8O8K+rE/RARb+a5PGFbzlsJBHIgdjd6asHAVSKZLkAlDA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "juN+/XatKeheTgofu1u6Wyz0QuDWK/RnDAWn44Z513/T1eIQLPwr77ndmhAf01c19ifv1+w/J49o75MZC8ziAQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "POST",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "+Mm1QAMoJj7rvoqDDN1S5+lfgTBxllfhjBhLrkRWvkb9WwaJ8Tl6+QdFcRJKJrY8ESQ5GJGR2mbcIHb75cnOAA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "hpc/FXGuy1Tu3KOfxtdak6MWfYIApvx6/FRRqdsA/6KoERNqIwqsuY37unSarBOFeQOQhlmSeoJCZl8uMNT/Aw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/portfolio/balance",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "NJcQmzjtY9NodxfOuLW+Hct2RViUTF5qOXP1CP1aLjYRZ5/E2R8N/K0hkJaHwGWLyWk3mhS/4Uwe1RvnKXitBQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "SbLSj15Cg46FprEjda8ea1TlYhKeSOiCcO19ct1k2EdRDyzZX+39IIDwr+gj6/F/d4KklqyVKauC22kx3UeeAA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets?limit=5&cursor=x",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "P3c3OVwlUaRo5NYQs3/R9Oe7Cos41LGYTBfE8YgGAvt4Woe9tLB/PmjR9DkHTKlWglbRqSTzMfeANafVW5P1AA=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "MYILcpgqV6F+Te6zCLohx+/Cb/N81za2wazmhf2UrItphKChfD2NzWS2mydyxfKPTddZDFA9heriEv/a/vAUBg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/trade-api/v2/markets/caf\u00e9",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "RSvN2L8oIvTtGJG4EixPjyOSlYe/sA1r02/jKMrVFjGJNE9oOr+Z7AOipsJDKoq+aziztCakYsxL2EMnNpmJAg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "s2ze/xZ63b/IHD4KbwjGXmCWRG1vO9trZJSn0Fx3qxZvWUH50Wti7uD9kecvZd9lbHMxfbKcRQximYnBsqhNAQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "GlQixUlHzVpnubSn66P6CEZw+1H2qjp2+qlhFJlkRLY9/tXDAzXVSbooTKIAWiv+XbdvTZOzIniMvl7uahoeCg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "KbofGCm8ClPf1Y/ObNeQ20nvlR7oMJ/ytF4sBhlqBUJXffnkvYj2au+L1IIl/UIhr7x8OqGZ6I8ZWbYsEci3DQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "Q5vHERImhCSd1rIYxBgj4cXaCtrTZWoOsD3h9XzYpOtaGiiG28kGMacB7M0zlcqhoYDRN3p0SYejFq+1Vh87Cg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "?only=query",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "s2ze/xZ63b/IHD4KbwjGXmCWRG1vO9trZJSn0Fx3qxZvWUH50Wti7uD9kecvZd9lbHMxfbKcRQximYnBsqhNAQ=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "?only=query",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "GlQixUlHzVpnubSn66P6CEZw+1H2qjp2+qlhFJlkRLY9/tXDAzXVSbooTKIAWiv+XbdvTZOzIniMvl7uahoeCg=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/a?b?c",
+   "timestamp": 1700000000000,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1700000000000",
+    "KALSHI-ACCESS-SIGNATURE": "lz9Jxn5c6mNhlMVkIdGcmzOCMsB4s6leiSUylLw3kY8MZ1x7PDtx4jh1J5eDIst7okZfDb2kQcPGnao8i/B7Dw=="
+   }
+  },
+  {
+   "signer": "seed255",
+   "keyId": "key-id-123",
+   "method": "DELETE",
+   "path": "/a?b?c",
+   "timestamp": 1,
+   "headers": {
+    "KALSHI-ACCESS-KEY": "key-id-123",
+    "KALSHI-ACCESS-TIMESTAMP": "1",
+    "KALSHI-ACCESS-SIGNATURE": "ue1lPOFZGuGrIZ1yRcayYHhIA7ypcZWsaIJ8M6/8mC/UvDvV5oMMMgW1PBq3J4cenxvSyLVfEa3rTUC5tQJPCw=="
+   }
+  }
+ ]
+}

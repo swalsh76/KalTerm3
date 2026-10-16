@@ -4,6 +4,7 @@ import importlib
 import json
 import subprocess
 import sys
+import types
 from pathlib import Path
 
 INT64_MAX = 2**63 - 1
@@ -15,6 +16,15 @@ def load_reference_module(reference: Path, name: str):
     if str(source) not in sys.path:
         sys.path.insert(0, str(source))
     return importlib.import_module(f"kalshi_core.{name}")
+
+
+def stub_settings_module() -> None:
+    """``kalshi_core.config`` needs pydantic to import. Modules that only mention ``KalshiSettings`` (the rate
+    limiter, the signer) do not use it in the paths the generators call, so it is replaced by an empty stand-in
+    to keep the generators free of that dependency. Call this before ``load_reference_module``."""
+    stub = types.ModuleType("kalshi_core.config")
+    stub.KalshiSettings = object  # type: ignore[attr-defined]
+    sys.modules.setdefault("kalshi_core.config", stub)
 
 
 def reference_commit(reference: Path) -> str:
