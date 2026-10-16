@@ -157,3 +157,27 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   (Kalshi never sends such values). The port refuses it; the vector carries a `note`.
 - Verification: 278 tests pass (244 from vectors), build with 0 warnings, `dotnet format` clean;
   coverage 98.1% lines and 95.8% branches (`Dollars` and `Contracts` 100%).
+
+### 3.2 Fees (2026-10-16): done
+
+- `KalTerm.Core.Fees`: `FeeMultiplier` (non-negative, 10^-6) and `KalshiFees` with `TakerFee`,
+  `RoundUp`, `TakerMultiplier` and `QuadraticFamily`. Typed: `TakerFee(FeeMultiplier, Contracts, Dollars)`
+  returns `Dollars`. Only the quadratic family is modelled; other fee types return `null` so callers
+  skip rather than guess (as in the reference).
+- Exact: the numerator `M x 7 x C x P x (10^6 - P)` is checked 128-bit arithmetic, divided by 10^16 and
+  rounded up; no floating point. The reference uses unbounded integers; a fee that does not fit a `long`
+  raises `OverflowException` here (inputs of the order of 10^12 contracts times 10^12 multiplier). A
+  numerator that overflows 128 bits always implies a result that overflows a long, so both cases agree.
+- Domain: a negative count or a price outside [$0, $1] is `ArgumentOutOfRangeException`; a negative
+  multiplier cannot be constructed; a rounding unit below one micro-dollar is refused. `RoundUp` of a
+  negative amount goes toward zero (the ceiling), as in the reference.
+- Parity: `tools/vectors/generate_fees.py` calls the reference `kalshi_core.fees` as the oracle
+  (commit 3d19d50): 1,819 fee cases (a 9 x 13 x 12 grid, 400 seeded random, 7 out-of-domain, 8 extremes
+  of which 4 overflow), 171 round-up cases and 63 multiplier cases; plus the reference's own tests
+  (Kalshi's worked example 3,639; the peak 17,500; the never-rounds-down cases) and an independent
+  `decimal` computation. No divergence from the reference was found.
+- Refactor: the generators now share `tools/vectors/common.py`; `fixedpoint.json` regenerates
+  byte-identical.
+- Verification: 2,365 tests pass, build with 0 warnings, `dotnet format` clean, coverage 98.5% lines and
+  96.7% branches (`KalshiFees` and `FeeMultiplier` 100%). The reflection test that bans floating point
+  now covers these types too.

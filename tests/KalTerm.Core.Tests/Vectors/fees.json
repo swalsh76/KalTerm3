@@ -1,0 +1,12100 @@
+{
+ "generator": "tools/vectors/generate_fees.py",
+ "referenceCommit": "3d19d501c84ddf89e9b7df63185e5d17eecec320",
+ "python": "3.14.7",
+ "quadraticFamily": [
+  "quadratic",
+  "quadratic_with_combo_maker_fees",
+  "quadratic_with_maker_fees"
+ ],
+ "takerFee": [
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 0,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 333333,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 500000,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 666667,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "7"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "37"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "76"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "156"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "175"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "156"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "6930"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "36383"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "75751"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "155556"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "175000"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "155556"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 123456,
+   "expect": "2"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 333333,
+   "expect": "3"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 500000,
+   "expect": "4"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 666667,
+   "expect": "3"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 55000,
+   "expect": "3"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 123456,
+   "expect": "6"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 333333,
+   "expect": "11"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 500000,
+   "expect": "13"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 666667,
+   "expect": "11"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "49"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "255"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "531"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "1089"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "1225"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "1089"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "5"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "10"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "48510"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "254678"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "530252"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "1088889"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "1225000"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "1088889"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "10"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "5"
+  },
+  {
+   "multiplier": 7,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 333333,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 500000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 666667,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 55000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 123456,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 333333,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 500000,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 666667,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 55000,
+   "expect": "4"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 123456,
+   "expect": "8"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 333333,
+   "expect": "16"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 500000,
+   "expect": "18"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 666667,
+   "expect": "16"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 55000,
+   "expect": "4"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 123456,
+   "expect": "8"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 333333,
+   "expect": "16"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 500000,
+   "expect": "18"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 666667,
+   "expect": "16"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 10000,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 55000,
+   "expect": "4"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 123456,
+   "expect": "8"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 333333,
+   "expect": "16"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 500000,
+   "expect": "18"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 666667,
+   "expect": "16"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 10000,
+   "expect": "6"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 55000,
+   "expect": "29"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 123456,
+   "expect": "59"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 333333,
+   "expect": "121"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 500000,
+   "expect": "136"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 666667,
+   "expect": "121"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 10000,
+   "expect": "18"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 55000,
+   "expect": "93"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 123456,
+   "expect": "194"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 333333,
+   "expect": "397"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 500000,
+   "expect": "447"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 666667,
+   "expect": "397"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 10000,
+   "expect": "70"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 55000,
+   "expect": "364"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 123456,
+   "expect": "758"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 333333,
+   "expect": "1556"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 500000,
+   "expect": "1750"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 666667,
+   "expect": "1556"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "6930"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "36383"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "75751"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "155556"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "175000"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "155556"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "700"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "1400"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "6930000"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "36382500"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "75750232"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "155555478"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "175000000"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "155555478"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "1400"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "700"
+  },
+  {
+   "multiplier": 1000,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 10000,
+   "expect": "4"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 55000,
+   "expect": "19"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 123456,
+   "expect": "38"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 333333,
+   "expect": "78"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 500000,
+   "expect": "88"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 666667,
+   "expect": "78"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 10000,
+   "expect": "7"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 55000,
+   "expect": "37"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 123456,
+   "expect": "76"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 333333,
+   "expect": "156"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 500000,
+   "expect": "175"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 666667,
+   "expect": "156"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 10000,
+   "expect": "11"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 55000,
+   "expect": "55"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 123456,
+   "expect": "114"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 333333,
+   "expect": "234"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 500000,
+   "expect": "263"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 666667,
+   "expect": "234"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 10000,
+   "expect": "25"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 55000,
+   "expect": "128"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 123456,
+   "expect": "266"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 333333,
+   "expect": "545"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 500000,
+   "expect": "613"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 666667,
+   "expect": "545"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 10000,
+   "expect": "344"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 55000,
+   "expect": "1801"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 123456,
+   "expect": "3750"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 333333,
+   "expect": "7700"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 500000,
+   "expect": "8663"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 666667,
+   "expect": "7700"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 10000,
+   "expect": "347"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 55000,
+   "expect": "1820"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 123456,
+   "expect": "3788"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 333333,
+   "expect": "7778"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 500000,
+   "expect": "8750"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 666667,
+   "expect": "7778"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 10000,
+   "expect": "350"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 55000,
+   "expect": "1838"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 123456,
+   "expect": "3826"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 333333,
+   "expect": "7856"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 500000,
+   "expect": "8838"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 666667,
+   "expect": "7856"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 10000,
+   "expect": "2693"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 55000,
+   "expect": "14135"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 123456,
+   "expect": "29429"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 333333,
+   "expect": "60434"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 500000,
+   "expect": "67988"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 666667,
+   "expect": "60434"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 10000,
+   "expect": "8836"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 55000,
+   "expect": "46388"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 123456,
+   "expect": "96582"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 333333,
+   "expect": "198334"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 500000,
+   "expect": "223125"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 666667,
+   "expect": "198334"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 500000,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 1,
+   "expect": "4"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 2,
+   "expect": "7"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 10000,
+   "expect": "34650"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 55000,
+   "expect": "181913"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 123456,
+   "expect": "378752"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 333333,
+   "expect": "777778"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 500000,
+   "expect": "875000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 666667,
+   "expect": "777778"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 999998,
+   "expect": "7"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 999999,
+   "expect": "4"
+  },
+  {
+   "multiplier": 500000,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 1,
+   "expect": "350"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 2,
+   "expect": "700"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "3465000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "18191250"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "37875116"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "77777739"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "87500000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "77777739"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "700"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "350"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "350000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "699999"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "3465000000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "18191250000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "37875115623"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "77777738889"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "87500000000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "77777738889"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "699999"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "350000"
+  },
+  {
+   "multiplier": 500000,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 10000,
+   "expect": "7"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 55000,
+   "expect": "37"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 123456,
+   "expect": "76"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 333333,
+   "expect": "156"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 500000,
+   "expect": "175"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 666667,
+   "expect": "156"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 10000,
+   "expect": "14"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 55000,
+   "expect": "73"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 123456,
+   "expect": "152"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 333333,
+   "expect": "312"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 500000,
+   "expect": "350"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 666667,
+   "expect": "312"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 10000,
+   "expect": "21"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 55000,
+   "expect": "110"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 123456,
+   "expect": "228"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 333333,
+   "expect": "467"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 500000,
+   "expect": "525"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 666667,
+   "expect": "467"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 10000,
+   "expect": "49"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 55000,
+   "expect": "255"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 123456,
+   "expect": "531"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 333333,
+   "expect": "1089"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 500000,
+   "expect": "1225"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 666667,
+   "expect": "1089"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 10000,
+   "expect": "687"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 55000,
+   "expect": "3602"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 123456,
+   "expect": "7500"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 333333,
+   "expect": "15400"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 500000,
+   "expect": "17325"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 666667,
+   "expect": "15400"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 10000,
+   "expect": "693"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 55000,
+   "expect": "3639"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 123456,
+   "expect": "7576"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 333333,
+   "expect": "15556"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 500000,
+   "expect": "17500"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 666667,
+   "expect": "15556"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 10000,
+   "expect": "700"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 55000,
+   "expect": "3675"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 123456,
+   "expect": "7651"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 333333,
+   "expect": "15712"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 500000,
+   "expect": "17675"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 666667,
+   "expect": "15712"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 10000,
+   "expect": "5385"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 55000,
+   "expect": "28270"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 123456,
+   "expect": "58858"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 333333,
+   "expect": "120867"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 500000,
+   "expect": "135975"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 666667,
+   "expect": "120867"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 1,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 2,
+   "expect": "4"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 10000,
+   "expect": "17672"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 55000,
+   "expect": "92776"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 123456,
+   "expect": "193164"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 333333,
+   "expect": "396667"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 500000,
+   "expect": "446250"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 666667,
+   "expect": "396667"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 999998,
+   "expect": "4"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 999999,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 1,
+   "expect": "7"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 2,
+   "expect": "14"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 10000,
+   "expect": "69300"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 55000,
+   "expect": "363825"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 123456,
+   "expect": "757503"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 333333,
+   "expect": "1555555"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 500000,
+   "expect": "1750000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 666667,
+   "expect": "1555555"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 999998,
+   "expect": "14"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 999999,
+   "expect": "7"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 1,
+   "expect": "700"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 2,
+   "expect": "1400"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "6930000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "36382500"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "75750232"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "155555478"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "175000000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "155555478"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "1400"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "700"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "700000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "1399998"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "6930000000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "36382500000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "75750231245"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "155555477778"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "175000000000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "155555477778"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "1399998"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "700000"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 10000,
+   "expect": "9"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 55000,
+   "expect": "45"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 123456,
+   "expect": "94"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 333333,
+   "expect": "193"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 500000,
+   "expect": "217"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 666667,
+   "expect": "193"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 10000,
+   "expect": "18"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 55000,
+   "expect": "90"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 123456,
+   "expect": "188"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 333333,
+   "expect": "385"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 500000,
+   "expect": "433"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 666667,
+   "expect": "385"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 10000,
+   "expect": "26"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 55000,
+   "expect": "135"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 123456,
+   "expect": "281"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 333333,
+   "expect": "577"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 500000,
+   "expect": "649"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 666667,
+   "expect": "577"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 10000,
+   "expect": "60"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 55000,
+   "expect": "315"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 123456,
+   "expect": "655"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 333333,
+   "expect": "1345"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 500000,
+   "expect": "1513"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 666667,
+   "expect": "1345"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 10000,
+   "expect": "847"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 55000,
+   "expect": "4447"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 123456,
+   "expect": "9259"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 333333,
+   "expect": "19013"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 500000,
+   "expect": "21389"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 666667,
+   "expect": "19013"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 10000,
+   "expect": "856"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 55000,
+   "expect": "4492"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 123456,
+   "expect": "9352"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 333333,
+   "expect": "19205"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 500000,
+   "expect": "21605"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 666667,
+   "expect": "19205"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 10000,
+   "expect": "865"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 55000,
+   "expect": "4537"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 123456,
+   "expect": "9446"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 333333,
+   "expect": "19397"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 500000,
+   "expect": "21821"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 666667,
+   "expect": "19397"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 10000,
+   "expect": "6648"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 55000,
+   "expect": "34901"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 123456,
+   "expect": "72665"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 333333,
+   "expect": "149218"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 500000,
+   "expect": "167871"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 666667,
+   "expect": "149218"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 1,
+   "expect": "3"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 2,
+   "expect": "5"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 10000,
+   "expect": "21817"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 55000,
+   "expect": "114538"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 123456,
+   "expect": "238473"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 333333,
+   "expect": "489712"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 500000,
+   "expect": "550926"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 666667,
+   "expect": "489712"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 999998,
+   "expect": "5"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 999999,
+   "expect": "3"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 1,
+   "expect": "9"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 2,
+   "expect": "18"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 10000,
+   "expect": "85556"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 55000,
+   "expect": "449167"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 123456,
+   "expect": "935188"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 333333,
+   "expect": "1920437"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 500000,
+   "expect": "2160493"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 666667,
+   "expect": "1920437"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 999998,
+   "expect": "18"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 999999,
+   "expect": "9"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 1,
+   "expect": "865"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 2,
+   "expect": "1729"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "8555550"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "44916634"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "93518736"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "192043660"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "216049225"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "192043660"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "1729"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "865"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "864197"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "1728391"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "8555549310"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "44916633878"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "93518735738"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "192043659534"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "216049225000"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "192043659534"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "1728391"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "864197"
+  },
+  {
+   "multiplier": 1234567,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 10000,
+   "expect": "14"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 55000,
+   "expect": "73"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 123456,
+   "expect": "152"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 333333,
+   "expect": "312"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 500000,
+   "expect": "350"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 666667,
+   "expect": "312"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 10000,
+   "expect": "28"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 55000,
+   "expect": "146"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 123456,
+   "expect": "304"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 333333,
+   "expect": "623"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 500000,
+   "expect": "700"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 666667,
+   "expect": "623"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 10000,
+   "expect": "42"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 55000,
+   "expect": "219"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 123456,
+   "expect": "455"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 333333,
+   "expect": "934"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 500000,
+   "expect": "1050"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 666667,
+   "expect": "934"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 10000,
+   "expect": "98"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 55000,
+   "expect": "510"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 123456,
+   "expect": "1061"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 333333,
+   "expect": "2178"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 500000,
+   "expect": "2450"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 666667,
+   "expect": "2178"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 10000,
+   "expect": "1373"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 55000,
+   "expect": "7204"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 123456,
+   "expect": "14999"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 333333,
+   "expect": "30800"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 500000,
+   "expect": "34650"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 666667,
+   "expect": "30800"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 10000,
+   "expect": "1386"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 55000,
+   "expect": "7277"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 123456,
+   "expect": "15151"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 333333,
+   "expect": "31112"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 500000,
+   "expect": "35000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 666667,
+   "expect": "31112"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 10000,
+   "expect": "1400"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 55000,
+   "expect": "7350"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 123456,
+   "expect": "15302"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 333333,
+   "expect": "31423"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 500000,
+   "expect": "35350"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 666667,
+   "expect": "31423"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 1,
+   "expect": "2"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 2,
+   "expect": "3"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 10000,
+   "expect": "10770"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 55000,
+   "expect": "56539"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 123456,
+   "expect": "117716"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 333333,
+   "expect": "241734"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 500000,
+   "expect": "271950"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 666667,
+   "expect": "241734"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 999998,
+   "expect": "3"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 999999,
+   "expect": "2"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 1,
+   "expect": "4"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 2,
+   "expect": "8"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 10000,
+   "expect": "35343"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 55000,
+   "expect": "185551"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 123456,
+   "expect": "386327"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 333333,
+   "expect": "793333"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 500000,
+   "expect": "892500"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 666667,
+   "expect": "793333"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 999998,
+   "expect": "8"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 999999,
+   "expect": "4"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 1,
+   "expect": "14"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 2,
+   "expect": "28"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 10000,
+   "expect": "138600"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 55000,
+   "expect": "727650"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 123456,
+   "expect": "1515005"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 333333,
+   "expect": "3111110"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 500000,
+   "expect": "3500000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 666667,
+   "expect": "3111110"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 999998,
+   "expect": "28"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 999999,
+   "expect": "14"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 1,
+   "expect": "1400"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 2,
+   "expect": "2800"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "13860000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "72765000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "151500463"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "311110956"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "350000000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "311110956"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "2800"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "1400"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "1399999"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "2799995"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "13860000000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "72765000000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "151500462490"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "311110955556"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "350000000000"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "311110955556"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "2799995"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "1399999"
+  },
+  {
+   "multiplier": 2000000,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 1,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 2,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 10000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 55000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 123456,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 333333,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 500000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 666667,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 999998,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 999999,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 0,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 10000,
+   "expect": "70"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 55000,
+   "expect": "364"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 123456,
+   "expect": "758"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 333333,
+   "expect": "1556"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 500000,
+   "expect": "1750"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 666667,
+   "expect": "1556"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 10000,
+   "expect": "139"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 55000,
+   "expect": "728"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 123456,
+   "expect": "1516"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 333333,
+   "expect": "3112"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 500000,
+   "expect": "3500"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 666667,
+   "expect": "3112"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 10000,
+   "expect": "208"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 55000,
+   "expect": "1092"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 123456,
+   "expect": "2273"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 333333,
+   "expect": "4667"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 500000,
+   "expect": "5250"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 666667,
+   "expect": "4667"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 3,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 2,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 10000,
+   "expect": "486"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 55000,
+   "expect": "2547"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 123456,
+   "expect": "5303"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 333333,
+   "expect": "10889"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 500000,
+   "expect": "12250"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 666667,
+   "expect": "10889"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 999998,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 7,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 10000,
+   "expect": "6861"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 55000,
+   "expect": "36019"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 123456,
+   "expect": "74993"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 333333,
+   "expect": "154000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 500000,
+   "expect": "173250"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 666667,
+   "expect": "154000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 99,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 10000,
+   "expect": "6930"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 55000,
+   "expect": "36383"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 123456,
+   "expect": "75751"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 333333,
+   "expect": "155556"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 500000,
+   "expect": "175000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 666667,
+   "expect": "155556"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 100,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 1,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 2,
+   "expect": "2"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 10000,
+   "expect": "7000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 55000,
+   "expect": "36747"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 123456,
+   "expect": "76508"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 333333,
+   "expect": "157112"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 500000,
+   "expect": "176750"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 666667,
+   "expect": "157112"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 999998,
+   "expect": "2"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 999999,
+   "expect": "1"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 101,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 1,
+   "expect": "6"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 2,
+   "expect": "11"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 10000,
+   "expect": "53847"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 55000,
+   "expect": "282693"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 123456,
+   "expect": "588580"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 333333,
+   "expect": "1208667"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 500000,
+   "expect": "1359750"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 666667,
+   "expect": "1208667"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 999998,
+   "expect": "11"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 999999,
+   "expect": "6"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 777,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 1,
+   "expect": "18"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 2,
+   "expect": "36"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 10000,
+   "expect": "176715"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 55000,
+   "expect": "927754"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 123456,
+   "expect": "1931631"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 333333,
+   "expect": "3966665"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 500000,
+   "expect": "4462500"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 666667,
+   "expect": "3966665"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 999998,
+   "expect": "36"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 999999,
+   "expect": "18"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 2550,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 1,
+   "expect": "70"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 2,
+   "expect": "140"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 10000,
+   "expect": "693000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 55000,
+   "expect": "3638250"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 123456,
+   "expect": "7575024"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 333333,
+   "expect": "15555548"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 500000,
+   "expect": "17500000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 666667,
+   "expect": "15555548"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 999998,
+   "expect": "140"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 999999,
+   "expect": "70"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 10000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 1,
+   "expect": "7000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 2,
+   "expect": "14000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 10000,
+   "expect": "69300000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 55000,
+   "expect": "363825000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 123456,
+   "expect": "757502313"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 333333,
+   "expect": "1555554778"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 500000,
+   "expect": "1750000000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 666667,
+   "expect": "1555554778"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 999998,
+   "expect": "14000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 999999,
+   "expect": "7000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 0,
+   "expect": "0"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 1,
+   "expect": "6999993"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 2,
+   "expect": "13999972"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 10000,
+   "expect": "69300000000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 55000,
+   "expect": "363825000000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 123456,
+   "expect": "757502312448"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 333333,
+   "expect": "1555554777777"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "1750000000000"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 666667,
+   "expect": "1555554777777"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 999998,
+   "expect": "13999972"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 999999,
+   "expect": "6999993"
+  },
+  {
+   "multiplier": 10000000,
+   "count": 1000000000,
+   "price": 1000000,
+   "expect": "0"
+  },
+  {
+   "multiplier": 1380229,
+   "count": 40413,
+   "price": 547337,
+   "expect": "9673867"
+  },
+  {
+   "multiplier": 1992173,
+   "count": 850973,
+   "price": 405193,
+   "expect": "286008458"
+  },
+  {
+   "multiplier": 4978545,
+   "count": 1259725,
+   "price": 396843,
+   "expect": "1050812722"
+  },
+  {
+   "multiplier": 267903,
+   "count": 1299737,
+   "price": 394378,
+   "expect": "58216411"
+  },
+  {
+   "multiplier": 3583301,
+   "count": 517707,
+   "price": 386906,
+   "expect": "308033464"
+  },
+  {
+   "multiplier": 4514275,
+   "count": 721278,
+   "price": 976418,
+   "expect": "52481369"
+  },
+  {
+   "multiplier": 135420,
+   "count": 133591,
+   "price": 32850,
+   "expect": "402335"
+  },
+  {
+   "multiplier": 2678055,
+   "count": 1874110,
+   "price": 67737,
+   "expect": "221858983"
+  },
+  {
+   "multiplier": 3854241,
+   "count": 1914226,
+   "price": 741067,
+   "expect": "991003060"
+  },
+  {
+   "multiplier": 3448415,
+   "count": 511917,
+   "price": 543623,
+   "expect": "306576379"
+  },
+  {
+   "multiplier": 2807034,
+   "count": 896451,
+   "price": 298979,
+   "expect": "369184945"
+  },
+  {
+   "multiplier": 4175039,
+   "count": 1308692,
+   "price": 371445,
+   "expect": "892963745"
+  },
+  {
+   "multiplier": 730676,
+   "count": 96340,
+   "price": 646354,
+   "expect": "11263380"
+  },
+  {
+   "multiplier": 571045,
+   "count": 254527,
+   "price": 922663,
+   "expect": "7259934"
+  },
+  {
+   "multiplier": 4813831,
+   "count": 361313,
+   "price": 77918,
+   "expect": "87474166"
+  },
+  {
+   "multiplier": 2336579,
+   "count": 1410683,
+   "price": 486286,
+   "expect": "576396202"
+  },
+  {
+   "multiplier": 4202771,
+   "count": 1172553,
+   "price": 394500,
+   "expect": "824000366"
+  },
+  {
+   "multiplier": 1452391,
+   "count": 503995,
+   "price": 541784,
+   "expect": "127205018"
+  },
+  {
+   "multiplier": 2111629,
+   "count": 565353,
+   "price": 812103,
+   "expect": "127516482"
+  },
+  {
+   "multiplier": 624321,
+   "count": 1351140,
+   "price": 186012,
+   "expect": "89405719"
+  },
+  {
+   "multiplier": 3275839,
+   "count": 1388119,
+   "price": 10556,
+   "expect": "33245885"
+  },
+  {
+   "multiplier": 2683686,
+   "count": 1203558,
+   "price": 481629,
+   "expect": "564481991"
+  },
+  {
+   "multiplier": 2092491,
+   "count": 1901713,
+   "price": 565244,
+   "expect": "684523181"
+  },
+  {
+   "multiplier": 4483640,
+   "count": 864629,
+   "price": 525437,
+   "expect": "676664043"
+  },
+  {
+   "multiplier": 1889052,
+   "count": 1876657,
+   "price": 359817,
+   "expect": "571626919"
+  },
+  {
+   "multiplier": 537432,
+   "count": 984695,
+   "price": 779570,
+   "expect": "63657432"
+  },
+  {
+   "multiplier": 718979,
+   "count": 1938172,
+   "price": 567490,
+   "expect": "239420276"
+  },
+  {
+   "multiplier": 834413,
+   "count": 255031,
+   "price": 653065,
+   "expect": "33750220"
+  },
+  {
+   "multiplier": 2959239,
+   "count": 835956,
+   "price": 475663,
+   "expect": "431888239"
+  },
+  {
+   "multiplier": 3521675,
+   "count": 1977972,
+   "price": 294841,
+   "expect": "1013776880"
+  },
+  {
+   "multiplier": 3696923,
+   "count": 550909,
+   "price": 520389,
+   "expect": "355824261"
+  },
+  {
+   "multiplier": 92716,
+   "count": 350528,
+   "price": 431059,
+   "expect": "5579296"
+  },
+  {
+   "multiplier": 3952771,
+   "count": 339087,
+   "price": 16617,
+   "expect": "15331554"
+  },
+  {
+   "multiplier": 511990,
+   "count": 1266891,
+   "price": 783233,
+   "expect": "77087315"
+  },
+  {
+   "multiplier": 2040420,
+   "count": 883798,
+   "price": 9738,
+   "expect": "12172801"
+  },
+  {
+   "multiplier": 41500,
+   "count": 902749,
+   "price": 549436,
+   "expect": "6492124"
+  },
+  {
+   "multiplier": 2489047,
+   "count": 1410936,
+   "price": 432388,
+   "expect": "603342132"
+  },
+  {
+   "multiplier": 1737332,
+   "count": 814639,
+   "price": 694341,
+   "expect": "210259708"
+  },
+  {
+   "multiplier": 1275963,
+   "count": 936726,
+   "price": 902610,
+   "expect": "73546702"
+  },
+  {
+   "multiplier": 3837138,
+   "count": 1324418,
+   "price": 645170,
+   "expect": "814376118"
+  },
+  {
+   "multiplier": 4556171,
+   "count": 1058728,
+   "price": 18015,
+   "expect": "59733997"
+  },
+  {
+   "multiplier": 3639750,
+   "count": 133421,
+   "price": 581307,
+   "expect": "82736099"
+  },
+  {
+   "multiplier": 641108,
+   "count": 1393449,
+   "price": 307246,
+   "expect": "133102311"
+  },
+  {
+   "multiplier": 249717,
+   "count": 642797,
+   "price": 105111,
+   "expect": "10569084"
+  },
+  {
+   "multiplier": 2035839,
+   "count": 1730261,
+   "price": 729128,
+   "expect": "486991050"
+  },
+  {
+   "multiplier": 2042295,
+   "count": 1294053,
+   "price": 569539,
+   "expect": "453550716"
+  },
+  {
+   "multiplier": 4087543,
+   "count": 1048076,
+   "price": 753512,
+   "expect": "556979364"
+  },
+  {
+   "multiplier": 1215710,
+   "count": 1692355,
+   "price": 391141,
+   "expect": "342980612"
+  },
+  {
+   "multiplier": 2177345,
+   "count": 417947,
+   "price": 493643,
+   "expect": "159226850"
+  },
+  {
+   "multiplier": 595402,
+   "count": 89859,
+   "price": 703336,
+   "expect": "7814436"
+  },
+  {
+   "multiplier": 998509,
+   "count": 915912,
+   "price": 563386,
+   "expect": "157473501"
+  },
+  {
+   "multiplier": 1761949,
+   "count": 1343405,
+   "price": 975454,
+   "expect": "39672161"
+  },
+  {
+   "multiplier": 387506,
+   "count": 1444225,
+   "price": 324944,
+   "expect": "85932937"
+  },
+  {
+   "multiplier": 1949633,
+   "count": 1741876,
+   "price": 930258,
+   "expect": "154228969"
+  },
+  {
+   "multiplier": 4618131,
+   "count": 742157,
+   "price": 258433,
+   "expect": "459788856"
+  },
+  {
+   "multiplier": 4677065,
+   "count": 394340,
+   "price": 78295,
+   "expect": "93168317"
+  },
+  {
+   "multiplier": 3573250,
+   "count": 494428,
+   "price": 730560,
+   "expect": "243434687"
+  },
+  {
+   "multiplier": 237875,
+   "count": 1360095,
+   "price": 263672,
+   "expect": "43969489"
+  },
+  {
+   "multiplier": 2200652,
+   "count": 163839,
+   "price": 898480,
+   "expect": "23021135"
+  },
+  {
+   "multiplier": 1093016,
+   "count": 1083903,
+   "price": 909806,
+   "expect": "68052083"
+  },
+  {
+   "multiplier": 1343359,
+   "count": 337158,
+   "price": 240749,
+   "expect": "57952672"
+  },
+  {
+   "multiplier": 2479584,
+   "count": 1942358,
+   "price": 136837,
+   "expect": "398201145"
+  },
+  {
+   "multiplier": 4346020,
+   "count": 1355169,
+   "price": 349829,
+   "expect": "937705843"
+  },
+  {
+   "multiplier": 3665063,
+   "count": 1447401,
+   "price": 915322,
+   "expect": "287814617"
+  },
+  {
+   "multiplier": 4227385,
+   "count": 1275069,
+   "price": 988539,
+   "expect": "42748399"
+  },
+  {
+   "multiplier": 3894762,
+   "count": 1724211,
+   "price": 725752,
+   "expect": "935623424"
+  },
+  {
+   "multiplier": 2044662,
+   "count": 1313769,
+   "price": 709754,
+   "expect": "387358124"
+  },
+  {
+   "multiplier": 2415659,
+   "count": 809864,
+   "price": 529308,
+   "expect": "341185871"
+  },
+  {
+   "multiplier": 1907309,
+   "count": 1291360,
+   "price": 656044,
+   "expect": "389047193"
+  },
+  {
+   "multiplier": 470446,
+   "count": 305965,
+   "price": 865979,
+   "expect": "11693912"
+  },
+  {
+   "multiplier": 3217687,
+   "count": 1333884,
+   "price": 337041,
+   "expect": "671319566"
+  },
+  {
+   "multiplier": 623086,
+   "count": 1078136,
+   "price": 581464,
+   "expect": "114439311"
+  },
+  {
+   "multiplier": 3151389,
+   "count": 1207287,
+   "price": 845065,
+   "expect": "348698622"
+  },
+  {
+   "multiplier": 1693250,
+   "count": 802979,
+   "price": 516474,
+   "expect": "237679436"
+  },
+  {
+   "multiplier": 3160087,
+   "count": 214635,
+   "price": 710049,
+   "expect": "97748602"
+  },
+  {
+   "multiplier": 500758,
+   "count": 216455,
+   "price": 204278,
+   "expect": "12333222"
+  },
+  {
+   "multiplier": 3498762,
+   "count": 1758267,
+   "price": 723160,
+   "expect": "862105673"
+  },
+  {
+   "multiplier": 559136,
+   "count": 1803361,
+   "price": 46538,
+   "expect": "31319100"
+  },
+  {
+   "multiplier": 2867687,
+   "count": 1932770,
+   "price": 984596,
+   "expect": "58843913"
+  },
+  {
+   "multiplier": 4580682,
+   "count": 823434,
+   "price": 465365,
+   "expect": "656913342"
+  },
+  {
+   "multiplier": 557144,
+   "count": 443331,
+   "price": 501479,
+   "expect": "43224483"
+  },
+  {
+   "multiplier": 1260788,
+   "count": 1664165,
+   "price": 78791,
+   "expect": "106603454"
+  },
+  {
+   "multiplier": 4813249,
+   "count": 1443943,
+   "price": 650099,
+   "expect": "1106652070"
+  },
+  {
+   "multiplier": 4696041,
+   "count": 522624,
+   "price": 846432,
+   "expect": "223312006"
+  },
+  {
+   "multiplier": 4789760,
+   "count": 1944843,
+   "price": 347632,
+   "expect": "1478797603"
+  },
+  {
+   "multiplier": 2702211,
+   "count": 1210488,
+   "price": 605057,
+   "expect": "547152637"
+  },
+  {
+   "multiplier": 1728472,
+   "count": 518823,
+   "price": 513360,
+   "expect": "156822885"
+  },
+  {
+   "multiplier": 3657711,
+   "count": 1071068,
+   "price": 631164,
+   "expect": "638410463"
+  },
+  {
+   "multiplier": 190919,
+   "count": 1758986,
+   "price": 247934,
+   "expect": "43833043"
+  },
+  {
+   "multiplier": 113750,
+   "count": 1492548,
+   "price": 123053,
+   "expect": "12824585"
+  },
+  {
+   "multiplier": 4728429,
+   "count": 1749358,
+   "price": 446550,
+   "expect": "1431008104"
+  },
+  {
+   "multiplier": 487589,
+   "count": 212840,
+   "price": 961604,
+   "expect": "2682177"
+  },
+  {
+   "multiplier": 2503732,
+   "count": 1265308,
+   "price": 803964,
+   "expect": "349505947"
+  },
+  {
+   "multiplier": 151922,
+   "count": 377827,
+   "price": 605214,
+   "expect": "9600248"
+  },
+  {
+   "multiplier": 530446,
+   "count": 845957,
+   "price": 146431,
+   "expect": "39260803"
+  },
+  {
+   "multiplier": 4624751,
+   "count": 848261,
+   "price": 990243,
+   "expect": "26532244"
+  },
+  {
+   "multiplier": 797966,
+   "count": 593885,
+   "price": 558978,
+   "expect": "81778616"
+  },
+  {
+   "multiplier": 2348776,
+   "count": 1465522,
+   "price": 872838,
+   "expect": "267437916"
+  },
+  {
+   "multiplier": 4982313,
+   "count": 11135,
+   "price": 221543,
+   "expect": "6697488"
+  },
+  {
+   "multiplier": 4264983,
+   "count": 290775,
+   "price": 279394,
+   "expect": "174778239"
+  },
+  {
+   "multiplier": 4037427,
+   "count": 838015,
+   "price": 992061,
+   "expect": "18653430"
+  },
+  {
+   "multiplier": 3973014,
+   "count": 1308188,
+   "price": 538561,
+   "expect": "904143772"
+  },
+  {
+   "multiplier": 4301229,
+   "count": 1679018,
+   "price": 160254,
+   "expect": "680303617"
+  },
+  {
+   "multiplier": 1563147,
+   "count": 298295,
+   "price": 956188,
+   "expect": "13673517"
+  },
+  {
+   "multiplier": 3521578,
+   "count": 1925150,
+   "price": 894726,
+   "expect": "447003691"
+  },
+  {
+   "multiplier": 4750167,
+   "count": 1665001,
+   "price": 72039,
+   "expect": "370099772"
+  },
+  {
+   "multiplier": 3703705,
+   "count": 129448,
+   "price": 629795,
+   "expect": "78247643"
+  },
+  {
+   "multiplier": 227443,
+   "count": 852077,
+   "price": 145269,
+   "expect": "16844258"
+  },
+  {
+   "multiplier": 2573317,
+   "count": 190545,
+   "price": 243860,
+   "expect": "63289501"
+  },
+  {
+   "multiplier": 168852,
+   "count": 1867653,
+   "price": 241503,
+   "expect": "40436806"
+  },
+  {
+   "multiplier": 667638,
+   "count": 1355487,
+   "price": 812417,
+   "expect": "96539918"
+  },
+  {
+   "multiplier": 1690187,
+   "count": 1411852,
+   "price": 454528,
+   "expect": "414147530"
+  },
+  {
+   "multiplier": 2438212,
+   "count": 357287,
+   "price": 404345,
+   "expect": "146870167"
+  },
+  {
+   "multiplier": 2325269,
+   "count": 441862,
+   "price": 142685,
+   "expect": "87978518"
+  },
+  {
+   "multiplier": 864247,
+   "count": 1583163,
+   "price": 949408,
+   "expect": "46004074"
+  },
+  {
+   "multiplier": 3310940,
+   "count": 1850179,
+   "price": 148890,
+   "expect": "543393353"
+  },
+  {
+   "multiplier": 660964,
+   "count": 1966280,
+   "price": 717678,
+   "expect": "184329805"
+  },
+  {
+   "multiplier": 1097680,
+   "count": 1836085,
+   "price": 327222,
+   "expect": "310585267"
+  },
+  {
+   "multiplier": 4475977,
+   "count": 1682597,
+   "price": 708652,
+   "expect": "1088456444"
+  },
+  {
+   "multiplier": 3348177,
+   "count": 1710351,
+   "price": 993861,
+   "expect": "24457665"
+  },
+  {
+   "multiplier": 3764209,
+   "count": 488237,
+   "price": 541177,
+   "expect": "319438287"
+  },
+  {
+   "multiplier": 3209824,
+   "count": 420223,
+   "price": 693583,
+   "expect": "200664421"
+  },
+  {
+   "multiplier": 3000805,
+   "count": 78016,
+   "price": 221870,
+   "expect": "28292430"
+  },
+  {
+   "multiplier": 3663230,
+   "count": 397337,
+   "price": 904581,
+   "expect": "87943462"
+  },
+  {
+   "multiplier": 4862298,
+   "count": 1914894,
+   "price": 453814,
+   "expect": "1615484533"
+  },
+  {
+   "multiplier": 4562634,
+   "count": 1928317,
+   "price": 169587,
+   "expect": "867318879"
+  },
+  {
+   "multiplier": 530677,
+   "count": 1476029,
+   "price": 532006,
+   "expect": "136514887"
+  },
+  {
+   "multiplier": 1660334,
+   "count": 122940,
+   "price": 793305,
+   "expect": "23429169"
+  },
+  {
+   "multiplier": 419235,
+   "count": 513663,
+   "price": 985405,
+   "expect": "2167968"
+  },
+  {
+   "multiplier": 4912922,
+   "count": 328977,
+   "price": 295110,
+   "expect": "235347030"
+  },
+  {
+   "multiplier": 3939510,
+   "count": 1350660,
+   "price": 449206,
+   "expect": "921554523"
+  },
+  {
+   "multiplier": 4344546,
+   "count": 1589989,
+   "price": 448585,
+   "expect": "1196079049"
+  },
+  {
+   "multiplier": 240378,
+   "count": 598068,
+   "price": 675867,
+   "expect": "22045900"
+  },
+  {
+   "multiplier": 880547,
+   "count": 1115955,
+   "price": 500942,
+   "expect": "171963285"
+  },
+  {
+   "multiplier": 1032836,
+   "count": 1584897,
+   "price": 639804,
+   "expect": "264068311"
+  },
+  {
+   "multiplier": 3284670,
+   "count": 1382963,
+   "price": 579005,
+   "expect": "775103320"
+  },
+  {
+   "multiplier": 2409996,
+   "count": 575411,
+   "price": 434738,
+   "expect": "238544779"
+  },
+  {
+   "multiplier": 1513114,
+   "count": 1651241,
+   "price": 27734,
+   "expect": "47160431"
+  },
+  {
+   "multiplier": 3177770,
+   "count": 664323,
+   "price": 987584,
+   "expect": "18119890"
+  },
+  {
+   "multiplier": 4340823,
+   "count": 1585050,
+   "price": 945460,
+   "expect": "248354125"
+  },
+  {
+   "multiplier": 25416,
+   "count": 1850731,
+   "price": 818540,
+   "expect": "4890682"
+  },
+  {
+   "multiplier": 1443715,
+   "count": 1184861,
+   "price": 247157,
+   "expect": "222804648"
+  },
+  {
+   "multiplier": 76187,
+   "count": 1274655,
+   "price": 824411,
+   "expect": "9840398"
+  },
+  {
+   "multiplier": 3016732,
+   "count": 10701,
+   "price": 213785,
+   "expect": "3798199"
+  },
+  {
+   "multiplier": 377733,
+   "count": 742593,
+   "price": 601748,
+   "expect": "47055072"
+  },
+  {
+   "multiplier": 2766430,
+   "count": 1241221,
+   "price": 55325,
+   "expect": "125623442"
+  },
+  {
+   "multiplier": 4027015,
+   "count": 409815,
+   "price": 921281,
+   "expect": "83780090"
+  },
+  {
+   "multiplier": 2965028,
+   "count": 563214,
+   "price": 874857,
+   "expect": "127980533"
+  },
+  {
+   "multiplier": 3421801,
+   "count": 1634210,
+   "price": 336390,
+   "expect": "873809278"
+  },
+  {
+   "multiplier": 2968202,
+   "count": 663740,
+   "price": 16420,
+   "expect": "22272673"
+  },
+  {
+   "multiplier": 4091364,
+   "count": 17348,
+   "price": 86577,
+   "expect": "3929073"
+  },
+  {
+   "multiplier": 4464153,
+   "count": 1400695,
+   "price": 305027,
+   "expect": "927869513"
+  },
+  {
+   "multiplier": 3964313,
+   "count": 1595312,
+   "price": 857061,
+   "expect": "542343053"
+  },
+  {
+   "multiplier": 1660095,
+   "count": 529678,
+   "price": 860737,
+   "expect": "73781782"
+  },
+  {
+   "multiplier": 779086,
+   "count": 1012473,
+   "price": 521019,
+   "expect": "137796675"
+  },
+  {
+   "multiplier": 4820285,
+   "count": 1811252,
+   "price": 492793,
+   "expect": "1527563961"
+  },
+  {
+   "multiplier": 2415790,
+   "count": 41088,
+   "price": 682491,
+   "expect": "15056541"
+  },
+  {
+   "multiplier": 4929636,
+   "count": 1671808,
+   "price": 94241,
+   "expect": "492438314"
+  },
+  {
+   "multiplier": 3473754,
+   "count": 589334,
+   "price": 179640,
+   "expect": "211186485"
+  },
+  {
+   "multiplier": 4744411,
+   "count": 380245,
+   "price": 499642,
+   "expect": "315706587"
+  },
+  {
+   "multiplier": 4465398,
+   "count": 1508827,
+   "price": 130248,
+   "expect": "534274148"
+  },
+  {
+   "multiplier": 2258752,
+   "count": 1672999,
+   "price": 519135,
+   "expect": "660337178"
+  },
+  {
+   "multiplier": 1545216,
+   "count": 1796112,
+   "price": 145462,
+   "expect": "241491354"
+  },
+  {
+   "multiplier": 4271376,
+   "count": 1475345,
+   "price": 899844,
+   "expect": "397560867"
+  },
+  {
+   "multiplier": 2698258,
+   "count": 206356,
+   "price": 55970,
+   "expect": "20593953"
+  },
+  {
+   "multiplier": 2997365,
+   "count": 1119149,
+   "price": 702340,
+   "expect": "490900488"
+  },
+  {
+   "multiplier": 1419392,
+   "count": 1289922,
+   "price": 162140,
+   "expect": "174110704"
+  },
+  {
+   "multiplier": 4274914,
+   "count": 42694,
+   "price": 376589,
+   "expect": "29993999"
+  },
+  {
+   "multiplier": 641251,
+   "count": 1283310,
+   "price": 856574,
+   "expect": "70770205"
+  },
+  {
+   "multiplier": 1746121,
+   "count": 493564,
+   "price": 175110,
+   "expect": "87141060"
+  },
+  {
+   "multiplier": 3410502,
+   "count": 1086446,
+   "price": 376740,
+   "expect": "609025508"
+  },
+  {
+   "multiplier": 4636691,
+   "count": 1219442,
+   "price": 488890,
+   "expect": "988992221"
+  },
+  {
+   "multiplier": 3699097,
+   "count": 804325,
+   "price": 435638,
+   "expect": "512045846"
+  },
+  {
+   "multiplier": 1842147,
+   "count": 318301,
+   "price": 37947,
+   "expect": "14984311"
+  },
+  {
+   "multiplier": 1345134,
+   "count": 1183874,
+   "price": 815857,
+   "expect": "167470506"
+  },
+  {
+   "multiplier": 478376,
+   "count": 1581108,
+   "price": 22208,
+   "expect": "11497010"
+  },
+  {
+   "multiplier": 1726268,
+   "count": 1039572,
+   "price": 592253,
+   "expect": "303360393"
+  },
+  {
+   "multiplier": 2198222,
+   "count": 388026,
+   "price": 925534,
+   "expect": "41151041"
+  },
+  {
+   "multiplier": 4893257,
+   "count": 1710461,
+   "price": 843157,
+   "expect": "774787906"
+  },
+  {
+   "multiplier": 1983115,
+   "count": 973543,
+   "price": 787451,
+   "expect": "226195356"
+  },
+  {
+   "multiplier": 1589100,
+   "count": 1733513,
+   "price": 107927,
+   "expect": "185655095"
+  },
+  {
+   "multiplier": 446857,
+   "count": 1649191,
+   "price": 997827,
+   "expect": "1118543"
+  },
+  {
+   "multiplier": 3908548,
+   "count": 67050,
+   "price": 445633,
+   "expect": "45319696"
+  },
+  {
+   "multiplier": 1902709,
+   "count": 1486430,
+   "price": 97128,
+   "expect": "173614305"
+  },
+  {
+   "multiplier": 4703230,
+   "count": 1622891,
+   "price": 284141,
+   "expect": "1086788423"
+  },
+  {
+   "multiplier": 3314975,
+   "count": 1000448,
+   "price": 819682,
+   "expect": "343128900"
+  },
+  {
+   "multiplier": 3397800,
+   "count": 1792512,
+   "price": 45467,
+   "expect": "185031288"
+  },
+  {
+   "multiplier": 1768190,
+   "count": 1611167,
+   "price": 46119,
+   "expect": "87728683"
+  },
+  {
+   "multiplier": 3286252,
+   "count": 252468,
+   "price": 231414,
+   "expect": "103296913"
+  },
+  {
+   "multiplier": 2033439,
+   "count": 1143337,
+   "price": 419199,
+   "expect": "396233363"
+  },
+  {
+   "multiplier": 4994349,
+   "count": 897472,
+   "price": 575106,
+   "expect": "766701534"
+  },
+  {
+   "multiplier": 3507105,
+   "count": 1434644,
+   "price": 622020,
+   "expect": "828064421"
+  },
+  {
+   "multiplier": 2305197,
+   "count": 574433,
+   "price": 998339,
+   "expect": "1537069"
+  },
+  {
+   "multiplier": 4215336,
+   "count": 1998737,
+   "price": 158891,
+   "expect": "788201883"
+  },
+  {
+   "multiplier": 2046396,
+   "count": 1889658,
+   "price": 504441,
+   "expect": "676669614"
+  },
+  {
+   "multiplier": 3139813,
+   "count": 1317709,
+   "price": 719976,
+   "expect": "583894804"
+  },
+  {
+   "multiplier": 29157,
+   "count": 902588,
+   "price": 922269,
+   "expect": "1320634"
+  },
+  {
+   "multiplier": 920404,
+   "count": 219450,
+   "price": 659851,
+   "expect": "31734175"
+  },
+  {
+   "multiplier": 3973765,
+   "count": 1323675,
+   "price": 675234,
+   "expect": "807432908"
+  },
+  {
+   "multiplier": 3237659,
+   "count": 760602,
+   "price": 858737,
+   "expect": "209110197"
+  },
+  {
+   "multiplier": 342823,
+   "count": 1749190,
+   "price": 238654,
+   "expect": "76270355"
+  },
+  {
+   "multiplier": 1754036,
+   "count": 434415,
+   "price": 878527,
+   "expect": "56921486"
+  },
+  {
+   "multiplier": 346176,
+   "count": 1593310,
+   "price": 696471,
+   "expect": "81620361"
+  },
+  {
+   "multiplier": 3676787,
+   "count": 1125389,
+   "price": 667714,
+   "expect": "642645845"
+  },
+  {
+   "multiplier": 1665417,
+   "count": 1776203,
+   "price": 358864,
+   "expect": "476424065"
+  },
+  {
+   "multiplier": 408559,
+   "count": 391182,
+   "price": 847093,
+   "expect": "14490727"
+  },
+  {
+   "multiplier": 4955723,
+   "count": 1984839,
+   "price": 166554,
+   "expect": "955790880"
+  },
+  {
+   "multiplier": 3871947,
+   "count": 1575803,
+   "price": 472657,
+   "expect": "1064556330"
+  },
+  {
+   "multiplier": 1279450,
+   "count": 1820908,
+   "price": 625081,
+   "expect": "382193337"
+  },
+  {
+   "multiplier": 4390980,
+   "count": 1543453,
+   "price": 829689,
+   "expect": "670364395"
+  },
+  {
+   "multiplier": 4011885,
+   "count": 240500,
+   "price": 227083,
+   "expect": "118543864"
+  },
+  {
+   "multiplier": 2773157,
+   "count": 1701137,
+   "price": 407027,
+   "expect": "797021297"
+  },
+  {
+   "multiplier": 3019494,
+   "count": 1304488,
+   "price": 413050,
+   "expect": "668460937"
+  },
+  {
+   "multiplier": 1406422,
+   "count": 160521,
+   "price": 173293,
+   "expect": "22640092"
+  },
+  {
+   "multiplier": 127051,
+   "count": 513105,
+   "price": 423434,
+   "expect": "11140820"
+  },
+  {
+   "multiplier": 3520617,
+   "count": 76760,
+   "price": 239399,
+   "expect": "34445383"
+  },
+  {
+   "multiplier": 1325995,
+   "count": 191073,
+   "price": 763501,
+   "expect": "32024192"
+  },
+  {
+   "multiplier": 4862673,
+   "count": 633824,
+   "price": 257000,
+   "expect": "411968228"
+  },
+  {
+   "multiplier": 153843,
+   "count": 852354,
+   "price": 727926,
+   "expect": "18179003"
+  },
+  {
+   "multiplier": 1656472,
+   "count": 1659368,
+   "price": 838992,
+   "expect": "259914271"
+  },
+  {
+   "multiplier": 4443043,
+   "count": 1325200,
+   "price": 647241,
+   "expect": "941031382"
+  },
+  {
+   "multiplier": 1470803,
+   "count": 852348,
+   "price": 2998,
+   "expect": "2622994"
+  },
+  {
+   "multiplier": 671119,
+   "count": 1769311,
+   "price": 346128,
+   "expect": "188118378"
+  },
+  {
+   "multiplier": 2733579,
+   "count": 384781,
+   "price": 517682,
+   "expect": "183839921"
+  },
+  {
+   "multiplier": 1337104,
+   "count": 796571,
+   "price": 397692,
+   "expect": "178588384"
+  },
+  {
+   "multiplier": 4641033,
+   "count": 1873155,
+   "price": 467449,
+   "expect": "1514892628"
+  },
+  {
+   "multiplier": 973439,
+   "count": 669295,
+   "price": 782770,
+   "expect": "77549382"
+  },
+  {
+   "multiplier": 2782807,
+   "count": 1034621,
+   "price": 961050,
+   "expect": "75442464"
+  },
+  {
+   "multiplier": 3641935,
+   "count": 87089,
+   "price": 597410,
+   "expect": "53398494"
+  },
+  {
+   "multiplier": 2012647,
+   "count": 1757988,
+   "price": 682611,
+   "expect": "536595110"
+  },
+  {
+   "multiplier": 4074059,
+   "count": 1396764,
+   "price": 624034,
+   "expect": "934555745"
+  },
+  {
+   "multiplier": 4115242,
+   "count": 1440994,
+   "price": 15607,
+   "expect": "63773983"
+  },
+  {
+   "multiplier": 1580408,
+   "count": 173925,
+   "price": 757336,
+   "expect": "35360894"
+  },
+  {
+   "multiplier": 4009243,
+   "count": 1520791,
+   "price": 656395,
+   "expect": "962619583"
+  },
+  {
+   "multiplier": 2736360,
+   "count": 300753,
+   "price": 458164,
+   "expect": "143011203"
+  },
+  {
+   "multiplier": 117312,
+   "count": 1172529,
+   "price": 400774,
+   "expect": "23123537"
+  },
+  {
+   "multiplier": 1146902,
+   "count": 226260,
+   "price": 368958,
+   "expect": "42292887"
+  },
+  {
+   "multiplier": 351383,
+   "count": 277885,
+   "price": 162595,
+   "expect": "9306506"
+  },
+  {
+   "multiplier": 4272643,
+   "count": 324097,
+   "price": 348562,
+   "expect": "220101391"
+  },
+  {
+   "multiplier": 2361793,
+   "count": 41017,
+   "price": 339181,
+   "expect": "15199098"
+  },
+  {
+   "multiplier": 2669802,
+   "count": 950660,
+   "price": 188691,
+   "expect": "271981770"
+  },
+  {
+   "multiplier": 2041985,
+   "count": 1849178,
+   "price": 876625,
+   "expect": "285871147"
+  },
+  {
+   "multiplier": 3726884,
+   "count": 1459213,
+   "price": 795750,
+   "expect": "618730206"
+  },
+  {
+   "multiplier": 1434596,
+   "count": 357557,
+   "price": 529364,
+   "expect": "89456621"
+  },
+  {
+   "multiplier": 3739039,
+   "count": 164251,
+   "price": 458289,
+   "expect": "106726716"
+  },
+  {
+   "multiplier": 2434584,
+   "count": 1116982,
+   "price": 359742,
+   "expect": "438445015"
+  },
+  {
+   "multiplier": 1871523,
+   "count": 1400634,
+   "price": 81489,
+   "expect": "137341322"
+  },
+  {
+   "multiplier": 2652090,
+   "count": 828161,
+   "price": 150585,
+   "expect": "196653968"
+  },
+  {
+   "multiplier": 833401,
+   "count": 1447202,
+   "price": 829377,
+   "expect": "119473277"
+  },
+  {
+   "multiplier": 4149788,
+   "count": 939889,
+   "price": 154083,
+   "expect": "355863132"
+  },
+  {
+   "multiplier": 3968609,
+   "count": 170307,
+   "price": 553139,
+   "expect": "116943365"
+  },
+  {
+   "multiplier": 4653309,
+   "count": 1452225,
+   "price": 402261,
+   "expect": "1137400365"
+  },
+  {
+   "multiplier": 3860178,
+   "count": 1122416,
+   "price": 645636,
+   "expect": "693899467"
+  },
+  {
+   "multiplier": 2149166,
+   "count": 522782,
+   "price": 249463,
+   "expect": "147253924"
+  },
+  {
+   "multiplier": 2313219,
+   "count": 1863824,
+   "price": 928721,
+   "expect": "199786692"
+  },
+  {
+   "multiplier": 2673616,
+   "count": 1305564,
+   "price": 382783,
+   "expect": "577279000"
+  },
+  {
+   "multiplier": 2005655,
+   "count": 1463322,
+   "price": 991951,
+   "expect": "16403115"
+  },
+  {
+   "multiplier": 3764384,
+   "count": 416930,
+   "price": 415570,
+   "expect": "266828242"
+  },
+  {
+   "multiplier": 1552995,
+   "count": 1614466,
+   "price": 759463,
+   "expect": "320616237"
+  },
+  {
+   "multiplier": 1504500,
+   "count": 1421927,
+   "price": 868122,
+   "expect": "171443352"
+  },
+  {
+   "multiplier": 4858240,
+   "count": 1909336,
+   "price": 99472,
+   "expect": "581644248"
+  },
+  {
+   "multiplier": 2950322,
+   "count": 675422,
+   "price": 447224,
+   "expect": "344839448"
+  },
+  {
+   "multiplier": 4696916,
+   "count": 1772682,
+   "price": 300377,
+   "expect": "1224820431"
+  },
+  {
+   "multiplier": 234577,
+   "count": 371812,
+   "price": 394485,
+   "expect": "14583517"
+  },
+  {
+   "multiplier": 3612579,
+   "count": 469637,
+   "price": 962833,
+   "expect": "42499731"
+  },
+  {
+   "multiplier": 2047218,
+   "count": 840404,
+   "price": 672026,
+   "expect": "265445725"
+  },
+  {
+   "multiplier": 2860565,
+   "count": 350909,
+   "price": 208204,
+   "expect": "115836851"
+  },
+  {
+   "multiplier": 1999321,
+   "count": 337892,
+   "price": 513136,
+   "expect": "118140451"
+  },
+  {
+   "multiplier": 3641209,
+   "count": 933497,
+   "price": 129148,
+   "expect": "267601543"
+  },
+  {
+   "multiplier": 4572357,
+   "count": 1141666,
+   "price": 579485,
+   "expect": "890432351"
+  },
+  {
+   "multiplier": 3050619,
+   "count": 216335,
+   "price": 221086,
+   "expect": "79554281"
+  },
+  {
+   "multiplier": 1921704,
+   "count": 723271,
+   "price": 498679,
+   "expect": "243233038"
+  },
+  {
+   "multiplier": 1931394,
+   "count": 817713,
+   "price": 509775,
+   "expect": "276276413"
+  },
+  {
+   "multiplier": 2950524,
+   "count": 68724,
+   "price": 336026,
+   "expect": "31668652"
+  },
+  {
+   "multiplier": 4832624,
+   "count": 1767055,
+   "price": 336468,
+   "expect": "1334555848"
+  },
+  {
+   "multiplier": 2280590,
+   "count": 793510,
+   "price": 421240,
+   "expect": "308834474"
+  },
+  {
+   "multiplier": 3357681,
+   "count": 1686537,
+   "price": 228720,
+   "expect": "699277507"
+  },
+  {
+   "multiplier": 2053106,
+   "count": 798568,
+   "price": 892644,
+   "expect": "109983093"
+  },
+  {
+   "multiplier": 1225676,
+   "count": 693974,
+   "price": 459205,
+   "expect": "147861872"
+  },
+  {
+   "multiplier": 4296145,
+   "count": 1813524,
+   "price": 366737,
+   "expect": "1266598941"
+  },
+  {
+   "multiplier": 4963271,
+   "count": 7965,
+   "price": 882525,
+   "expect": "2868959"
+  },
+  {
+   "multiplier": 2364597,
+   "count": 116247,
+   "price": 815666,
+   "expect": "28930420"
+  },
+  {
+   "multiplier": 4267384,
+   "count": 277796,
+   "price": 702121,
+   "expect": "173555189"
+  },
+  {
+   "multiplier": 2168519,
+   "count": 1867148,
+   "price": 770131,
+   "expect": "501747281"
+  },
+  {
+   "multiplier": 3946413,
+   "count": 1913140,
+   "price": 33401,
+   "expect": "170629115"
+  },
+  {
+   "multiplier": 1058033,
+   "count": 1783988,
+   "price": 47405,
+   "expect": "59665273"
+  },
+  {
+   "multiplier": 128761,
+   "count": 20929,
+   "price": 541449,
+   "expect": "468356"
+  },
+  {
+   "multiplier": 3272515,
+   "count": 621094,
+   "price": 856648,
+   "expect": "174720226"
+  },
+  {
+   "multiplier": 1284251,
+   "count": 1111257,
+   "price": 441351,
+   "expect": "246312019"
+  },
+  {
+   "multiplier": 1652333,
+   "count": 384407,
+   "price": 685721,
+   "expect": "95818577"
+  },
+  {
+   "multiplier": 995421,
+   "count": 421536,
+   "price": 615198,
+   "expect": "69533125"
+  },
+  {
+   "multiplier": 905040,
+   "count": 74318,
+   "price": 174594,
+   "expect": "6785108"
+  },
+  {
+   "multiplier": 3422199,
+   "count": 848960,
+   "price": 816649,
+   "expect": "304515390"
+  },
+  {
+   "multiplier": 1546305,
+   "count": 1863797,
+   "price": 570550,
+   "expect": "494308554"
+  },
+  {
+   "multiplier": 3313436,
+   "count": 289301,
+   "price": 315237,
+   "expect": "144845176"
+  },
+  {
+   "multiplier": 4073625,
+   "count": 629504,
+   "price": 309130,
+   "expect": "383367304"
+  },
+  {
+   "multiplier": 4262858,
+   "count": 1736627,
+   "price": 973618,
+   "expect": "133107267"
+  },
+  {
+   "multiplier": 2217901,
+   "count": 1282367,
+   "price": 147173,
+   "expect": "249885822"
+  },
+  {
+   "multiplier": 958299,
+   "count": 101700,
+   "price": 656707,
+   "expect": "15380011"
+  },
+  {
+   "multiplier": 138365,
+   "count": 1046854,
+   "price": 460432,
+   "expect": "25189648"
+  },
+  {
+   "multiplier": 3337452,
+   "count": 1233785,
+   "price": 104089,
+   "expect": "268795665"
+  },
+  {
+   "multiplier": 4351921,
+   "count": 1169240,
+   "price": 252669,
+   "expect": "672585758"
+  },
+  {
+   "multiplier": 2001089,
+   "count": 1898553,
+   "price": 458806,
+   "expect": "660342474"
+  },
+  {
+   "multiplier": 3907193,
+   "count": 178394,
+   "price": 511652,
+   "expect": "121912220"
+  },
+  {
+   "multiplier": 1509154,
+   "count": 1292609,
+   "price": 242358,
+   "expect": "250738011"
+  },
+  {
+   "multiplier": 2138216,
+   "count": 835467,
+   "price": 499198,
+   "expect": "312620755"
+  },
+  {
+   "multiplier": 2228364,
+   "count": 451988,
+   "price": 829221,
+   "expect": "99842590"
+  },
+  {
+   "multiplier": 3048466,
+   "count": 288591,
+   "price": 313301,
+   "expect": "132492220"
+  },
+  {
+   "multiplier": 1784480,
+   "count": 731670,
+   "price": 520447,
+   "expect": "228106729"
+  },
+  {
+   "multiplier": 4167391,
+   "count": 1489971,
+   "price": 925945,
+   "expect": "298043519"
+  },
+  {
+   "multiplier": 2432115,
+   "count": 1538599,
+   "price": 487903,
+   "expect": "654475378"
+  },
+  {
+   "multiplier": 54396,
+   "count": 917064,
+   "price": 471176,
+   "expect": "8700796"
+  },
+  {
+   "multiplier": 868232,
+   "count": 1783890,
+   "price": 997769,
+   "expect": "2413413"
+  },
+  {
+   "multiplier": 2640911,
+   "count": 9351,
+   "price": 942031,
+   "expect": "943998"
+  },
+  {
+   "multiplier": 4994412,
+   "count": 83753,
+   "price": 700807,
+   "expect": "61394949"
+  },
+  {
+   "multiplier": 4096018,
+   "count": 1086389,
+   "price": 643791,
+   "expect": "714323677"
+  },
+  {
+   "multiplier": 3286350,
+   "count": 1668691,
+   "price": 263809,
+   "expect": "745534748"
+  },
+  {
+   "multiplier": 790321,
+   "count": 1287999,
+   "price": 305706,
+   "expect": "151239232"
+  },
+  {
+   "multiplier": 4239286,
+   "count": 276140,
+   "price": 677813,
+   "expect": "178952589"
+  },
+  {
+   "multiplier": 4444138,
+   "count": 409407,
+   "price": 713723,
+   "expect": "260229778"
+  },
+  {
+   "multiplier": 4545010,
+   "count": 539891,
+   "price": 810155,
+   "expect": "264183842"
+  },
+  {
+   "multiplier": 2652669,
+   "count": 1603544,
+   "price": 971600,
+   "expect": "82161400"
+  },
+  {
+   "multiplier": 2437410,
+   "count": 543208,
+   "price": 805907,
+   "expect": "144973154"
+  },
+  {
+   "multiplier": 2314935,
+   "count": 1505103,
+   "price": 428188,
+   "expect": "597160152"
+  },
+  {
+   "multiplier": 1907175,
+   "count": 610873,
+   "price": 314898,
+   "expect": "175940027"
+  },
+  {
+   "multiplier": 3575375,
+   "count": 327016,
+   "price": 65819,
+   "expect": "50323514"
+  },
+  {
+   "multiplier": 2974786,
+   "count": 20068,
+   "price": 113532,
+   "expect": "4205709"
+  },
+  {
+   "multiplier": 3153436,
+   "count": 1790201,
+   "price": 455497,
+   "expect": "980098343"
+  },
+  {
+   "multiplier": 4307407,
+   "count": 760112,
+   "price": 249771,
+   "expect": "429464627"
+  },
+  {
+   "multiplier": 2639308,
+   "count": 840736,
+   "price": 687586,
+   "expect": "333660865"
+  },
+  {
+   "multiplier": 1526450,
+   "count": 317253,
+   "price": 99238,
+   "expect": "30302219"
+  },
+  {
+   "multiplier": 2517438,
+   "count": 359612,
+   "price": 251438,
+   "expect": "119275073"
+  },
+  {
+   "multiplier": 3571767,
+   "count": 1331749,
+   "price": 350047,
+   "expect": "757550960"
+  },
+  {
+   "multiplier": 3741638,
+   "count": 1685708,
+   "price": 758609,
+   "expect": "808502227"
+  },
+  {
+   "multiplier": 3381153,
+   "count": 1455917,
+   "price": 788768,
+   "expect": "574127666"
+  },
+  {
+   "multiplier": 352642,
+   "count": 1241223,
+   "price": 789760,
+   "expect": "50873589"
+  },
+  {
+   "multiplier": 4589421,
+   "count": 1615098,
+   "price": 152388,
+   "expect": "670197316"
+  },
+  {
+   "multiplier": 2888289,
+   "count": 379308,
+   "price": 179366,
+   "expect": "112880863"
+  },
+  {
+   "multiplier": 4685971,
+   "count": 1446606,
+   "price": 698998,
+   "expect": "998373887"
+  },
+  {
+   "multiplier": 1828627,
+   "count": 412853,
+   "price": 617486,
+   "expect": "124822554"
+  },
+  {
+   "multiplier": 3517053,
+   "count": 67185,
+   "price": 54183,
+   "expect": "8476557"
+  },
+  {
+   "multiplier": 1356438,
+   "count": 147853,
+   "price": 114925,
+   "expect": "14279820"
+  },
+  {
+   "multiplier": 417447,
+   "count": 1951750,
+   "price": 563211,
+   "expect": "140302818"
+  },
+  {
+   "multiplier": 3713981,
+   "count": 1246210,
+   "price": 670795,
+   "expect": "715459722"
+  },
+  {
+   "multiplier": 183311,
+   "count": 24053,
+   "price": 682159,
+   "expect": "669193"
+  },
+  {
+   "multiplier": 3713681,
+   "count": 260292,
+   "price": 786777,
+   "expect": "113513931"
+  },
+  {
+   "multiplier": 4942620,
+   "count": 1780580,
+   "price": 700630,
+   "expect": "1292152464"
+  },
+  {
+   "multiplier": 4349066,
+   "count": 134684,
+   "price": 441735,
+   "expect": "101114225"
+  },
+  {
+   "multiplier": 2396317,
+   "count": 104183,
+   "price": 433924,
+   "expect": "42926708"
+  },
+  {
+   "multiplier": 3367506,
+   "count": 328042,
+   "price": 21524,
+   "expect": "16285798"
+  },
+  {
+   "multiplier": 1838897,
+   "count": 1967199,
+   "price": 926346,
+   "expect": "172771979"
+  },
+  {
+   "multiplier": 2646311,
+   "count": 742228,
+   "price": 621984,
+   "expect": "323270185"
+  },
+  {
+   "multiplier": 1610415,
+   "count": 692363,
+   "price": 433847,
+   "expect": "191707945"
+  },
+  {
+   "multiplier": 4451342,
+   "count": 1398240,
+   "price": 398198,
+   "expect": "1044055117"
+  },
+  {
+   "multiplier": 474981,
+   "count": 1131795,
+   "price": 440087,
+   "expect": "92725918"
+  },
+  {
+   "multiplier": 3320126,
+   "count": 1734027,
+   "price": 922576,
+   "expect": "287863247"
+  },
+  {
+   "multiplier": 2530958,
+   "count": 1941386,
+   "price": 803411,
+   "expect": "543240149"
+  },
+  {
+   "multiplier": 425693,
+   "count": 211289,
+   "price": 444878,
+   "expect": "15548941"
+  },
+  {
+   "multiplier": 1191419,
+   "count": 1351558,
+   "price": 314632,
+   "expect": "243065860"
+  },
+  {
+   "multiplier": 1097248,
+   "count": 1548678,
+   "price": 314157,
+   "expect": "256292218"
+  },
+  {
+   "multiplier": 4218371,
+   "count": 840564,
+   "price": 57694,
+   "expect": "134938602"
+  },
+  {
+   "multiplier": 3012699,
+   "count": 1148490,
+   "price": 481807,
+   "expect": "604707910"
+  },
+  {
+   "multiplier": 7880,
+   "count": 475159,
+   "price": 332891,
+   "expect": "582053"
+  },
+  {
+   "multiplier": 2259211,
+   "count": 1436436,
+   "price": 201643,
+   "expect": "365697005"
+  },
+  {
+   "multiplier": 639916,
+   "count": 1044158,
+   "price": 194053,
+   "expect": "73149957"
+  },
+  {
+   "multiplier": 3232967,
+   "count": 1063989,
+   "price": 585672,
+   "expect": "584299070"
+  },
+  {
+   "multiplier": 298014,
+   "count": 11242,
+   "price": 158587,
+   "expect": "312936"
+  },
+  {
+   "multiplier": 1427228,
+   "count": 624026,
+   "price": 184221,
+   "expect": "93692697"
+  },
+  {
+   "multiplier": 1851689,
+   "count": 1490792,
+   "price": 101962,
+   "expect": "176935998"
+  },
+  {
+   "multiplier": 845945,
+   "count": 1089641,
+   "price": 844694,
+   "expect": "84646938"
+  },
+  {
+   "multiplier": 1324689,
+   "count": 1879910,
+   "price": 357146,
+   "expect": "400227724"
+  },
+  {
+   "multiplier": 367639,
+   "count": 732530,
+   "price": 424071,
+   "expect": "46041828"
+  },
+  {
+   "multiplier": 3267799,
+   "count": 1764671,
+   "price": 768514,
+   "expect": "718114405"
+  },
+  {
+   "multiplier": 2395529,
+   "count": 1562432,
+   "price": 565698,
+   "expect": "643690457"
+  },
+  {
+   "multiplier": 3054108,
+   "count": 708301,
+   "price": 573546,
+   "expect": "370374206"
+  },
+  {
+   "multiplier": 1763368,
+   "count": 1194724,
+   "price": 539678,
+   "expect": "366357452"
+  },
+  {
+   "multiplier": 1378483,
+   "count": 1023353,
+   "price": 488338,
+   "expect": "246733777"
+  },
+  {
+   "multiplier": 3921680,
+   "count": 1943155,
+   "price": 778045,
+   "expect": "921185911"
+  },
+  {
+   "multiplier": 1599006,
+   "count": 665296,
+   "price": 378916,
+   "expect": "175249316"
+  },
+  {
+   "multiplier": 3254400,
+   "count": 161307,
+   "price": 875602,
+   "expect": "40026013"
+  },
+  {
+   "multiplier": 2314748,
+   "count": 72106,
+   "price": 727111,
+   "expect": "23182481"
+  },
+  {
+   "multiplier": 929869,
+   "count": 1982803,
+   "price": 494405,
+   "expect": "322615331"
+  },
+  {
+   "multiplier": 1417786,
+   "count": 1177586,
+   "price": 476268,
+   "expect": "291515647"
+  },
+  {
+   "multiplier": 2582378,
+   "count": 543283,
+   "price": 690461,
+   "expect": "209893262"
+  },
+  {
+   "multiplier": 1754451,
+   "count": 184431,
+   "price": 941604,
+   "expect": "12454452"
+  },
+  {
+   "multiplier": 3417860,
+   "count": 1698077,
+   "price": 652314,
+   "expect": "921411424"
+  },
+  {
+   "multiplier": 4960532,
+   "count": 1244540,
+   "price": 412423,
+   "expect": "1047231796"
+  },
+  {
+   "multiplier": 1520420,
+   "count": 1267925,
+   "price": 396104,
+   "expect": "322794823"
+  },
+  {
+   "multiplier": 4907650,
+   "count": 1430331,
+   "price": 720332,
+   "expect": "989882528"
+  },
+  {
+   "multiplier": 3961402,
+   "count": 874127,
+   "price": 326503,
+   "expect": "533021017"
+  },
+  {
+   "multiplier": 1661641,
+   "count": 554393,
+   "price": 969613,
+   "expect": "18999372"
+  },
+  {
+   "multiplier": 3943263,
+   "count": 358653,
+   "price": 417988,
+   "expect": "240837442"
+  },
+  {
+   "multiplier": 1820696,
+   "count": 1071551,
+   "price": 815372,
+   "expect": "205589857"
+  },
+  {
+   "multiplier": 437543,
+   "count": 441969,
+   "price": 941263,
+   "expect": "7483993"
+  },
+  {
+   "multiplier": 2562731,
+   "count": 119731,
+   "price": 80231,
+   "expect": "15849978"
+  },
+  {
+   "multiplier": 1554294,
+   "count": 769031,
+   "price": 661670,
+   "expect": "187308295"
+  },
+  {
+   "multiplier": 2727477,
+   "count": 1302136,
+   "price": 797053,
+   "expect": "402147451"
+  },
+  {
+   "multiplier": 490763,
+   "count": 1687921,
+   "price": 556734,
+   "expect": "143098188"
+  },
+  {
+   "multiplier": 481831,
+   "count": 282273,
+   "price": 126369,
+   "expect": "10510678"
+  },
+  {
+   "multiplier": 4959083,
+   "count": 253752,
+   "price": 220779,
+   "expect": "151540007"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": -1,
+   "expect": "refuse"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 1000001,
+   "expect": "refuse"
+  },
+  {
+   "multiplier": 1000000,
+   "count": -1,
+   "price": 5,
+   "expect": "refuse"
+  },
+  {
+   "multiplier": -1,
+   "count": 1,
+   "price": 5,
+   "expect": "refuse"
+  },
+  {
+   "multiplier": -1,
+   "count": -1,
+   "price": -1,
+   "expect": "refuse"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": -1000000,
+   "expect": "refuse"
+  },
+  {
+   "multiplier": 1000000,
+   "count": 100,
+   "price": 2000000,
+   "expect": "refuse"
+  },
+  {
+   "multiplier": 1000000000000,
+   "count": 1000000000000,
+   "price": 500000,
+   "expect": "overflow"
+  },
+  {
+   "multiplier": 1000000000,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "175000000000000"
+  },
+  {
+   "multiplier": 10000000000000,
+   "count": 1000000000,
+   "price": 500000,
+   "expect": "1750000000000000000"
+  },
+  {
+   "multiplier": 9223372036854775807,
+   "count": 9223372036854775807,
+   "price": 500000,
+   "expect": "overflow"
+  },
+  {
+   "multiplier": 9223372036854775807,
+   "count": 1,
+   "price": 500000,
+   "expect": "1614090106449586"
+  },
+  {
+   "multiplier": 1,
+   "count": 9223372036854775807,
+   "price": 500000,
+   "expect": "1614090106449586"
+  },
+  {
+   "multiplier": 9223372036854775807,
+   "count": 9223372036854775807,
+   "price": 1,
+   "expect": "overflow"
+  },
+  {
+   "multiplier": 1000000000000000000,
+   "count": 1000000000000000000,
+   "price": 250000,
+   "expect": "overflow"
+  }
+ ],
+ "roundUp": [
+  {
+   "value": 0,
+   "unit": 1,
+   "expect": "0"
+  },
+  {
+   "value": 0,
+   "unit": 2,
+   "expect": "0"
+  },
+  {
+   "value": 0,
+   "unit": 3,
+   "expect": "0"
+  },
+  {
+   "value": 0,
+   "unit": 100,
+   "expect": "0"
+  },
+  {
+   "value": 0,
+   "unit": 10000,
+   "expect": "0"
+  },
+  {
+   "value": 0,
+   "unit": 1000000,
+   "expect": "0"
+  },
+  {
+   "value": 0,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 0,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 0,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 1,
+   "unit": 1,
+   "expect": "1"
+  },
+  {
+   "value": 1,
+   "unit": 2,
+   "expect": "2"
+  },
+  {
+   "value": 1,
+   "unit": 3,
+   "expect": "3"
+  },
+  {
+   "value": 1,
+   "unit": 100,
+   "expect": "100"
+  },
+  {
+   "value": 1,
+   "unit": 10000,
+   "expect": "10000"
+  },
+  {
+   "value": 1,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 1,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 1,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 1,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 99,
+   "unit": 1,
+   "expect": "99"
+  },
+  {
+   "value": 99,
+   "unit": 2,
+   "expect": "100"
+  },
+  {
+   "value": 99,
+   "unit": 3,
+   "expect": "99"
+  },
+  {
+   "value": 99,
+   "unit": 100,
+   "expect": "100"
+  },
+  {
+   "value": 99,
+   "unit": 10000,
+   "expect": "10000"
+  },
+  {
+   "value": 99,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 99,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 99,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 99,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 100,
+   "unit": 1,
+   "expect": "100"
+  },
+  {
+   "value": 100,
+   "unit": 2,
+   "expect": "100"
+  },
+  {
+   "value": 100,
+   "unit": 3,
+   "expect": "102"
+  },
+  {
+   "value": 100,
+   "unit": 100,
+   "expect": "100"
+  },
+  {
+   "value": 100,
+   "unit": 10000,
+   "expect": "10000"
+  },
+  {
+   "value": 100,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 100,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 100,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 100,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 101,
+   "unit": 1,
+   "expect": "101"
+  },
+  {
+   "value": 101,
+   "unit": 2,
+   "expect": "102"
+  },
+  {
+   "value": 101,
+   "unit": 3,
+   "expect": "102"
+  },
+  {
+   "value": 101,
+   "unit": 100,
+   "expect": "200"
+  },
+  {
+   "value": 101,
+   "unit": 10000,
+   "expect": "10000"
+  },
+  {
+   "value": 101,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 101,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 101,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 101,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 3639,
+   "unit": 1,
+   "expect": "3639"
+  },
+  {
+   "value": 3639,
+   "unit": 2,
+   "expect": "3640"
+  },
+  {
+   "value": 3639,
+   "unit": 3,
+   "expect": "3639"
+  },
+  {
+   "value": 3639,
+   "unit": 100,
+   "expect": "3700"
+  },
+  {
+   "value": 3639,
+   "unit": 10000,
+   "expect": "10000"
+  },
+  {
+   "value": 3639,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 3639,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 3639,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 3639,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 17500,
+   "unit": 1,
+   "expect": "17500"
+  },
+  {
+   "value": 17500,
+   "unit": 2,
+   "expect": "17500"
+  },
+  {
+   "value": 17500,
+   "unit": 3,
+   "expect": "17502"
+  },
+  {
+   "value": 17500,
+   "unit": 100,
+   "expect": "17500"
+  },
+  {
+   "value": 17500,
+   "unit": 10000,
+   "expect": "20000"
+  },
+  {
+   "value": 17500,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 17500,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 17500,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 17500,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 20000,
+   "unit": 1,
+   "expect": "20000"
+  },
+  {
+   "value": 20000,
+   "unit": 2,
+   "expect": "20000"
+  },
+  {
+   "value": 20000,
+   "unit": 3,
+   "expect": "20001"
+  },
+  {
+   "value": 20000,
+   "unit": 100,
+   "expect": "20000"
+  },
+  {
+   "value": 20000,
+   "unit": 10000,
+   "expect": "20000"
+  },
+  {
+   "value": 20000,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 20000,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 20000,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 20000,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 999999,
+   "unit": 1,
+   "expect": "999999"
+  },
+  {
+   "value": 999999,
+   "unit": 2,
+   "expect": "1000000"
+  },
+  {
+   "value": 999999,
+   "unit": 3,
+   "expect": "999999"
+  },
+  {
+   "value": 999999,
+   "unit": 100,
+   "expect": "1000000"
+  },
+  {
+   "value": 999999,
+   "unit": 10000,
+   "expect": "1000000"
+  },
+  {
+   "value": 999999,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 999999,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 999999,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 999999,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 1000000,
+   "unit": 1,
+   "expect": "1000000"
+  },
+  {
+   "value": 1000000,
+   "unit": 2,
+   "expect": "1000000"
+  },
+  {
+   "value": 1000000,
+   "unit": 3,
+   "expect": "1000002"
+  },
+  {
+   "value": 1000000,
+   "unit": 100,
+   "expect": "1000000"
+  },
+  {
+   "value": 1000000,
+   "unit": 10000,
+   "expect": "1000000"
+  },
+  {
+   "value": 1000000,
+   "unit": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "value": 1000000,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 1000000,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 1000000,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 1000000000,
+   "unit": 1,
+   "expect": "1000000000"
+  },
+  {
+   "value": 1000000000,
+   "unit": 2,
+   "expect": "1000000000"
+  },
+  {
+   "value": 1000000000,
+   "unit": 3,
+   "expect": "1000000002"
+  },
+  {
+   "value": 1000000000,
+   "unit": 100,
+   "expect": "1000000000"
+  },
+  {
+   "value": 1000000000,
+   "unit": 10000,
+   "expect": "1000000000"
+  },
+  {
+   "value": 1000000000,
+   "unit": 1000000,
+   "expect": "1000000000"
+  },
+  {
+   "value": 1000000000,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 1000000000,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 1000000000,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": 1,
+   "expect": "9223372036854775806"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": 2,
+   "expect": "9223372036854775806"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": 3,
+   "expect": "9223372036854775806"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": 100,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": 10000,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": 1000000,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 9223372036854775806,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": 1,
+   "expect": "9223372036854775807"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": 2,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": 3,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": 100,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": 10000,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": 1000000,
+   "expect": "overflow"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": 9223372036854775807,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": -1,
+   "unit": 1,
+   "expect": "-1"
+  },
+  {
+   "value": -1,
+   "unit": 2,
+   "expect": "0"
+  },
+  {
+   "value": -1,
+   "unit": 3,
+   "expect": "0"
+  },
+  {
+   "value": -1,
+   "unit": 100,
+   "expect": "0"
+  },
+  {
+   "value": -1,
+   "unit": 10000,
+   "expect": "0"
+  },
+  {
+   "value": -1,
+   "unit": 1000000,
+   "expect": "0"
+  },
+  {
+   "value": -1,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": -1,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": -1,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": -99,
+   "unit": 1,
+   "expect": "-99"
+  },
+  {
+   "value": -99,
+   "unit": 2,
+   "expect": "-98"
+  },
+  {
+   "value": -99,
+   "unit": 3,
+   "expect": "-99"
+  },
+  {
+   "value": -99,
+   "unit": 100,
+   "expect": "0"
+  },
+  {
+   "value": -99,
+   "unit": 10000,
+   "expect": "0"
+  },
+  {
+   "value": -99,
+   "unit": 1000000,
+   "expect": "0"
+  },
+  {
+   "value": -99,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": -99,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": -99,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": -100,
+   "unit": 1,
+   "expect": "-100"
+  },
+  {
+   "value": -100,
+   "unit": 2,
+   "expect": "-100"
+  },
+  {
+   "value": -100,
+   "unit": 3,
+   "expect": "-99"
+  },
+  {
+   "value": -100,
+   "unit": 100,
+   "expect": "-100"
+  },
+  {
+   "value": -100,
+   "unit": 10000,
+   "expect": "0"
+  },
+  {
+   "value": -100,
+   "unit": 1000000,
+   "expect": "0"
+  },
+  {
+   "value": -100,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": -100,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": -100,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": -101,
+   "unit": 1,
+   "expect": "-101"
+  },
+  {
+   "value": -101,
+   "unit": 2,
+   "expect": "-100"
+  },
+  {
+   "value": -101,
+   "unit": 3,
+   "expect": "-99"
+  },
+  {
+   "value": -101,
+   "unit": 100,
+   "expect": "-100"
+  },
+  {
+   "value": -101,
+   "unit": 10000,
+   "expect": "0"
+  },
+  {
+   "value": -101,
+   "unit": 1000000,
+   "expect": "0"
+  },
+  {
+   "value": -101,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": -101,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": -101,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": -17500,
+   "unit": 1,
+   "expect": "-17500"
+  },
+  {
+   "value": -17500,
+   "unit": 2,
+   "expect": "-17500"
+  },
+  {
+   "value": -17500,
+   "unit": 3,
+   "expect": "-17499"
+  },
+  {
+   "value": -17500,
+   "unit": 100,
+   "expect": "-17500"
+  },
+  {
+   "value": -17500,
+   "unit": 10000,
+   "expect": "-10000"
+  },
+  {
+   "value": -17500,
+   "unit": 1000000,
+   "expect": "0"
+  },
+  {
+   "value": -17500,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": -17500,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": -17500,
+   "unit": -10000,
+   "expect": "refuse"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": 1,
+   "expect": "-9223372036854775807"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": 2,
+   "expect": "-9223372036854775806"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": 3,
+   "expect": "-9223372036854775806"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": 100,
+   "expect": "-9223372036854775800"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": 10000,
+   "expect": "-9223372036854770000"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": 1000000,
+   "expect": "-9223372036854000000"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": 0,
+   "expect": "refuse"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": -1,
+   "expect": "refuse"
+  },
+  {
+   "value": -9223372036854775807,
+   "unit": -10000,
+   "expect": "refuse"
+  }
+ ],
+ "takerMultiplier": [
+  {
+   "feeType": "quadratic",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "quadratic",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "quadratic",
+   "multiplier": 0,
+   "expect": "0"
+  },
+  {
+   "feeType": "quadratic",
+   "multiplier": 1,
+   "expect": "1"
+  },
+  {
+   "feeType": "quadratic",
+   "multiplier": 500000,
+   "expect": "500000"
+  },
+  {
+   "feeType": "quadratic",
+   "multiplier": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "feeType": "quadratic",
+   "multiplier": 123456789,
+   "expect": "123456789"
+  },
+  {
+   "feeType": "quadratic_with_maker_fees",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "quadratic_with_maker_fees",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "quadratic_with_maker_fees",
+   "multiplier": 0,
+   "expect": "0"
+  },
+  {
+   "feeType": "quadratic_with_maker_fees",
+   "multiplier": 1,
+   "expect": "1"
+  },
+  {
+   "feeType": "quadratic_with_maker_fees",
+   "multiplier": 500000,
+   "expect": "500000"
+  },
+  {
+   "feeType": "quadratic_with_maker_fees",
+   "multiplier": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "feeType": "quadratic_with_maker_fees",
+   "multiplier": 123456789,
+   "expect": "123456789"
+  },
+  {
+   "feeType": "quadratic_with_combo_maker_fees",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "quadratic_with_combo_maker_fees",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "quadratic_with_combo_maker_fees",
+   "multiplier": 0,
+   "expect": "0"
+  },
+  {
+   "feeType": "quadratic_with_combo_maker_fees",
+   "multiplier": 1,
+   "expect": "1"
+  },
+  {
+   "feeType": "quadratic_with_combo_maker_fees",
+   "multiplier": 500000,
+   "expect": "500000"
+  },
+  {
+   "feeType": "quadratic_with_combo_maker_fees",
+   "multiplier": 1000000,
+   "expect": "1000000"
+  },
+  {
+   "feeType": "quadratic_with_combo_maker_fees",
+   "multiplier": 123456789,
+   "expect": "123456789"
+  },
+  {
+   "feeType": "flat",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "flat",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "flat",
+   "multiplier": 0,
+   "expect": "null"
+  },
+  {
+   "feeType": "flat",
+   "multiplier": 1,
+   "expect": "null"
+  },
+  {
+   "feeType": "flat",
+   "multiplier": 500000,
+   "expect": "null"
+  },
+  {
+   "feeType": "flat",
+   "multiplier": 1000000,
+   "expect": "null"
+  },
+  {
+   "feeType": "flat",
+   "multiplier": 123456789,
+   "expect": "null"
+  },
+  {
+   "feeType": "margin_market_maker_program_fees",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "margin_market_maker_program_fees",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "margin_market_maker_program_fees",
+   "multiplier": 0,
+   "expect": "null"
+  },
+  {
+   "feeType": "margin_market_maker_program_fees",
+   "multiplier": 1,
+   "expect": "null"
+  },
+  {
+   "feeType": "margin_market_maker_program_fees",
+   "multiplier": 500000,
+   "expect": "null"
+  },
+  {
+   "feeType": "margin_market_maker_program_fees",
+   "multiplier": 1000000,
+   "expect": "null"
+  },
+  {
+   "feeType": "margin_market_maker_program_fees",
+   "multiplier": 123456789,
+   "expect": "null"
+  },
+  {
+   "feeType": "mystery",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "mystery",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "mystery",
+   "multiplier": 0,
+   "expect": "null"
+  },
+  {
+   "feeType": "mystery",
+   "multiplier": 1,
+   "expect": "null"
+  },
+  {
+   "feeType": "mystery",
+   "multiplier": 500000,
+   "expect": "null"
+  },
+  {
+   "feeType": "mystery",
+   "multiplier": 1000000,
+   "expect": "null"
+  },
+  {
+   "feeType": "mystery",
+   "multiplier": 123456789,
+   "expect": "null"
+  },
+  {
+   "feeType": "",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "",
+   "multiplier": 0,
+   "expect": "null"
+  },
+  {
+   "feeType": "",
+   "multiplier": 1,
+   "expect": "null"
+  },
+  {
+   "feeType": "",
+   "multiplier": 500000,
+   "expect": "null"
+  },
+  {
+   "feeType": "",
+   "multiplier": 1000000,
+   "expect": "null"
+  },
+  {
+   "feeType": "",
+   "multiplier": 123456789,
+   "expect": "null"
+  },
+  {
+   "feeType": "Quadratic",
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": "Quadratic",
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": "Quadratic",
+   "multiplier": 0,
+   "expect": "null"
+  },
+  {
+   "feeType": "Quadratic",
+   "multiplier": 1,
+   "expect": "null"
+  },
+  {
+   "feeType": "Quadratic",
+   "multiplier": 500000,
+   "expect": "null"
+  },
+  {
+   "feeType": "Quadratic",
+   "multiplier": 1000000,
+   "expect": "null"
+  },
+  {
+   "feeType": "Quadratic",
+   "multiplier": 123456789,
+   "expect": "null"
+  },
+  {
+   "feeType": null,
+   "multiplier": null,
+   "expect": "null"
+  },
+  {
+   "feeType": null,
+   "multiplier": -1,
+   "expect": "null"
+  },
+  {
+   "feeType": null,
+   "multiplier": 0,
+   "expect": "null"
+  },
+  {
+   "feeType": null,
+   "multiplier": 1,
+   "expect": "null"
+  },
+  {
+   "feeType": null,
+   "multiplier": 500000,
+   "expect": "null"
+  },
+  {
+   "feeType": null,
+   "multiplier": 1000000,
+   "expect": "null"
+  },
+  {
+   "feeType": null,
+   "multiplier": 123456789,
+   "expect": "null"
+  }
+ ]
+}

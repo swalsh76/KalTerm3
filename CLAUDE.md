@@ -93,4 +93,5 @@ committed and CI never runs Python; see `tools/vectors/README.md`):
 
 ```powershell
 python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```

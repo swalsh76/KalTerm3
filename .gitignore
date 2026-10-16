@@ -19,3 +19,7 @@ appsettings.*.Local.json
 *.mdf
 *.ldf
 *.ndf
+
+# python bytecode (tools/vectors)
+__pycache__/
+*.pyc
