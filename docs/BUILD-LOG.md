@@ -349,3 +349,38 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   bool to an int, and a string to a float); the corpus tags were corrected from the oracle's actual behaviour.
 - Verification: 3,522 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core` 98.3%
   (351 of 357 lines), `KalTerm.Kalshi` 96.3% (341 of 354).
+
+### 3.7b REST client core (2026-10-16): done
+
+- `KalTerm.Kalshi.Rest`: `KalshiRestClient` (`IDisposable`; `new KalshiRestClient(settings, options?, handler?)`),
+  `KalshiRestClientOptions` (signer, bucket, `TimeProvider`, `ILogger`, `MaxRetries` 5, timeout 30 s), `KalshiQuery`
+  (immutable query builder: nulls dropped, bools `true`/`false`, invariant numbers, escaped, a `DateTimeOffset` becomes
+  epoch seconds, a repeated name replaces), `KalshiApiException` (status, whole body, message shortened to 200 characters),
+  `ReadOnlyViolationException`. Endpoints in this slice: `ExchangeStatusAsync`, `MarketsPageAsync`, `IterateMarketsAsync`.
+  New package: `Microsoft.Extensions.Logging.Abstractions` 10.0.13 (MIT, Microsoft; one dependency, also Microsoft's).
+- **Read-only, twice over.** The client has no write methods (a reflection test checks the public surface), and a
+  `DelegatingHandler` is the outermost layer: any non-GET (POST, PUT, DELETE, PATCH, HEAD, OPTIONS), through `SendAsync` or the
+  synchronous `Send`, raises `ReadOnlyViolationException` before anything reaches the inner handler (the stub records zero
+  requests). The write path stays a separate trading client with its own key (M6).
+- **Pipeline per attempt:** acquire rate-limit tokens (every attempt, retries included); sign `GET` over the full path
+  `/trade-api/v2/...` without the query, with a fresh timestamp each attempt; send; accept only HTTP 200 (201, 202 and 204 are
+  errors, as in the reference); retry 429, 500, 502, 503, 504 and transport errors with delay
+  `min(8 s, 0.5 s x 2^attempt) x (0.5 + 0.5 x jitter)`; a 4xx is never retried. The caller's cancellation is never retried;
+  an HTTP timeout is. A connection lost while reading the body (it surfaces as an IO or request exception) is retried too,
+  which the reference's `httpx.TransportError` covers implicitly.
+- Added over the reference: `User-Agent: KalTerm/<version>` and `Accept: application/json`; a retry notice logged at
+  Information level with the path and reason but never the query or headers; the production banner (Warning, "Kalshi client
+  using PRODUCTION environment (read-only)") through `ILogger`, nothing when demo; a bad body is a
+  `KalshiResponseException` naming the endpoint. The client owns and disposes the HTTP pipeline and any bucket it built itself;
+  a bucket passed in stays the caller's.
+- Test support: `StubHttpMessageHandler` in `KalTerm.TestSupport` (scripted responses and exceptions, records every request,
+  fails loudly when the script runs out), the role the reference fills with `respx`. The Kalshi tests also gain `ListLogger`.
+- Tests (65 new): the reference's REST tests ported (signing over the full path, cursor pagination, growing 429 backoff,
+  give-up after the maximum, 4xx not retried, transport errors retried, non-GET blocked with zero requests sent, tokens
+  acquired on each attempt, production banner and none for demo) plus: every retryable status, the jitter bounds and the 8 s
+  cap, a fresh signature and timestamp on each retry, only-200, timeout retried but caller cancellation not, an IO failure
+  mid-body, bucket and handler ownership, query escaping, and logs that never carry the query. The rate-limit test has a
+  control (a single attempt leaves the bucket able to serve the next call without waiting). 20 consecutive runs of the
+  Kalshi suite showed no failure or hang.
+- Verification: 3,587 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core` 98.3%,
+  `KalTerm.Kalshi` 95.1% (462 of 486 lines).
