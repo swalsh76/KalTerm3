@@ -82,7 +82,7 @@ public class ModelVectorTests
         where T : class =>
         JsonSerializer.SerializeToElement(KalshiJson.Parse(json, typeInfo, typeof(T).Name), typeInfo);
 
-    private static void Compare(JsonElement expected, JsonElement actual, string path, string name)
+    internal static void Compare(JsonElement expected, JsonElement actual, string path, string name)
     {
         switch (expected.ValueKind)
         {
@@ -123,7 +123,7 @@ public class ModelVectorTests
             return;
         }
 
-        if (TimeSuffixes.Any(s => name.EndsWith(s, StringComparison.Ordinal)))
+        if (expected.ValueKind == JsonValueKind.String && TimeSuffixes.Any(s => name.EndsWith(s, StringComparison.Ordinal)))
         {
             // A Python datetime holds microseconds; the port keeps 100 ns. Compare at the coarser resolution.
             Assert.Equal(Instant(expected).UtcTicks / 10, Instant(actual).UtcTicks / 10);

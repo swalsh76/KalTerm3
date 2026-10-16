@@ -441,3 +441,22 @@ passed. What the run read:
   the field names are a head start for the M6 portfolio models. The public client surface still has no portfolio methods.
 - Fix to the docs: the live-test command now runs the test assembly directly (`dotnet test --filter-class` would also hit the other
   test projects, which have no such class); CLAUDE.md shows the single-test form too.
+
+### 3.8a WebSocket models (2026-10-16): done
+
+Public-channel message models in `KalTerm.Kalshi.Models` (`WsMessages.cs`): `TickerMsg`, `TradeMsg`, `LifecycleMsg` (market and
+multivariate lifecycle), `EventLifecycleMsg`, `OrderbookSnapshotMsg`, `OrderbookDeltaMsg`, the `WsMessage` envelope with a typed
+`Payload()` (null for types without a model, `KalshiResponseException` for a known type whose payload is missing or invalid), and
+the marker `IWsPayload`. Same rules as the REST models: exact fixed-point, unknown fields ignored, required fields enforced.
+
+- **Vectors:** `tools/vectors/generate_ws_models.py` runs 414 payloads through the reference's pydantic `ws_models`
+  (`tests/KalTerm.Kalshi.Tests/Vectors/ws_models.json`); 70 are recorded deliberate differences (a stricter port: JSON type
+  coercion, finer-than-scale values, integers beyond 64 bits). All pass; the envelope case compares the envelope plus its payload.
+- **Snapshot levels** are `[price, quantity]` pairs on the wire; a small converter (`PriceLevelPairListJsonConverter`) reads and
+  writes that shape and reuses the exact readers. An absent side is empty; an explicit null is refused, as in the reference
+  (a non-nullable constructor parameter defaulting to null, normalised in the body).
+- **Left out on purpose:** the private channels (fill, user_order, market_position; M6) and the reference's `received_at` (the
+  client stamps it from `TimeProvider` in 2.8b). The corpus has no private-type case because the port deliberately has no model
+  for them; `WsMessageTests` pins that they yield no typed payload.
+- **Verification:** 4,045 tests (4,037 pass, 8 live skipped), build 0 warnings, format clean, coverage `KalTerm.Core` 98.3%,
+  `KalTerm.Kalshi` 96.2% (606 of 630 lines).
