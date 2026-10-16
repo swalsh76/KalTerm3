@@ -102,9 +102,12 @@ python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTer
 ```
 
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in
-CI). Ask the owner before each run and repeat what they read in the reply; the key id and path come from
-`KALSHI_KEY_ID` / `KALSHI_PRIVATE_KEY_PATH` and are never printed. A summary lands in `live-summary.txt` next to the
-test assembly:
+CI). **The owner granted standing permission (2026-10-16) for the assistant to run them itself**, within these limits:
+GET only and never an order; the key id and path come from the owner's User environment variables
+`KALSHI_KEY_ID` / `KALSHI_PRIVATE_KEY_PATH`, loaded into each command's own process and removed afterwards; never print or
+read the key id, the key path or the key file (check it exists with `Test-Path` only); delete `live-summary.txt` after reading
+it; and repeat what the run read in the visible reply (public market data and status codes, never an account value). A
+summary lands in `live-summary.txt` next to the test assembly:
 
 ```powershell
 dotnet build KalTerm.sln -c Release
