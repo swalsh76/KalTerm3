@@ -54,3 +54,41 @@ key files? Spike code is on branch `spike/s3-ed25519` (813c829), deliberately no
   machine without extra runtimes (S-4).
 - The 21 vectors are reusable for the M2 parity tests; they live only on the spike branch until M2
   asks for them.
+
+### 2.2 S-1a flush path, workstation (2026-10-16): done, red flag found
+
+Question: when SQL Server acknowledges a commit, is the data on the flash? Method, scripts and raw
+results: branch `spike/s1-durability` (2b51c0e, not merged). Hardware: MSI MS-7D78, WD Blue SN580
+2 TB NVMe (consumer, DRAM-less), one volume (C:), Windows 11 Pro 26300. Windows reports the drive
+`IsPowerProtected = False`, device write cache enabled. SQL Server 2025 17.0.1000.7 Enterprise
+Developer, default instance, max server memory capped at 16 GB for the tests. Scratch files in
+`C:\KalTermSpikes\s1`; test database `S1Test` (`PAGE_VERIFY CHECKSUM`, `DELAYED_DURABILITY
+DISABLED`, simple recovery). `diskspd` 2.3, Microsoft-signed.
+
+A-B-A: device write cache on (A1), off via Device Manager (B), on again (A2). One thread, queue
+depth 1. The A1 and A2 baselines agree.
+
+| Measure | A1 cache on | B cache off | A2 cache on |
+|---|---|---|---|
+| 4K write-through write (`diskspd -Sw`) | 23 us | 215 us | 23 us |
+| 4K no-buffer + write-through (`-Sh`) | 19 us | 209 us | 19 us |
+| 8K random write-through | 26 us | 233 us | 26 us |
+| 4K write + `FlushFileBuffers` | 228 us | 488 us | 221 us |
+| SQL commit, mean (20,000 autocommits) | 48 us | 234 us | 62 us |
+| SQL log write stall per write | 28 us | 203 us | 36 us |
+| SQL commits per second | 20,731 | 4,272 | 16,115 |
+
+- **Finding:** with the device cache on, write-through writes (what SQL Server uses for its log:
+  one write per commit, no separate flush) are acknowledged in about 20 to 30 us, while the flash
+  needs about 200 us to commit a write (the cache-off figure). So the acknowledged data was in the
+  drive's volatile cache, not on the flash. A power cut would lose acknowledged commits. This is
+  the KalshiTerm2 failure mode, reproduced on Windows before any power was pulled.
+- An explicit flush (about 220 us, cache on) does reach the flash.
+- With the cache off, SQL still commits about 4,300 per second single-threaded, well above what the
+  batched ingest needs. Candidate fixes (decision after S-1d, in PLAN.md): a drive with power-loss
+  protection, or the device cache disabled with the installer's `verify` checking it, or both. A UPS
+  alone does not close the gap (a crash or reset still loses the cache).
+- Limits: one drive, one run per state, a busy workstation. This is a measurement of acknowledgement
+  latency, not a power-loss test; S-1d on the target server is the gate.
+- Housekeeping: the cache was restored to on. Max server memory stays capped at 16 GB until S-1b
+  ends, then goes back to the default.
