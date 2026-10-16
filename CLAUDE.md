@@ -94,4 +94,12 @@ committed and CI never runs Python; see `tools/vectors/README.md`):
 ```powershell
 python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
+```
+
+CI fails if line coverage is under 90% (coverlet.MTP's own threshold option is unsupported). To check
+locally after the test command above:
+
+```powershell
+powershell -NoProfile -File tools/ci/check-coverage.ps1 -Path TestResults -MinLinePercent 90
 ```

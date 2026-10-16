@@ -8,6 +8,7 @@ Python. Regenerate only when the reference changes, review the diff, and record 
 ```powershell
 python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```
 
 `common.py` holds what the generators share (loading `kalshi_core.<module>` from the clone, the
