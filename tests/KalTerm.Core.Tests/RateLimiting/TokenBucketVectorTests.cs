@@ -1,6 +1,5 @@
 using System.Text.Json;
 using KalTerm.Core.RateLimiting;
-using KalTerm.Core.Tests.Support;
 
 namespace KalTerm.Core.Tests.RateLimiting;
 

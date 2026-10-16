@@ -216,3 +216,33 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   locally three ways: passes at 90, fails at 99.9, fails on an empty folder. New CI step after the tests.
 - Verification: 2,447 tests pass, build with 0 warnings, `dotnet format` clean; coverage 98.4% lines
   and 96.4% branches (`TokenBucket` 97.4% and 90.0%).
+
+### 3.4 Configuration and environments, `KalTerm.Kalshi` (2026-10-16): done
+
+- New projects: `src/KalTerm.Kalshi` (I/O-side library, references `KalTerm.Core`), `tests/KalTerm.Kalshi.Tests`
+  and `tests/KalTerm.TestSupport` (shared test helpers `VectorFile` and `AutoAdvanceTimeProvider`, moved with
+  `git mv` out of `KalTerm.Core.Tests` so both test projects use one copy).
+- `KalTerm.Kalshi.Configuration`: `KalshiEnvironment` (Demo = 0, so an unset value can never mean production),
+  `KalshiEndpoints` (**the only file naming Kalshi hosts**, typed as `Uri`), `KalshiSettings` (immutable,
+  validated; `Default`, `Create`, `FromVariables`, `FromEnvironment`) and `KalshiConfigurationException`.
+  `KalshiRateLimits.ReadBucket/WriteBucket(settings)` build the `TokenBucket`s at budget x margin.
+- Behaviour: `KALSHI_ENV` unset or empty means demo; only `demo` / `production` (case-insensitive) are valid,
+  anything else is refused (never guessed). Budgets > 0, margin in (0, 1], and budget x margin must have at most
+  six decimal places (the bucket's resolution). Variable names match case-insensitively, as on Windows. No `.env`
+  file support, by design; trading-key settings wait for M6. No new NuGet packages.
+- Enforced rules: a test scans every `.cs` under `src/` and fails if a Kalshi host name appears outside
+  `KalshiEndpoints.cs` or `localhost` appears anywhere (CLAUDE.md non-negotiable). It has a negative control.
+  Its first version matched `kalshi.co` inside the namespace `KalTerm.Kalshi.Configuration`; the pattern now
+  matches host names only, and a regression test covers that exact case.
+- Parity: `tools/vectors/generate_config.py` reads the reference `config.py` with `ast` (it needs pydantic to
+  import) and extracts the URL maps, defaults, constraints and prefix; the tests assert the port equals them,
+  so demo/production URLs are checked against the original. The budget table applies the reference formula.
+- **Coverage gate corrected.** The first multi-project run failed the gate at 42.6%: each test project's report
+  also lists the assemblies it merely references (`KalTerm.Core` was 19% in the Kalshi tests' report, 98% in its
+  own). The gate was judging reports; it now merges line coverage per assembly across all reports (a line is
+  covered if any report covers it) and judges each production assembly on the union; `KalTerm.TestSupport` is
+  excluded as test infrastructure (visible in the output and a parameter). Verified under PowerShell 7 and 5.1:
+  passes at 90, fails at 97 (`KalTerm.Kalshi` is 96.0%), fails on an empty folder, judges TestSupport when not
+  excluded.
+- Verification: 2,513 tests pass, build with 0 warnings, `dotnet format` clean. Merged coverage: `KalTerm.Core`
+  98.4% (244 of 248 lines), `KalTerm.Kalshi` 96.0% (95 of 99).

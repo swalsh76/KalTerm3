@@ -23,10 +23,10 @@ def reference_commit(reference: Path) -> str:
     ).stdout.strip()
 
 
-def default_output(script: str, filename: str) -> Path:
-    """tests/KalTerm.Core.Tests/Vectors/<filename>, relative to the repository root."""
+def default_output(script: str, filename: str, project: str = "KalTerm.Core.Tests") -> Path:
+    """tests/<project>/Vectors/<filename>, relative to the repository root."""
     root = Path(script).resolve().parents[2]
-    return root / "tests" / "KalTerm.Core.Tests" / "Vectors" / filename
+    return root / "tests" / project / "Vectors" / filename
 
 
 def write_vectors(path: Path, generator: str, reference: Path, body: dict) -> None:

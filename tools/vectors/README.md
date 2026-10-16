@@ -9,7 +9,12 @@ Python. Regenerate only when the reference changes, review the diff, and record 
 python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```
+
+`generate_config.py` reads the reference `config.py` statically with `ast` (it cannot be imported without
+pydantic): the URL maps, field defaults, constraints and variable prefix come from the source itself.
+Vectors are written into the project that tests the code (`tests/<project>/Vectors/`).
 
 `common.py` holds what the generators share (loading `kalshi_core.<module>` from the clone, the
 reference commit, writing the JSON). Expectation strings: an integer, `refuse` (outside the domain),
