@@ -12,7 +12,13 @@ python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\Kalshi
 python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2    # needs: pip install pydantic
 ```
+
+`generate_models.py` runs the reference's pydantic models over an adversarial corpus (JSON numbers where strings are
+expected, empty strings, nulls, finer-than-scale values, odd date-times, pydantic's lax type coercions) and records
+each outcome. The port is stricter than pydantic's coercing mode; each such case carries `port: "error"` and a `why`, so
+every deliberate difference is data. Case names are unique (an assertion enforces it) and tell `1` from `"1"`.
 
 `generate_clock.py` imports the reference `clock.py` directly (standard library only). It drops generated cases
 where float noise could legitimately flip a status or tip a two-decimal rounding tie, and records the count
@@ -31,8 +37,8 @@ Vectors are written into the project that tests the code (`tests/<project>/Vecto
 reference commit, writing the JSON). Expectation strings: an integer, `refuse` (outside the domain),
 or `overflow` (the reference's unbounded integer does not fit a signed 64-bit long).
 
-Requirements: Python 3.11+ and the standard library only (except `generate_ed25519.py`, below). The
-reference clone is read, never edited.
+Requirements: Python 3.11+ and the standard library only, except `generate_ed25519.py` (`cryptography`) and
+`generate_models.py` (`pydantic`), both dev-only in a throwaway venv. The reference clone is read, never edited.
 
 Where the C# port is deliberately stricter or different from the reference, the vector says so
 (`csharp` or `unsupported`), so every deviation is visible in the data rather than hidden in a test.

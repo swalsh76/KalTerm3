@@ -315,3 +315,37 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   my own filter removed. Round-trip times are now chosen to avoid ties, so the fallback path is covered.
 - Verification: 3,208 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core`
   98.2% (333 of 339 lines), `KalTerm.Kalshi` 94.6% (176 of 186).
+
+### 3.7a REST models (2026-10-16): done
+
+- `KalTerm.Core.Money.Level` (new, 10^-6): strike levels such as `floor_strike`; the reference uses a float, which our
+  rules forbid. Same scale and exactness as `Dollars`, but a different type so the two cannot be mixed up.
+- `KalTerm.Kalshi.Models` (positional records; no new packages): `ExchangeStatus`, `ExchangeIndexStatus`, `Market`,
+  `MveSelectedLeg`, `KalshiEvent` (not `Event`: CA1716, a VB keyword), `Series`, `Trade`, `MarketsPage`, `TradesPage`,
+  `EventsPage`, `SeriesList`, `PriceLevel`, `OrderBook` (`FromResponse` for the `orderbook_fp` shape). Prices are
+  `Dollars`, counts `Contracts`, strikes `Level`, the series fee multiplier `FeeMultiplier`; nothing passes through a
+  floating-point type. Unknown fields are ignored (Kalshi adds fields over time).
+- Source-generated System.Text.Json (`KalshiJsonContext`): snake_case names, nullable annotations respected,
+  required constructor parameters respected. Fixed-point fields accept a JSON string (what Kalshi sends) or a number,
+  read from the token text; a value finer than its scale, or not a number, is refused, never rounded.
+  `KalshiJson.Parse` turns every JSON problem into a `KalshiResponseException` naming what was being read and, via
+  `JsonException.Path`, which field.
+- `StrictDateTimeOffsetConverter`: ISO 8601 with an explicit UTC offset only. The stock reader accepts a timestamp with
+  no offset (taken as local time) and a bare date, so the same payload could mean different instants on different
+  machines; those, a space for the `T`, epoch numbers, impossible dates, leap seconds and offsets beyond +-14 h are refused.
+  Up to nine fractional digits are accepted and kept to 100 ns (Python keeps microseconds).
+- Parity: `tools/vectors/generate_models.py` runs the reference's pydantic models over 229 payloads (every model; the
+  reference tests' own payloads, the live multivariate shapes, and an adversarial corpus). The test compares the port's
+  serialised model to pydantic's dump: identical key sets, prices and counts numerically, date-times at microsecond
+  resolution. 189 cases agree field for field; 40 are recorded, deliberate differences where pydantic coerces (a bool for
+  an int or a float, `"true"` for a bool, `"1"` for an int, a number or a string for a datetime) or accepts a value the
+  port refuses as inexact. One reference quirk is left out of the corpus: `Decimal(0.15)` is the float's binary expansion.
+  The port reads the number's text, `0.15` (a unit test pins it).
+- **Real bugs found by the oracle (all fixed):** (1) with `required` + `init` properties the source-generated
+  deserialiser overwrote defaults such as `= ""` with `null` when a field was absent, so the models became positional
+  records, whose constructor defaults it honours. (2) System.Text.Json accepted offset-less timestamps (above).
+  (3) Converter errors lost the field name; it is now added from `JsonException.Path`. (4) The reference silently accepts
+  bool for int and float fields; the port refuses. Three of my own expectations about pydantic were wrong (it coerces a
+  bool to an int, and a string to a float); the corpus tags were corrected from the oracle's actual behaviour.
+- Verification: 3,522 tests pass, build with 0 warnings, `dotnet format` clean; merged coverage `KalTerm.Core` 98.3%
+  (351 of 357 lines), `KalTerm.Kalshi` 96.3% (341 of 354).
