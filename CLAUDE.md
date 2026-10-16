@@ -17,8 +17,8 @@ oracle. No code is shared.
 
 ## Status
 
-Planning. No code yet. **Next: M0 (scaffold), then M1 spikes** (PLAN.md §6). Do not start M2 until
-the S-1 durability spike has passed.
+M0 (scaffold) in progress on branch `m0-scaffold`; CI not yet verified on GitHub. **Next: M1 spikes**
+(PLAN.md §6). Do not start M2 until the S-1 durability spike has passed.
 
 ## Non-negotiables
 
@@ -74,4 +74,14 @@ KalshiTerm 1 died of feature creep and directional changes. Guard against it:
 
 - Solution and namespaces use the prefix `KalTerm`. `src/` and `tests/` layout, central package
   management, nullable enabled, warnings as errors, `.editorconfig` enforced.
-- Tests: xUnit. Dev commands are added here as they come into existence.
+- Tests: xUnit v3 on Microsoft Testing Platform. Test methods use plain PascalCase, no underscores
+  (CA1707 is an error), e.g. `VersionIsNotEmpty`.
+
+## Dev commands
+
+```powershell
+dotnet restore KalTerm.sln
+dotnet format KalTerm.sln --verify-no-changes
+dotnet build KalTerm.sln -c Release
+dotnet test --solution KalTerm.sln -c Release --coverlet --coverlet-output-format cobertura --report-trx --results-directory TestResults
+```
