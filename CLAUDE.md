@@ -107,9 +107,14 @@ CI). Ask the owner before each run and repeat what they read in the reply; the k
 test assembly:
 
 ```powershell
-$env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'
-dotnet test --solution KalTerm.sln -c Release --filter-class "*LiveKalshiTests"
+dotnet build KalTerm.sln -c Release
+$env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'   # plus KALSHI_KEY_ID and KALSHI_PRIVATE_KEY_PATH
+.\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-class "*LiveKalshiTests"
+# one test only, for example the signed-account-read check:
+.\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-method "*TheServerAcceptsOurSignatureOnAnAuthenticatedRead"
 ```
+
+(Run the test assembly directly: `dotnet test --filter-class` would also hit the other test projects, which have no such class.)
 
 CI fails if any production assembly is under 90% line coverage, judged on the union of all test
 projects' reports (coverlet.MTP's own threshold option is unsupported; `KalTerm.TestSupport` is test

@@ -184,6 +184,38 @@ public class LiveKalshiTests
         }
     }
 
+    /// <summary>
+    /// The one check the public reads cannot make: that the real server accepts OUR signatures. Market data is public, so a
+    /// server may ignore bad signature headers there. An account endpoint is not public: unsigned it must be refused, and
+    /// signed it must be accepted. Refused-then-accepted proves the server checks credentials AND likes ours. It reads the
+    /// account balance endpoint through the client's internal GET (the public surface has no portfolio methods; that is M6),
+    /// and prints only the status codes and the NAMES of the response fields, never a value.
+    /// </summary>
+    [Fact(Skip = Why, SkipUnless = nameof(LiveGate.Enabled), SkipType = typeof(LiveGate))]
+    public async Task TheServerAcceptsOurSignatureOnAnAuthenticatedRead()
+    {
+        var (settings, signer) = Credentials();
+        using (signer)
+        {
+            using (var unsigned = new KalshiRestClient(settings))
+            {
+                var refused = await Assert.ThrowsAsync<KalshiApiException>(
+                    () => unsigned.GetStringAsync("/portfolio/balance", null, TestContext.Current.CancellationToken));
+
+                Say($"unsigned read of an account endpoint: HTTP {refused.StatusCode}");
+                Assert.True(refused.StatusCode is 401 or 403, $"expected the server to refuse an unsigned account read, got HTTP {refused.StatusCode}");
+            }
+
+            using var client = Client(settings, signer);
+
+            var body = await client.GetStringAsync("/portfolio/balance", null, TestContext.Current.CancellationToken);
+
+            using var document = System.Text.Json.JsonDocument.Parse(body);
+            Assert.Equal(System.Text.Json.JsonValueKind.Object, document.RootElement.ValueKind);
+            Say($"signed read of the same endpoint: HTTP 200; fields: {string.Join(", ", document.RootElement.EnumerateObject().Select(p => p.Name))}");
+        }
+    }
+
     [Fact(Skip = Why, SkipUnless = nameof(LiveGate.Enabled), SkipType = typeof(LiveGate))]
     public async Task ThisMachinesClockIsCloseEnoughToKalshis()
     {

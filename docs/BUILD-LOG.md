@@ -417,3 +417,27 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   prints the key id, the key path or key material. Without the variable the seven tests show as skipped, in CI too.
 - Verification: 3,619 tests (3,612 pass, 7 live skipped), build with 0 warnings, `dotnet format` clean; merged coverage
   `KalTerm.Core` 98.3%, `KalTerm.Kalshi` 95.5% (510 of 534 lines).
+
+### 3.7d Live evidence against production (2026-10-16): passed
+
+The owner ran the opt-in live tests from their own terminal, against the production API with a read-only Ed25519 key (no key
+id, path or material was printed or recorded). All 7 tests passed in 4.9 s (about 13 GET requests); then the added check below
+passed. What the run read:
+
+- Exchange status: `exchange_active=True`, `trading_active=True`.
+- 1,000 ordinary open markets parsed (every price between $0 and $1; none multivariate); 200 combo markets parsed, each with its
+  legs (the first has 9); 15,187 series parsed, **every one with a fee schedule** (so every fee multiplier read as an exact
+  fixed-point value); combo events parsed; the busiest market `KXTEMPMIAH-26OCT1619-T83.99` (24 h volume 8,342.24) had an order
+  book of 7 yes and 10 no levels, top yes bid 0.09 for 63.00 contracts, all prices in range and quantities positive.
+- 200 trades from the last hour (newest `2026-10-16T22:50:03.637060Z`); on every one yes price + no price = exactly $1.00.
+- Clock: 0.12 s ahead of Kalshi (+-0.18 s, 5 samples): ok.
+- **No real value was finer than its fixed-point scale and no real timestamp lacked a UTC offset**, so the two strictest design
+  choices (refuse never round; explicit offsets only) rejected nothing real.
+- **Signature acceptance (the 8th test, added at the owner's request).** Market data is public, so those reads cannot show whether
+  the server accepts our signatures. This test reads an account endpoint (the balance) twice through the client's internal GET: unsigned,
+  which the server **refused with HTTP 401**, and signed with the owner's key, which it **accepted with HTTP 200**. Refused
+  then accepted proves the server checks credentials and accepts our Ed25519 signature. The test prints only status codes and the
+  response's field names (`balance`, `balance_breakdown`, `balance_dollars`, `portfolio_value`, `updated_ts`), never a value;
+  the field names are a head start for the M6 portfolio models. The public client surface still has no portfolio methods.
+- Fix to the docs: the live-test command now runs the test assembly directly (`dotnet test --filter-class` would also hit the other
+  test projects, which have no such class); CLAUDE.md shows the single-test form too.
