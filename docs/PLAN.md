@@ -1,6 +1,6 @@
 # KalTerm plan
 
-**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0.
+**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0. M1 spikes done: S-3.
 
 ## 1. Goal
 
@@ -76,7 +76,9 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 
 - **Durability is unproven.** The premise of SQL Server is a hypothesis; M1 S-1 tests it first.
 - **Rewrite cost.** KalshiTerm2 phases 0 to 6 are complete; this repeats them. Keep milestones tight.
-- **Ed25519** is not in the .NET base library as far as known; S-3 picks a library.
+- **Ed25519** is not in the .NET 10 base library (confirmed by S-3). Decision: NSec.Cryptography
+  (libsodium; ships one native `libsodium.dll`). BouncyCastle is the managed fallback. Remaining
+  check, in S-4: `libsodium.dll` loads on a clean machine.
 - **Workstation impact** in single-box mode: cap SQL Server memory, measure.
 - **Arbitrary machines:** existing SQL Server, no domain, non-English locale, restricted execution policy.
 
