@@ -1,0 +1,21 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+artifacts/
+publish/
+
+# secrets and local config: never commit
+.env
+*.pem
+*.key
+*.pfx
+secrets/
+appsettings.Local.json
+appsettings.*.Local.json
+*.bak
+*.mdf
+*.ldf
+*.ndf
