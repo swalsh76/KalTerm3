@@ -18,7 +18,8 @@ oracle. No code is shared.
 ## Status
 
 M0 (scaffold) is done and merged; CI is green on GitHub. **Next: M1 spikes**
-(PLAN.md §6). Do not start M2 until the S-1 durability spike has passed.
+(PLAN.md §6). S-3 is done. Do not start M2 until S-1a and S-1b have passed, and do not start M3
+until S-1d (real power cuts) has passed on the target server (PLAN.md §6.1).
 
 ## Non-negotiables
 
