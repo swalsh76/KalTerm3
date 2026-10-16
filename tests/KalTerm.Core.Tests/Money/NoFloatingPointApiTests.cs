@@ -11,6 +11,7 @@ public class NoFloatingPointApiTests
     {
         typeof(Dollars),
         typeof(Contracts),
+        typeof(Level),
         typeof(FeeMultiplier),
         typeof(KalshiFees),
     };
