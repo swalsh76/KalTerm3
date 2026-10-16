@@ -1,0 +1,219 @@
+{
+  "vectors": [
+    {
+      "name": "rfc8032-test1",
+      "seedHex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+      "publicHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIJ1hsZ3v/VpguoRK9JLsLMREScVpezJpGXA7rAMcrn9g\n-----END PRIVATE KEY-----\n",
+      "messageHex": "",
+      "signatureHex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+      "signatureBase64": "5VZDAMNgrHKQhuLMgG6CioSHfx645dl02HPgZSJJAVVfuIIVkKM7rMYeOXAc+bRr0lv18FlbviRlUUFDjnoQCw=="
+    },
+    {
+      "name": "rfc8032-test2",
+      "seedHex": "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
+      "publicHex": "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIEzNCJso/5banbbDRuwRTg9bijGfNaumJNqM9u1PuKb7\n-----END PRIVATE KEY-----\n",
+      "messageHex": "72",
+      "signatureHex": "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00",
+      "signatureBase64": "kqAJqfDUyrhyDoILX2QlQKKye1QWUD+Ps3YiI+vbadoIWsHkPhWZbkWPNhPQ8R2MOHsurrQwKu6wDSkWErsMAA=="
+    },
+    {
+      "name": "rfc8032-test3",
+      "seedHex": "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
+      "publicHex": "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIMWqjfQ/n4N77bdELzHct7Fm04U1B28JS4XOOi4LRFj3\n-----END PRIVATE KEY-----\n",
+      "messageHex": "af82",
+      "signatureHex": "6291d657deec24024827e69c3abe01a30ce548a284743a445e3680d7db5ac3ac18ff9b538d16f290ae67f760984dc6594a7c15e9716ed28dc027beceea1ec40a",
+      "signatureBase64": "YpHWV97sJAJIJ+acOr4BowzlSKKEdDpEXjaA19taw6wY/5tTjRbykK5n92CYTcZZSnwV6XFu0o3AJ77O6h7ECg=="
+    },
+    {
+      "name": "kalshi-get-balance-seed1",
+      "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+      "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f706f7274666f6c696f2f62616c616e6365",
+      "signatureHex": "49171cb6308b1a111b562ca7710342b23002d0a331128c4723b37bf501b50d5d98aa206ff313f7642acd3cf3f4ce2c0052eda6a312029c078791134e6e32b50c",
+      "signatureBase64": "SRcctjCLGhEbViyncQNCsjAC0KMxEoxHI7N79QG1DV2YqiBv8xP3ZCrNPPP0ziwAUu2moxICnAeHkRNObjK1DA=="
+    },
+    {
+      "name": "kalshi-get-query-stripped-seed1",
+      "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+      "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b657473",
+      "signatureHex": "5b948ab87be63492156416b505696d73484a2b3bc618137e69c7d1ce53479a8d85b76aaadd792873f3b5e494bd76ea0be76fba86f0f0e3832b0a5e9cd993ee0c",
+      "signatureBase64": "W5SKuHvmNJIVZBa1BWltc0hKKzvGGBN+acfRzlNHmo2Ft2qq3Xkoc/O15JS9duoL52+6hvDw44MrCl6c2ZPuDA=="
+    },
+    {
+      "name": "kalshi-post-order-seed1",
+      "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+      "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+      "messageHex": "31373030303030303030303030504f53542f74726164652d6170692f76322f706f7274666f6c696f2f6f7264657273",
+      "signatureHex": "0fb2446607384b1a30f4468be10871475b357a14479995c36b9a7ca1d60606437caa8ea980ba8a87992ab4622d2536f191224a8c9f0a4d9dd2b69b3485920400",
+      "signatureBase64": "D7JEZgc4Sxow9EaL4QhxR1s1ehRHmZXDa5p8odYGBkN8qo6pgLqKh5kqtGItJTbxkSJKjJ8KTZ3Stps0hZIEAA=="
+    },
+    {
+      "name": "kalshi-delete-order-seed1",
+      "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+      "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+      "messageHex": "3137303030303030303030303044454c4554452f74726164652d6170692f76322f706f7274666f6c696f2f6f72646572732f6162632d313233",
+      "signatureHex": "3bbe362761c6579152c3b61f36c3bb463f085a08c193a99c7159a3e40a298b862fad3911d37634e97fc23c4f561b12f996222ec3d23972aec94060edfabe3807",
+      "signatureBase64": "O742J2HGV5FSw7YfNsO7Rj8IWgjBk6mccVmj5Aopi4YvrTkR03Y06X/CPE9WGxL5liIuw9I5cq7JQGDt+r44Bw=="
+    },
+    {
+      "name": "kalshi-empty-path-seed1",
+      "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+      "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+      "messageHex": "31373030303030303030303030474554",
+      "signatureHex": "c6a174336de641fadb6bd91e0d35f8465b9f09d4adb44ae9bece3b4df31761aaead523dfdacf3523b30ababfc7adb452f1f8fc75ce71e8e7c888a4f3bc946908",
+      "signatureBase64": "xqF0M23mQfrba9keDTX4RlufCdSttErpvs47TfMXYarq1SPf2s81I7MKur/HrbRS8fj8dc5x6OfIiKTzvJRpCA=="
+    },
+    {
+      "name": "kalshi-non-ascii-seed1",
+      "seedHex": "0101010101010101010101010101010101010101010101010101010101010101",
+      "publicHex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b6574732f636166c3a9",
+      "signatureHex": "31dbf8dd785134ab47643af078d5e2852f1db92ddf33fa3fe1953ab00b7dd85d3c225405efa1dbacc78fcf7a9a1193ba23d6f9973657f56519c88aef3272230e",
+      "signatureBase64": "Mdv43XhRNKtHZDrweNXihS8duS3fM/o/4ZU6sAt92F08IlQF76HbrMePz3qaEZO6I9b5lzZX9WUZyIrvMnIjDg=="
+    },
+    {
+      "name": "kalshi-get-balance-seed2",
+      "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+      "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f706f7274666f6c696f2f62616c616e6365",
+      "signatureHex": "66dbf12d0e4ba6c792a0ecb80a3946d1d8a8330ec00bb653a4056cb1d1cc3d4f2666fb3a5e77e3b5f4ef2bf035d8aa4a11989533744160b414fc1436d402d401",
+      "signatureBase64": "ZtvxLQ5LpseSoOy4CjlG0dioMw7AC7ZTpAVssdHMPU8mZvs6XnfjtfTvK/A12KpKEZiVM3RBYLQU/BQ21ALUAQ=="
+    },
+    {
+      "name": "kalshi-get-query-stripped-seed2",
+      "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+      "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b657473",
+      "signatureHex": "015c1f38f2340c4c1d81260cc5517ab52b531e78ad89f668998e85ebe9c5a0b9f0f9e58fc0a4a91202bcaf207f8820b9b1fe063bdc17683a83c741d903392206",
+      "signatureBase64": "AVwfOPI0DEwdgSYMxVF6tStTHnitifZomY6F6+nFoLnw+eWPwKSpEgK8ryB/iCC5sf4GO9wXaDqDx0HZAzkiBg=="
+    },
+    {
+      "name": "kalshi-post-order-seed2",
+      "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+      "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+      "messageHex": "31373030303030303030303030504f53542f74726164652d6170692f76322f706f7274666f6c696f2f6f7264657273",
+      "signatureHex": "151825126c70ab98fcc8f87fe71a93b4a3cb63831b38c3dce2d17d0aab20419696266d5b34a2a4b237471ec5563e9fb2f9a74b12a75e1e40aa3e243ac26f760a",
+      "signatureBase64": "FRglEmxwq5j8yPh/5xqTtKPLY4MbOMPc4tF9CqsgQZaWJm1bNKKksjdHHsVWPp+y+adLEqdeHkCqPiQ6wm92Cg=="
+    },
+    {
+      "name": "kalshi-delete-order-seed2",
+      "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+      "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+      "messageHex": "3137303030303030303030303044454c4554452f74726164652d6170692f76322f706f7274666f6c696f2f6f72646572732f6162632d313233",
+      "signatureHex": "2c7d1b364d1a414281d908a159e53c7a3178c1bcb2ba9945ebc2feeb15ddf50491a74de0b9321c866d326f644e0a0a80d64ec3153361494b093e9de2504b5e08",
+      "signatureBase64": "LH0bNk0aQUKB2QihWeU8ejF4wbyyuplF68L+6xXd9QSRp03guTIchm0yb2ROCgqA1k7DFTNhSUsJPp3iUEteCA=="
+    },
+    {
+      "name": "kalshi-empty-path-seed2",
+      "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+      "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+      "messageHex": "31373030303030303030303030474554",
+      "signatureHex": "8279bb13afa1ddd3a8e059470345804652387e19226fa12d51d7935308a51ab9ac150408dd1791585ac6d9e0cd9e6aaa0caacb9de2813f8d86530123d9beb505",
+      "signatureBase64": "gnm7E6+h3dOo4FlHA0WARlI4fhkib6EtUdeTUwilGrmsFQQI3ReRWFrG2eDNnmqqDKrLneKBP42GUwEj2b61BQ=="
+    },
+    {
+      "name": "kalshi-non-ascii-seed2",
+      "seedHex": "0202020202020202020202020202020202020202020202020202020202020202",
+      "publicHex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b6574732f636166c3a9",
+      "signatureHex": "073fc1ad12b7d805345223f189f8921ecc6c419ff9d35880c96eab9eaebd62f001ee2636d5fe9d6b1632bdb3a49744532182746a68a9f75b1f8b70ebbb2db205",
+      "signatureBase64": "Bz/BrRK32AU0UiPxifiSHsxsQZ/501iAyW6rnq69YvAB7iY21f6daxYyvbOkl0RTIYJ0amip91sfi3Druy2yBQ=="
+    },
+    {
+      "name": "kalshi-get-balance-seed255",
+      "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f706f7274666f6c696f2f62616c616e6365",
+      "signatureHex": "332b8eac097cff749b056fe8a95424bc15b85b7e1e1a99f646d8b233190bbaab08f1a704be19aa2e46147fd1d742d9284b80fd43ca3d59c147bcaa6285b9690b",
+      "signatureBase64": "MyuOrAl8/3SbBW/oqVQkvBW4W34eGpn2RtiyMxkLuqsI8acEvhmqLkYUf9HXQtkoS4D9Q8o9WcFHvKpihblpCw=="
+    },
+    {
+      "name": "kalshi-get-query-stripped-seed255",
+      "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b657473",
+      "signatureHex": "324b6906b0c45d133f8d83fea8624966aac4ef5fac94be2f3fd9f4d6fd411c50a81b43800e4fe2551a06b253419b38d8b8e2a8da7988fade5dd0b6e67b314b0d",
+      "signatureBase64": "MktpBrDEXRM/jYP+qGJJZqrE71+slL4vP9n01v1BHFCoG0OADk/iVRoGslNBmzjYuOKo2nmI+t5d0LbmezFLDQ=="
+    },
+    {
+      "name": "kalshi-post-order-seed255",
+      "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+      "messageHex": "31373030303030303030303030504f53542f74726164652d6170692f76322f706f7274666f6c696f2f6f7264657273",
+      "signatureHex": "b2377d54db028e526dadbccade9df893e0abdd425f25c25365f45f1da83450394243b960637939f28ca4cb15e286b323dffe3b1c5c4fff7362a6a53d444d1806",
+      "signatureBase64": "sjd9VNsCjlJtrbzK3p34k+Cr3UJfJcJTZfRfHag0UDlCQ7lgY3k58oykyxXihrMj3/47HFxP/3NipqU9RE0YBg=="
+    },
+    {
+      "name": "kalshi-delete-order-seed255",
+      "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+      "messageHex": "3137303030303030303030303044454c4554452f74726164652d6170692f76322f706f7274666f6c696f2f6f72646572732f6162632d313233",
+      "signatureHex": "3b43eccd3a0bc630fb29c5d1b0873ce15023444aa91e3a8c8f993f1595ef25625c50bb5d1d89c430dcbb6ab141cd4908b518ed9ae49e24c720490fbbd8430704",
+      "signatureBase64": "O0PszToLxjD7KcXRsIc84VAjREqpHjqMj5k/FZXvJWJcULtdHYnEMNy7arFBzUkItRjtmuSeJMcgSQ+72EMHBA=="
+    },
+    {
+      "name": "kalshi-empty-path-seed255",
+      "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+      "messageHex": "31373030303030303030303030474554",
+      "signatureHex": "6dc85dfbc4b45f64dc68bf069d7f8c7ea81372d09db938dd734583cad8b78efeb42270d66b29c985f4c4c496903eb3c604d25ed244a053336b57f31730bd3a0b",
+      "signatureBase64": "bchd+8S0X2TcaL8GnX+MfqgTctCduTjdc0WDyti3jv60InDWaynJhfTExJaQPrPGBNJe0kSgUzNrV/MXML06Cw=="
+    },
+    {
+      "name": "kalshi-non-ascii-seed255",
+      "seedHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "publicHex": "76a1592044a6e4f511265bca73a604d90b0529d1df602be30a19a9257660d1f5",
+      "pkcs8Pem": "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIP//////////////////////////////////////////\n-----END PRIVATE KEY-----\n",
+      "messageHex": "313730303030303030303030304745542f74726164652d6170692f76322f6d61726b6574732f636166c3a9",
+      "signatureHex": "7bec7eabf5e4259409bbdcf8bf74c3bdc69b36224bcf738a2e918cf5f233d3151f967c8604cc26297b4ce98246d276568f3a275b10ef1357cf5cc82c4e724206",
+      "signatureBase64": "e+x+q/XkJZQJu9z4v3TDvcabNiJLz3OKLpGM9fIz0xUflnyGBMwmKXtM6YJG0nZWjzonWxDvE1fPXMgsTnJCBg=="
+    }
+  ],
+  "negatives": [
+    {
+      "name": "rsa-key",
+      "pem": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCaRVYJ+pP71diT\nMLyXLsqSloX6TUwNWg8C2P9THy7nNS05Wbhj8tJWY/rDTsdIQv+tsJlXIc0umDIj\ng/ewZ+cmeBS0bcfqXtcDjksPxTCALafMZONNIylKkwVFKkEk9rLLs+BPalD5WkzY\nA5gkvciwNzOLVbgcaHvhBVXNZKca7dFawLxV0WXaVfpJSNSuZJf0Hfou7LgrjxeW\n35hsn4dxsO9LgRA90IQqYmAHUnDcvYW1Pc/WqDALth/+KomZVk5Z64tux0tUKwAv\nqk6zRs9Rvj0X7dWaWMKM/LEJghloZEVdzOz7gHaqg04YYCNKGQ66gJnIl+zDTC1y\nDl9Bu09bAgMBAAECggEADDMIc0CP/D20Yyta9n+aQE5L6Pe82F9zSW/cfPe9z0XK\nvjrElI7KqE8+sLwlkSbPLi6FabkADzu0108jwpzs0AN167C0uulmCl9xux0GUVSK\n7ORbfymVJdMLeyU0wpYJnIcsaUtIfPdxlTFvkhQ57wlmd5G/PevbQ/eWief4OO5O\n+kI1118jdb53/ci6tNHonvu1qaAfjY58+xhmDQ+WnFKFDnLuq+6sFNsNyMbOSe/U\nkjZKH7EgP3nxZhUMHcoBGnTNu7kW5Kl0X8tKIOCkMvM6e7+OiUw3S97GqpBF0Jue\n/gvtDi59w+rCieMuFcMQG93RNgFaCjLeBxXcqItbqQKBgQDVN2TesGFYzce+j+rJ\n76odhjAAtHbon5H1gXvGRlnnhectxA7cHpsM23q37TUCN85RPD+1f/6mdF94xDnv\nV+grXjp3WdRwOP6lPFf1eVxIjyE43H75n4oYpPQUt8Zh8EOCO6GZS18XS2GV2jer\nNojy1GJZfL21jN0g4q4MoubzAwKBgQC5Of+DXoEs5CcBsd9wGvJsW0pjnbDbJXBG\nlXUm6rE6RDPK6oMqX2hxbbjSRU7ma4d4iiPmUws/ap/wmrYU/ZPU9mkr9sadeJDa\nCWTgUZ0EysrJQNcMWLklivdR4spkwoXlzUjWKjZ3upbK9P2FC8aNBYN8i3KtZHn0\nYe+8IxbWyQKBgQC5VOsi/mG/lS9YnzRQzzgpbahwFG1/iqSOqDx0flZLfwMRrufT\nwe64YFbtZQy8ntGBn0MpetZYzbLnAHnzZ4/xknhzoeucmI4QBsHWJ+VlVLRl/pOI\nW3roLQnUsGGKZBPqMfcnjnJbhzSN0x6sfjzQBnhunJUyJ/1WRnNPnJHvDQKBgCqx\npaWgKOIyDJOlbj0m2O4E9NaVSGia7pA2bvRzcDpf8hg5idZAe5B5m/pLo24VJvqv\nzKqQRa1uZENPRdz8vhB+Y6uQjCNL4QeA1tGlvi2WmLteyLK92J9AstUbE0+6Tqaz\ndLB4tmlOhudtJOp/1lo3BSG1+s7gtAOSd3HEHMWRAoGAQN3pRJ1zrZzcrbsdGIgD\n/X71L6Hj7Kc1lziQ+3Dgwk85ynKCOJUdFrJc5iCmQhYwqLijW/ISG484/Ya3Ps0d\n1cRbOe7y6ED/kk5LEGxroXjSkUtPJNu7PeNRTyPUAJ97DCJuaOQwrsnptPaeCFrT\nvDIV4hSqwSF4I1eI0tDZsdg=\n-----END PRIVATE KEY-----\n"
+    },
+    {
+      "name": "ec-key",
+      "pem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgaHQM5XLaJ1i9kt6K\n+5pHgMlnCT8E698J7l85XfLT7qahRANCAAT5iDEQ7IMDdNlQzv0rHUlPQJZ5qY/P\nyHV8eepvrbFYUrsWzdT2EjgUqG8dQhtCiJ2x14s6/DcYTBNzgMlgJKqx\n-----END PRIVATE KEY-----\n"
+    },
+    {
+      "name": "encrypted-ed25519",
+      "pem": "-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIGjMF8GCSqGSIb3DQEFDTBSMDEGCSqGSIb3DQEFDDAkBBCYWAYi8sI5dT5UY1vZ\nqZZyAgIIADAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQBKgQQNb/tJm0cfqDrcG/o\nrIsSHQRABWdtSJJ5rrA+FmQsS8+uMrprQ5TUNjME+jGvwBpkiQgqFMhubb+76oju\nLQLAETTVMAJ/QMdwvZkLg+nblpAXjw==\n-----END ENCRYPTED PRIVATE KEY-----\n"
+    },
+    {
+      "name": "garbage",
+      "pem": "not a key"
+    },
+    {
+      "name": "empty",
+      "pem": ""
+    },
+    {
+      "name": "public-key-only",
+      "pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=\n-----END PUBLIC KEY-----\n"
+    }
+  ]
+}
