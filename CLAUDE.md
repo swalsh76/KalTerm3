@@ -10,9 +10,15 @@ KalTerm is a greenfield rewrite. The Python/Postgres predecessor (KalshiTerm2, `
 is the **reference implementation**: its docs are the specification, and its tests and fixtures are the
 oracle. No code is shared.
 
+- Local clone of the reference: `C:\Users\stebe\dev\KalshiTerm2` (read it; do not edit it from here).
+  Fixtures and tests live under `packages\kalshi-core\tests`, measurements in `docs\BUILD-LOG.md` §10.2.
+- Longer list of lessons (durability, unattended operation, backups, testing):
+  `C:\Users\stebe\dev\KalshiTerm2\docs\windows\CLAUDE.md`.
+
 ## Status
 
-Planning. No code yet. The first milestone is in PLAN.md §6.
+Planning. No code yet. **Next: M0 (scaffold), then M1 spikes** (PLAN.md §6). Do not start M2 until
+the S-1 durability spike has passed.
 
 ## Non-negotiables
 
