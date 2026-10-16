@@ -38,6 +38,10 @@ jobs:
           --coverlet --coverlet-output-format cobertura
           --report-trx --results-directory TestResults
 
+      - name: Coverage gate
+        shell: pwsh
+        run: ./tools/ci/check-coverage.ps1 -Path TestResults -MinLinePercent 90
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -114,7 +114,7 @@ runs Python. Where the port is deliberately stricter or different, the vector sa
 |---|---|---|
 | 2.1 | Fixed-point (`Dollars`, `Contracts`, exact parse/refuse) | done |
 | 2.2 | Fees (taker fee, round-up) | done |
-| 2.3 | Token-bucket rate limiter on `TimeProvider`, then the coverage gate | |
+| 2.3 | Token-bucket rate limiter on `TimeProvider`, then the coverage gate (90% lines, `tools/ci/check-coverage.ps1`) | done |
 | 2.4 | Config and environments (demo default, URLs only here) | |
 | 2.5 | Ed25519 signer (NSec) against the 21 S-3 vectors | |
 | 2.6 | Clock-skew estimator | |

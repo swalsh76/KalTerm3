@@ -181,3 +181,38 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
 - Verification: 2,365 tests pass, build with 0 warnings, `dotnet format` clean, coverage 98.5% lines and
   96.7% branches (`KalshiFees` and `FeeMultiplier` 100%). The reflection test that bans floating point
   now covers these types too.
+
+### 3.3 Token-bucket rate limiter and coverage gate (2026-10-16): done
+
+- `KalTerm.Core.RateLimiting.TokenBucket(decimal tokensPerSecond, decimal capacity, TimeProvider?)` with
+  `AcquireAsync(decimal cost = 10, CancellationToken)`; `IDisposable` (it owns the FIFO `SemaphoreSlim`,
+  held across a wait, as the reference holds its lock). Starts full, refills continuously, capped at
+  capacity; cost outside (0, capacity] and rate or capacity of zero or less are refused.
+- Exact integer arithmetic: tokens are held as micro-tokens times the timestamp frequency in 128-bit
+  integers, so refill and wait times carry no drift. The reference uses floats: its sustained-throughput
+  scenario ends at 8.999999999999982 where the exact answer is 9, which the port returns exactly.
+  Rate, capacity and cost take at most six decimal places (otherwise `ArgumentException`).
+- Added over the reference: a `CancellationToken` (a cancelled wait spends nothing). A clock that goes
+  backwards is accepted as a new origin and adds nothing.
+- **Bug found and fixed by the tests:** `Task.Delay` works in whole milliseconds and truncates. The first
+  version waited 55 ms where 55.56 ms was needed, then retried with a sub-millisecond wait that truncated
+  to zero; under a fake clock that spun forever (597 CPU-seconds before it was killed), and under the real
+  clock it would have busy-waited up to a millisecond. Fix: every wait is rounded up to a whole
+  millisecond. The surplus stays in the bucket, so the long-run rate is exact; a test pins that
+  (18 acquires of 10 at 180 tokens/s end within 1 ms of one second). Another test pins that a
+  10-microsecond deficit still waits a full millisecond.
+- Test support: `AutoAdvanceTimeProvider` (a `TimeProvider` whose timers fire at once and advance the
+  clock, like the reference's FakeTime). A manual mode lets a test fire each wait itself. The FIFO test
+  first recorded order when each worker's continuation ran, which races on the thread pool even when the
+  bucket grants in order; it now steps one waiter at a time and reads each completion. 25 consecutive
+  full runs showed no failure or hang.
+- Parity: `tools/vectors/generate_ratelimit.py` runs the reference bucket under its fake clock: the
+  reference's five scenarios plus 40 seeded random schedules of acquires, idles and concurrent acquires,
+  recording the clock after every step (45 scenarios), and validation cases. `ratelimit.py` imports
+  pydantic via `config`; the generator stubs that one module to stay standard-library-only. The port
+  agrees within 1 ms per acquire (the rounding above).
+- **Coverage gate:** `tools/ci/check-coverage.ps1` fails CI if line coverage in any Cobertura report is
+  under 90% or no report exists (coverlet.MTP's threshold option is documented as unsupported). Checked
+  locally three ways: passes at 90, fails at 99.9, fails on an empty folder. New CI step after the tests.
+- Verification: 2,447 tests pass, build with 0 warnings, `dotnet format` clean; coverage 98.4% lines
+  and 96.4% branches (`TokenBucket` 97.4% and 90.0%).
