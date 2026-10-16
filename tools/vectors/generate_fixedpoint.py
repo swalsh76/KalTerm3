@@ -14,12 +14,10 @@ Case kinds
 """
 
 import argparse
-import importlib.util
-import json
 import re
-import subprocess
-import sys
 from pathlib import Path
+
+from common import default_output, load_reference_module, write_vectors
 
 ASCII_NUMBER = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?", re.ASCII)
 
@@ -63,15 +61,6 @@ SCALED_INTS = [
 ]
 
 
-def load_reference(reference: Path):
-    path = reference / "packages" / "kalshi-core" / "src" / "kalshi_core" / "fixedpoint.py"
-    spec = importlib.util.spec_from_file_location("reference_fixedpoint", path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module  # dataclass-free module, but keeps tracebacks readable
-    spec.loader.exec_module(module)
-    return module
-
-
 def oracle(fn, text: str) -> str:
     """The reference's answer as a string: the scaled integer, or ``refuse``."""
     try:
@@ -86,10 +75,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
-    ref = load_reference(args.reference)
-    commit = subprocess.run(
-        ["git", "-C", str(args.reference), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
-    ).stdout.strip()
+    ref = load_reference_module(args.reference, "fixedpoint")
 
     cases = []
     for scale, fn in (("e6", ref.to_e6), ("e2", ref.to_e2)):
@@ -116,20 +102,15 @@ def main() -> None:
                 {"scale": scale, "input": repr(value), "pythonExpect": oracle(lambda v, f=fn: f(value), "")}
             )
 
-    out = args.out or Path(__file__).resolve().parents[2] / "tests" / "KalTerm.Core.Tests" / "Vectors" / "fixedpoint.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    document = {
-        "generator": "tools/vectors/generate_fixedpoint.py",
-        "referenceCommit": commit,
-        "python": sys.version.split()[0],
+    out = args.out or default_output(__file__, "fixedpoint.json")
+    write_vectors(out, "tools/vectors/generate_fixedpoint.py", args.reference, {
         "cases": cases,
         "roundTrips": round_trips,
         "unsupported": unsupported,
-    }
-    out.write_text(json.dumps(document, indent=1, ensure_ascii=True) + "\n", encoding="utf-8")
+    })
     refused = sum(1 for c in cases if c["expect"] == "refuse")
     print(f"wrote {out}: {len(cases)} cases ({refused} refused), {len(round_trips)} round trips, "
-          f"{len(unsupported)} unsupported-by-design; reference {commit[:7]}")
+          f"{len(unsupported)} unsupported-by-design")
 
 
 if __name__ == "__main__":

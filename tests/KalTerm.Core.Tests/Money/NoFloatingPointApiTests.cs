@@ -1,4 +1,5 @@
 using System.Reflection;
+using KalTerm.Core.Fees;
 using KalTerm.Core.Money;
 
 namespace KalTerm.Core.Tests.Money;
@@ -6,7 +7,13 @@ namespace KalTerm.Core.Tests.Money;
 /// <summary>Money is never a float or double (CLAUDE.md): enforced on the public surface of the money types.</summary>
 public class NoFloatingPointApiTests
 {
-    public static TheoryData<Type> MoneyTypes() => new() { typeof(Dollars), typeof(Contracts) };
+    public static TheoryData<Type> MoneyTypes() => new()
+    {
+        typeof(Dollars),
+        typeof(Contracts),
+        typeof(FeeMultiplier),
+        typeof(KalshiFees),
+    };
 
     [Theory]
     [MemberData(nameof(MoneyTypes))]

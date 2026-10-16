@@ -7,7 +7,12 @@ Python. Regenerate only when the reference changes, review the diff, and record 
 
 ```powershell
 python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```
+
+`common.py` holds what the generators share (loading `kalshi_core.<module>` from the clone, the
+reference commit, writing the JSON). Expectation strings: an integer, `refuse` (outside the domain),
+or `overflow` (the reference's unbounded integer does not fit a signed 64-bit long).
 
 Requirements: Python 3.11+ and the standard library only. The reference clone is read, never edited.
 
