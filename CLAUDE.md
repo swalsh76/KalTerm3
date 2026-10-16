@@ -101,6 +101,16 @@ python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm
 python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
 ```
 
+Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in
+CI). Ask the owner before each run and repeat what they read in the reply; the key id and path come from
+`KALSHI_KEY_ID` / `KALSHI_PRIVATE_KEY_PATH` and are never printed. A summary lands in `live-summary.txt` next to the
+test assembly:
+
+```powershell
+$env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'
+dotnet test --solution KalTerm.sln -c Release --filter-class "*LiveKalshiTests"
+```
+
 CI fails if any production assembly is under 90% line coverage, judged on the union of all test
 projects' reports (coverlet.MTP's own threshold option is unsupported; `KalTerm.TestSupport` is test
 infrastructure and not judged). To check locally after the test command above:

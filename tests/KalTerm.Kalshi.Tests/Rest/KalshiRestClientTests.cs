@@ -34,21 +34,9 @@ public class KalshiRestClientTests
         ILogger? logger = null,
         int maxRetries = 5,
         double jitter = 1.0) =>
-        new(
-            settings ?? KalshiSettings.Default,
-            new KalshiRestClientOptions
-            {
-                Signer = signer,
-                Bucket = bucket,
-                TimeProvider = time,
-                Logger = logger,
-                MaxRetries = maxRetries,
-                JitterSample = () => jitter,
-            },
-            stub);
+        RestTestKit.Client(stub, time, settings, signer, bucket, logger, maxRetries, jitter);
 
-    private static string SamplePem() =>
-        VectorFile.Load("ed25519.json").GetProperty("rawSign")[3].GetProperty("pkcs8Pem").GetString()!;
+    private static string SamplePem() => RestTestKit.SamplePem();
 
     [Fact]
     public async Task ExchangeStatusParses()
@@ -428,17 +416,24 @@ public class KalshiRestClientTests
         Assert.Empty(stub.Requests);
     }
 
-    [Fact]
-    public void TheClientHasNoWriteMethods()
-    {
-        var names = typeof(KalshiRestClient).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)
-            .Select(m => m.Name)
-            .Where(n => n.Contains("Post", StringComparison.OrdinalIgnoreCase) || n.Contains("Put", StringComparison.OrdinalIgnoreCase)
-                        || n.Contains("Delete", StringComparison.OrdinalIgnoreCase) || n.Contains("Order", StringComparison.OrdinalIgnoreCase)
-                        || n.Contains("Cancel", StringComparison.OrdinalIgnoreCase) || n.Contains("Create", StringComparison.OrdinalIgnoreCase))
-            .ToList();
+    private static readonly string[] ApprovedPublicMethods =
+    [
+        "ClockSkewAsync", "Dispose", "EventAsync", "EventsPageAsync", "ExchangeStatusAsync", "IterateEventsAsync",
+        "IterateMarketsAsync", "IterateMultivariateEventsAsync", "IterateTradesAsync", "MarketAsync", "MarketsPageAsync",
+        "MultivariateEventsPageAsync", "OrderBookAsync", "SeriesAsync", "SeriesListAsync",
+    ];
 
-        Assert.Empty(names);
+    [Fact]
+    public void TheClientsPublicSurfaceIsExactlyTheApprovedReadMethods()
+    {
+        // An allow-list, not a blocklist of write-sounding words: adding any public method, a write method above all,
+        // fails here until someone deliberately extends this list. Order *books* are reads; placing orders is the trading client's job.
+        var names = typeof(KalshiRestClient)
+            .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(ApprovedPublicMethods, names);
     }
 
     [Fact]
