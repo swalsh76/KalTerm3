@@ -17,7 +17,7 @@ oracle. No code is shared.
 
 ## Status
 
-M0 (scaffold) in progress on branch `m0-scaffold`; CI not yet verified on GitHub. **Next: M1 spikes**
+M0 (scaffold) is done and merged; CI is green on GitHub. **Next: M1 spikes**
 (PLAN.md §6). Do not start M2 until the S-1 durability spike has passed.
 
 ## Non-negotiables
