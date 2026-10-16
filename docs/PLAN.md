@@ -18,6 +18,8 @@ Windows-only stack. KalshiTerm2 (Python, Postgres) is the reference implementati
 | 4 | Multi-user server; per-user tokens and data. |
 | 5 | Analytics start as standard screener metrics in SQL and C# (§5). |
 | 6 | MIT license, public repository. |
+| 7 | SQL Server 2025 **Enterprise** on the server; licensing is the owner's responsibility and is settled (2026-10-16). Spikes may run on any edition, but a result that depends on an Enterprise-only feature must say so. |
+| 8 | The server host runs **Windows Server 2025** (topology B and the S-1d target). The workstation runs Windows 11 Pro. |
 
 ## 3. Topologies
 
@@ -63,22 +65,48 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | Milestone | Deliverable | Gate |
 |---|---|---|
 | **M0 Scaffold** | Solution, CI, analyzers, central package management | CI green on an empty solution |
-| **M1 Spikes** (throwaway, measured) | **S-1 durability:** `diskspd` write-through benchmark on the target volume, then SQL Server commit latency, then 3 hard power cuts under load with `DBCC CHECKDB` after each. **S-2 time-series layout:** daily partitioned columnstore vs hot rowstore plus cold columnstore; insert rate, storage per million rows, query latency. **S-3 Ed25519:** signing library choice, verified against the Python signing vectors. **S-4 install:** unattended instance install on a clean VM | go/no-go; S-1 failing ends the SQL Server path |
-| **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green |
-| **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it |
+| **M1 Spikes** (throwaway, measured) | **S-1 durability:** `diskspd` write-through benchmark on the target volume, then SQL Server commit latency, then 3 hard power cuts under load with `DBCC CHECKDB` after each. **S-2 time-series layout:** daily partitioned columnstore vs hot rowstore plus cold columnstore; insert rate, storage per million rows, query latency. **S-3 Ed25519:** signing library choice, verified against the Python signing vectors. **S-4 install:** unattended instance install on a clean VM | go/no-go; S-1 failing ends the SQL Server path. S-1 runs in stages (§6.1) |
+| **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green; may start once S-1a and S-1b have passed (M2 never touches SQL) |
+| **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** |
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire |
 | **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead |
 | **M7 UI** | WPF terminal | decided later |
 | **M8 Host layer and verification** | Installer, services, reboot and power-cut tests, 48 h soak | all pass |
 
+### 6.1 S-1 stages
+
+Only a real power cut tests a drive's write cache, and the development workstation (one NVMe, one
+volume, the daily driver) must not be hard-cut. So S-1 is staged, safest first. Spike code lives on
+`spike/s1-durability`, outside `KalTerm.sln`, and is not merged; results go in BUILD-LOG.
+
+| Stage | Where | What | Proves |
+|---|---|---|---|
+| **S-1a** | workstation | `diskspd` write-through latency, then SQL Server commit latency, compared with each other and the drive's physical flush time | Early warning. Commits far faster than the drive can physically commit is the KalshiTerm2 signature: stop and discuss |
+| **S-1b** | workstation | Hard-kill `sqlservr.exe` under write load, then `DBCC CHECKDB` and a row-level verify | The engine's own recovery. Does **not** prove the drive flushes |
+| **S-1d** | target server (refurbished OptiPlex 7080 MFF, on order) | 3 hard power cuts (cord pulled) under load; after each, `DBCC CHECKDB`, every acknowledged commit present, every row's checksum valid | The authoritative gate, on the target volume |
+
+There is no S-1c: real cuts on the workstation are skipped in favour of the server box.
+
+Load and verify protocol: the writer inserts rows whose content is a checksum of the row id, in a mix
+of single-row and batched small transactions, with `DELAYED_DURABILITY = DISABLED` and
+`PAGE_VERIFY = CHECKSUM`. Each acknowledged commit id is sent to a ledger on a **different machine**
+(the workstation, once the server is the database host), so a cut cannot erase the record of what was
+promised. Pass: no lost acknowledged commit, `CHECKDB` clean, no zeroed or mismatched rows, and the
+instance recovers without manual repair across all 3 cuts. Watch recovery with a timed script
+(host up, service up, data fresh) and compare row counts with a baseline taken beforehand.
+
 ## 7. Risks
 
 - **Durability is unproven.** The premise of SQL Server is a hypothesis; M1 S-1 tests it first.
+  The workstation's drive (WD Blue SN580, consumer NVMe) reports no power-loss protection and its
+  write cache on. S-1d runs on the target server's drive, which may differ.
 - **Rewrite cost.** KalshiTerm2 phases 0 to 6 are complete; this repeats them. Keep milestones tight.
 - **Ed25519** is not in the .NET 10 base library (confirmed by S-3). Decision: NSec.Cryptography
   (libsodium; ships one native `libsodium.dll`). BouncyCastle is the managed fallback. Remaining
   check, in S-4: `libsodium.dll` loads on a clean machine.
+- **Server 2025 on the OptiPlex 7080:** a consumer-class box; confirm drivers (NIC, storage) install
+  before relying on it. Check at the start of S-1d.
 - **Workstation impact** in single-box mode: cap SQL Server memory, measure.
 - **Arbitrary machines:** existing SQL Server, no domain, non-English locale, restricted execution policy.
 
