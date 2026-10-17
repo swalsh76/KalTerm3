@@ -151,6 +151,33 @@ public sealed record OrderbookDeltaMsg(
     long? TsMs = null,
     string? ClientOrderId = null) : IWsPayload;
 
+/// <summary>One subscription that was restored after a reconnect.</summary>
+/// <param name="Channel">The channel.</param>
+/// <param name="Sid">Its subscription id on the new connection.</param>
+/// <param name="OldSid">Its subscription id on the lost connection.</param>
+public sealed record ResubscribedEntry(string Channel, int Sid, int OldSid);
+
+/// <summary>One subscription Kalshi refused after a reconnect; it is dropped.</summary>
+/// <param name="Channel">The channel.</param>
+/// <param name="OldSid">Its subscription id on the lost connection.</param>
+/// <param name="Error">Kalshi's error text, with its code.</param>
+public sealed record ResubscribeFailure(string Channel, int OldSid, string Error);
+
+/// <summary>
+/// The synthetic <c>reconnected</c> message the client puts in the stream after it replaced a lost connection: data may
+/// have been missed between the last message before it and the first after it, so a consumer must backfill. Sids and
+/// sequence numbers restart on the new connection.
+/// </summary>
+/// <param name="Resubscribed">Subscriptions that were restored.</param>
+/// <param name="Failed">Subscriptions Kalshi refused (dropped).</param>
+/// <param name="Reason">Why the connection was replaced, for example <c>connection_lost</c>.</param>
+/// <param name="Dropped">Messages discarded since the previous <c>reconnected</c> message.</param>
+public sealed record ReconnectedMsg(
+    IReadOnlyList<ResubscribedEntry> Resubscribed,
+    IReadOnlyList<ResubscribeFailure> Failed,
+    string Reason,
+    int Dropped) : IWsPayload;
+
 /// <summary>
 /// The envelope of everything the server sends. <see cref="Msg"/> is the raw payload; <see cref="Payload"/> types it for the
 /// public data channels.
@@ -186,6 +213,7 @@ public sealed record WsMessage(
             "event_lifecycle" => Read(ctx.EventLifecycleMsg),
             "orderbook_snapshot" => Read(ctx.OrderbookSnapshotMsg),
             "orderbook_delta" => Read(ctx.OrderbookDeltaMsg),
+            "reconnected" => Read(ctx.ReconnectedMsg),
             _ => null,
         };
     }

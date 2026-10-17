@@ -38,6 +38,7 @@ namespace KalTerm.Kalshi.Models.Json;
 [JsonSerializable(typeof(EventLifecycleMsg))]
 [JsonSerializable(typeof(OrderbookSnapshotMsg))]
 [JsonSerializable(typeof(OrderbookDeltaMsg))]
+[JsonSerializable(typeof(ReconnectedMsg))]
 [JsonSerializable(typeof(WsMessage))]
 [JsonSerializable(typeof(MarketEnvelope))]
 [JsonSerializable(typeof(EventEnvelope))]

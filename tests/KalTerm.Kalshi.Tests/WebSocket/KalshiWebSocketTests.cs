@@ -34,7 +34,7 @@ public sealed class KalshiWebSocketTests : IDisposable
         new(
             settings ?? KalshiSettings.Default,
             _signer,
-            new KalshiWebSocketOptions { Connector = _connector, TimeProvider = _time, Logger = _log, MaxQueueMessages = queue });
+            new KalshiWebSocketOptions { Connector = _connector, TimeProvider = _time, Logger = _log, MaxQueueMessages = queue, AutoReconnect = false });
 
     private async Task<KalshiWebSocket> ConnectedAsync(int? subscribeSid = null, int? seq = null, int queue = 500_000)
     {
@@ -66,6 +66,16 @@ public sealed class KalshiWebSocketTests : IDisposable
         catch (KalshiWsException ex)
         {
             return (messages, ex);
+        }
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        while (!condition())
+        {
+            await Task.Delay(1, timeout.Token);
         }
     }
 
@@ -437,6 +447,7 @@ public sealed class KalshiWebSocketTests : IDisposable
         _connector.Connection.Push(Tick);
         _connector.Connection.Push(Tick);
         _connector.Connection.Push(Tick);
+        await WaitUntilAsync(() => _connector.Connection.CloseCalled); // the third message did not fit, so the client closed
 
         var (messages, end) = await DrainAsync(client);
 
