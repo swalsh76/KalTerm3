@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Test-only: an in-process Kestrel WebSocket server for the real-socket tests. No product project references it. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\KalTerm.Kalshi\KalTerm.Kalshi.csproj" />
     <ProjectReference Include="..\KalTerm.TestSupport\KalTerm.TestSupport.csproj" />
   </ItemGroup>

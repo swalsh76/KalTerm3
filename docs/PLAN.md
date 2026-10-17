@@ -123,7 +123,7 @@ runs Python. Where the port is deliberately stricter or different, the vector sa
 | 2.7c | Remaining read endpoints (trades, events, multivariate events, market/event/series, order book), clock-skew sampling, opt-in live smoke test (production, read-only key) | done; live run passed 2026-10-16 (the owner runs it; each run needs the owner's go-ahead) |
 | 2.7d | One-off live check that the real server accepts our signature: an unsigned account read must be refused, the signed one accepted (added at the owner's request; account values are never printed) | done; passed 2026-10-16 (401 unsigned, 200 signed) |
 | 2.8a | WebSocket models: envelope plus the public channels (ticker, trade, market and event lifecycle, order book snapshot and delta); pydantic-oracle vectors | done |
-| 2.8b | WebSocket client core: small socket interface, scriptable in-memory fake on a fake `TimeProvider`, a few real-socket tests against in-process Kestrel; connect, sign, subscribe, command ids, sequence tracking | |
+| 2.8b | WebSocket client core: small socket interface, scriptable in-memory fake on a fake `TimeProvider`, a few real-socket tests against in-process Kestrel; connect, sign, subscribe, command ids, control markers for sequence tracking | done |
 | 2.8c | Reconnect, resubscribe, sequence-gap detection | |
 | 2.8d | Overflow handling, stats, opt-in live test | |
 
