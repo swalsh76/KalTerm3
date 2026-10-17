@@ -485,3 +485,36 @@ the marker `IWsPayload`. Same rules as the REST models: exact fixed-point, unkno
   `KalshiWsException`; fixed.
 - **Verification:** 4,085 tests (4,077 pass, 8 live skipped), build 0 warnings, format clean, coverage `KalTerm.Core` 98.3%,
   `KalTerm.Kalshi` 97.0% (835 of 861 lines).
+
+### 3.8c WebSocket reconnect and resubscribe (2026-10-16): done
+
+The client now replaces a lost connection (`AutoReconnect`, default on). A supervisor loop reads until the link ends, then
+reopens it with backoff `min(max, base * 2^attempt) * (0.5 + 0.5 * jitter)` (defaults 0.5 s and 30 s, unlimited attempts), signing
+the new upgrade fresh, re-sends every active subscription in creation order, and puts a `reconnected` message
+(`ReconnectedMsg`: `resubscribed`, `failed`, `reason`, `dropped`) in the stream. Data that arrives while the subscriptions are being
+restored is held and released after that message; if the link drops again mid-restore the held data is discarded and the whole
+round repeats. A subscription Kalshi refuses with an error code is reported in `failed` and dropped; trouble with the link itself
+keeps every subscription for the next round. Commands during a reconnect fail fast ("not connected"). `CloseAsync` during backoff
+ends the stream cleanly; running out of attempts delivers what is queued and then throws "reconnect attempts exhausted".
+
+- **Scope decision (the owner accepted):** sequence-gap detection is not in the reference's `ws.py` but in the order book builder
+  (`orderbook.py`), so it belongs to M3. 2.8b's `control` markers are its input.
+- **Differences from the reference, found while porting (all fixes):**
+  1. *State follows the reply.* The reference is single-threaded; here a reply wakes the caller on another thread. A link that
+     dropped right after a reply could be restored from a stale subscription list (a lost subscription, or a stale market set). Each
+     command now applies its state change (store the subscription, update the market set, remove it) on the reader as the reply is
+     received, before the caller resumes.
+  2. *A failed restore closes the connection.* In the reference a resubscribe that times out leaves a live link with nothing restored
+     until the server happens to drop it. Here a failed or overflowed restore closes the link so the supervisor retries.
+  3. *Retry keeps every subscription.* After a mid-restore failure all the old subscriptions are put back under their old sids (the
+     reference merges old and new, which can collide when new sids equal old ones).
+  4. The supervisor catches an unexpected error, logs it and ends the stream with its message instead of dying silently.
+- **Not here:** overflow-triggered reconnect, wait-to-drain and stats (2.8d). A full queue still ends the stream with an error, and
+  `dropped` is always 0 for now. Held data that cannot fit the queue when released is treated as an overflow, never lost silently.
+- **Tests (+20, 60 in the namespace):** the reference's eight reconnect tests ported to the scripted fake (which now serves a sequence of
+  connections), jitter and cap checks, typed event, ordered release of held data, fast failure while reconnecting, updated market set,
+  unexpected errors, flush overflow, a timed-out resubscribe; plus two real-socket tests (the server closes and the client really
+  reconnects and resubscribes; a refused reconnect upgrade is retried). Two tests were racy (a consumer that keeps pace never overflows
+  a queue; the server aborting before the client saw the upgrade) and were made deterministic; 80 consecutive runs of the namespace pass.
+- **Verification:** 4,105 tests (4,097 pass, 8 live skipped), build 0 warnings, format clean, coverage `KalTerm.Core` 98.3%,
+  `KalTerm.Kalshi` 96.7% (1,003 of 1,037 lines).

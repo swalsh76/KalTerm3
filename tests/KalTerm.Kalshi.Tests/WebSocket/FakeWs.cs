@@ -107,24 +107,61 @@ internal sealed class FakeWsConnection : IWsConnection
     public ValueTask DisposeAsync() => new(CloseAsync());
 }
 
-/// <summary>Hands out one <see cref="FakeWsConnection"/> and remembers how it was asked for.</summary>
+/// <summary>
+/// Hands out scripted connections, one per successful connect: <see cref="At"/> creates them on demand, and
+/// <see cref="OnOpen"/> lets a test script each one as it is opened (answer subscribes, then drop, and so on).
+/// </summary>
 internal sealed class FakeWsConnector : IWsConnector
 {
-    public FakeWsConnection Connection { get; } = new();
+    private readonly List<FakeWsConnection> _connections = [];
+    private readonly List<IReadOnlyDictionary<string, string>> _headers = [];
+    private int _opened;
 
+    /// <summary>The first connection.</summary>
+    public FakeWsConnection Connection => At(0);
+
+    /// <summary>Makes every connect attempt fail with this.</summary>
     public Exception? FailWith { get; set; }
 
+    /// <summary>Makes the attempt with this zero-based number fail (return null to let it through).</summary>
+    public Func<int, Exception?>? Fail { get; set; }
+
+    /// <summary>Scripts connection n as it is opened.</summary>
+    public Action<int, FakeWsConnection>? OnOpen { get; set; }
+
+    /// <summary>Connect attempts so far, failed ones included.</summary>
     public int ConnectCount { get; private set; }
 
     public Uri? Url { get; private set; }
 
-    public IReadOnlyDictionary<string, string>? Headers { get; private set; }
+    public IReadOnlyDictionary<string, string>? Headers => _headers.Count == 0 ? null : _headers[^1];
+
+    /// <summary>The headers of every successful connect, in order.</summary>
+    public IReadOnlyList<IReadOnlyDictionary<string, string>> HeadersSeen => _headers;
+
+    public FakeWsConnection At(int index)
+    {
+        while (_connections.Count <= index)
+        {
+            _connections.Add(new FakeWsConnection());
+        }
+
+        return _connections[index];
+    }
 
     public Task<IWsConnection> ConnectAsync(Uri url, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
     {
-        ConnectCount++;
+        var attempt = ConnectCount++;
         Url = url;
-        Headers = headers;
-        return FailWith is null ? Task.FromResult<IWsConnection>(Connection) : Task.FromException<IWsConnection>(FailWith);
+        if ((FailWith ?? Fail?.Invoke(attempt)) is { } failure)
+        {
+            return Task.FromException<IWsConnection>(failure);
+        }
+
+        _headers.Add(headers);
+        var index = _opened++;
+        var connection = At(index);
+        OnOpen?.Invoke(index, connection);
+        return Task.FromResult<IWsConnection>(connection);
     }
 }

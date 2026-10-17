@@ -23,6 +23,27 @@ public sealed class KalshiWebSocketOptions
     /// <summary>Largest single message the real socket accepts. Default 16 MiB (a big order book snapshot must fit).</summary>
     public int MaxMessageBytes { get; init; } = 16 * 1024 * 1024;
 
+    /// <summary>
+    /// Whether to replace a lost connection and restore the subscriptions (with a <c>reconnected</c> message in the stream).
+    /// When false a lost link ends <see cref="KalshiWebSocket.Messages"/> with an error. Default true.
+    /// </summary>
+    public bool AutoReconnect { get; init; } = true;
+
+    /// <summary>The first reconnect wait; it doubles on each failed attempt up to <see cref="ReconnectMax"/>, with jitter. Default 0.5 seconds.</summary>
+    public TimeSpan ReconnectBase { get; init; } = TimeSpan.FromSeconds(0.5);
+
+    /// <summary>The longest reconnect wait before jitter. Default 30 seconds.</summary>
+    public TimeSpan ReconnectMax { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>How many consecutive failed reconnect attempts to make before giving up; <see langword="null"/> (the default) never gives up.</summary>
+    public int? MaxReconnectAttempts { get; init; }
+
+    /// <summary>For tests: replaces the backoff wait.</summary>
+    internal Func<TimeSpan, CancellationToken, Task>? Delay { get; init; }
+
+    /// <summary>For tests: a sample in [0, 1) replacing the random jitter source.</summary>
+    internal Func<double>? JitterSample { get; init; }
+
     /// <summary>For tests: replaces the real socket.</summary>
     internal IWsConnector? Connector { get; init; }
 
