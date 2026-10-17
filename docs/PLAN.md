@@ -1,6 +1,6 @@
 # KalTerm plan
 
-**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0. M1 spikes done: S-3, S-1a, S-1b. M2 may start; M3 waits for S-1d (server on order).
+**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0, M2. M1 spikes done: S-3, S-1a, S-1b; outstanding: S-2, S-4, S-1d. M3 waits for S-1d (server on order).
 
 ## 1. Goal
 
@@ -66,7 +66,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 |---|---|---|
 | **M0 Scaffold** | Solution, CI, analyzers, central package management | CI green on an empty solution |
 | **M1 Spikes** (throwaway, measured) | **S-1 durability:** `diskspd` write-through benchmark on the target volume, then SQL Server commit latency, then 3 hard power cuts under load with `DBCC CHECKDB` after each. **S-2 time-series layout:** daily partitioned columnstore vs hot rowstore plus cold columnstore; insert rate, storage per million rows, query latency. **S-3 Ed25519:** signing library choice, verified against the Python signing vectors. **S-4 install:** unattended instance install on a clean VM | go/no-go; S-1 failing ends the SQL Server path. S-1 runs in stages (ยง6.1) |
-| **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green; may start once S-1a and S-1b have passed (M2 never touches SQL) |
+| **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green; may start once S-1a and S-1b have passed (M2 never touches SQL). **Met 2026-10-17** (BUILD-LOG ง4) |
 | **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** |
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire |
