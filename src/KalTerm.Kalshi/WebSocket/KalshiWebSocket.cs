@@ -35,6 +35,8 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
     public const string ReconnectedType = "reconnected";
 
     private const string ConnectionLostReason = "connection_lost";
+    private const string OverflowReason = "overflow";
+    private static readonly TimeSpan DrainPoll = TimeSpan.FromMilliseconds(50);
 
     private readonly KalshiSigner _signer;
     private readonly IWsConnector _connector;
@@ -57,6 +59,11 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
     private volatile bool _connected;
     private volatile bool _closing;
     private volatile bool _flushOverflowed;
+    private volatile string _reason = ConnectionLostReason; // why the last connection ended
+    private long _overflows;
+    private long _dropped;
+    private long _droppedRun; // dropped since the last reconnected message
+    private long _highWater;
     private string? _lost;
 
     /// <summary>Creates a client; nothing is opened until <see cref="ConnectAsync"/>.</summary>
@@ -110,6 +117,14 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
 
     /// <summary>True while the link is up.</summary>
     public bool IsConnected => _connected;
+
+    /// <summary>Queue health, for monitoring (for example a server status endpoint).</summary>
+    public WsStats Stats => new(
+        _queue.Reader.Count,
+        _options.MaxQueueMessages,
+        (int)Interlocked.Read(ref _highWater),
+        Interlocked.Read(ref _overflows),
+        Interlocked.Read(ref _dropped));
 
     /// <summary>Opens the connection with freshly signed headers and starts reading. May be called once.</summary>
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
@@ -250,6 +265,9 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
         _queue.Writer.TryComplete();
     }
 
+    /// <summary>For tests: cuts the link from our side, as a network failure would.</summary>
+    internal Task DropConnectionAsync() => _connection?.CloseAsync() ?? Task.CompletedTask;
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
@@ -375,6 +393,7 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
                     _connected = true;
                 }
 
+                _flushOverflowed = false;
                 var reader = ReadLoopAsync(connection);
                 if (!first)
                 {
@@ -383,8 +402,9 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
 
                 first = false;
                 var overflowed = await reader.ConfigureAwait(false);
+                _reason = overflowed ? OverflowReason : ConnectionLostReason;
                 await connection.DisposeAsync().ConfigureAwait(false);
-                if (_closing || !_options.AutoReconnect || overflowed)
+                if (_closing || !_options.AutoReconnect)
                 {
                     break;
                 }
@@ -456,6 +476,29 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
     /// <summary>Replaces the lost connection, waiting with backoff. Null if closing, or after giving up.</summary>
     private async Task<IWsConnection?> ReopenAsync()
     {
+        if (_reason == OverflowReason)
+        {
+            // Reconnecting into a still-full queue would just overflow again and hammer Kalshi with connects: wait until
+            // the consumer has drained it to half the limit.
+            LogWaitingToDrain(_logger);
+            while (_queue.Reader.Count > _options.MaxQueueMessages / 2)
+            {
+                if (_closing)
+                {
+                    return null;
+                }
+
+                try
+                {
+                    await _delay(DrainPoll, _stop.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            }
+        }
+
         var attempt = 0;
         while (true)
         {
@@ -527,14 +570,17 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
                 _held = null;
                 if (completed && held is not null)
                 {
-                    foreach (var message in held)
+                    for (var i = 0; i < held.Count; i++)
                     {
-                        if (!_queue.Writer.TryWrite(message))
+                        if (!_queue.Writer.TryWrite(held[i]))
                         {
+                            // The rest did not fit: count them as dropped and reconnect, so the consumer backfills.
                             _flushOverflowed = true;
-                            LogOverflow(_logger);
+                            RecordOverflow(held.Count - i);
                             break;
                         }
+
+                        NoteDepth();
                     }
                 }
             }
@@ -583,7 +629,7 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
             }
         }
 
-        // The `dropped` count is the overflow slice's (2.8d); a plain reconnect drops nothing.
+        var dropped = (int)Interlocked.Read(ref _droppedRun);
         var body = new JsonObject
         {
             ["resubscribed"] = new JsonArray([.. resubscribed.Select(r => (JsonNode?)new JsonObject
@@ -598,17 +644,24 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
                 ["old_sid"] = f.OldSid,
                 ["error"] = f.Error,
             })]),
-            ["reason"] = ConnectionLostReason,
-            ["dropped"] = 0,
+            ["reason"] = _reason,
+            ["dropped"] = dropped,
         };
         using var document = JsonDocument.Parse(body.ToJsonString());
         var message = new WsMessage(ReconnectedType, Msg: document.RootElement.Clone(), ReceivedAt: _time.GetUtcNow());
-        if (!_queue.Writer.TryWrite(message))
+        try
         {
-            _flushOverflowed = true;
-            LogOverflow(_logger);
+            // This message is what tells the consumer to backfill, so it is never dropped: if the queue is full, wait for
+            // room (the reader meanwhile holds incoming data, which is bounded).
+            await _queue.Writer.WriteAsync(message, _stop.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
 
+        Interlocked.Add(ref _droppedRun, -dropped);
+        NoteDepth();
         return true;
     }
 
@@ -670,18 +723,43 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
         {
             if (_held is not null)
             {
-                _held.Add(message);
+                if (_held.Count < _options.MaxQueueMessages)
+                {
+                    _held.Add(message);
+                    return true;
+                }
+
+                // A consumer that has stalled while the subscriptions are being restored: bound the held data too.
+                RecordOverflow(1);
+                return false;
+            }
+
+            if (_queue.Writer.TryWrite(message))
+            {
+                NoteDepth();
                 return true;
             }
         }
 
-        if (_queue.Writer.TryWrite(message))
-        {
-            return true;
-        }
-
-        LogOverflow(_logger);
+        RecordOverflow(1);
         return false;
+    }
+
+    private void RecordOverflow(int dropped)
+    {
+        Interlocked.Increment(ref _overflows);
+        Interlocked.Add(ref _dropped, dropped);
+        Interlocked.Add(ref _droppedRun, dropped);
+        LogOverflow(_logger);
+    }
+
+    private void NoteDepth()
+    {
+        var depth = (long)_queue.Reader.Count;
+        long seen;
+        while ((seen = Interlocked.Read(ref _highWater)) < depth && Interlocked.CompareExchange(ref _highWater, depth, seen) != seen)
+        {
+        }
     }
 
     private void FailPending()
@@ -712,6 +790,9 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
 
     [LoggerMessage(Level = LogLevel.Error, Message = "WebSocket receive queue full; closing the connection (the consumer must catch up and reconnect)")]
     private static partial void LogOverflow(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "waiting for the consumer to drain before reconnecting")]
+    private static partial void LogWaitingToDrain(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Kalshi WebSocket connection lost; reconnecting")]
     private static partial void LogReconnecting(ILogger logger);

@@ -518,3 +518,42 @@ ends the stream cleanly; running out of attempts delivers what is queued and the
   a queue; the server aborting before the client saw the upgrade) and were made deterministic; 80 consecutive runs of the namespace pass.
 - **Verification:** 4,105 tests (4,097 pass, 8 live skipped), build 0 warnings, format clean, coverage `KalTerm.Core` 98.3%,
   `KalTerm.Kalshi` 96.7% (1,003 of 1,037 lines).
+
+### 3.8d WebSocket overflow, stats and live tests (2026-10-17): done
+
+A consumer that falls `MaxQueueMessages` behind makes the client close the connection and count the overflow; what is already
+queued is still delivered in order. With `AutoReconnect` (the default) it then waits until the consumer has drained the queue to half
+the limit (polling every 50 ms, so no reconnect storm), reconnects, and the `reconnected` message carries `reason: "overflow"` and
+`dropped: N`, the messages received but discarded since the last `reconnected` message, so the consumer knows to backfill. Without
+`AutoReconnect` the stream ends with "receive queue overflow" after the backlog. `KalshiWebSocket.Stats` returns
+`WsStats(QueueDepth, QueueLimit, HighWater, Overflows, Dropped)`.
+
+- **Two hardening changes beyond the reference** (the owner approved): the `reconnected` message is written with a waiting write, so
+  it can never be dropped when the queue is full (the reference's queue is unbounded, so its put never fails); and the data held
+  while the subscriptions are restored is bounded by the queue limit (beyond it counts as an overflow and the cycle repeats). Held data
+  that does not fit when released counts toward `dropped` and triggers an overflow reconnect (2.8c ended the stream with an error).
+- **Count semantics:** `dropped` is reported once, in total. If a restore finishes while the reader is overflowing, the earlier
+  `reconnected` message may carry the count and the later `overflow` one say 0. A test originally assumed otherwise and failed once in
+  60 runs; it now asserts the total.
+- **Internal hook:** `DropConnectionAsync` (internal, not on the pinned public surface) cuts the link from our side, for the live
+  reconnect test.
+- **Live tests (opt-in, production, read-only key, standing permission; `LiveKalshiWebSocketTests`), run 2026-10-17, 4 of 4 passed in 24 s.** One
+  signed WebSocket upgrade per test, `subscribe` commands only, plus one REST markets page. Public data read:
+  - `trade` for 8 s: **2,599 trades**, all parsed, yes + no = $1.00 on every one, one contiguous sequence (for example
+    KXNFLGAME-26OCT18NONYG-NYG yes 0.51 / no 0.49 x 18.95; KXBTC15M-26OCT171415-15 yes 0.918 / no 0.082).
+  - `multivariate_market_lifecycle` for 6 s: **4,222 messages**, every one parsed through the typed models: event_lifecycle 1,005,
+    created 1,369, close_date_updated 617, settled 612, determined 619.
+  - Order book for the busiest market (KXLALIGATOTAL-26OCT17RBBBAR-8) for 8 s: a snapshot first (28 yes / 37 no levels), then
+    **265 deltas**, all parsing exactly, prices in range, contiguous sequence (first delta: no -10.00 at 0.49).
+  - Link cut from our side while subscribed to `trade`: 18 trades drained, then `reconnected` (connection_lost, the old sid reported),
+    then trades resumed on the new connection.
+  - Nothing about the account was read; no value other than public market data was printed.
+- **Refactor:** the live tests' shared pieces (skip reason, credentials, summary file) moved to `LiveSupport`; the WebSocket tests'
+  shared scripting and waits to `WsTestKit`.
+- **Tests (+19 net; 80 in the namespace plus 4 live):** the reference's overflow tests ported (ordered overflow reconnect, error without
+  auto-reconnect, no overflow when keeping up, reconnect waits for the drain), plus close-while-draining, the never-lost
+  `reconnected` message, held data beyond the limit, stats, and the drop hook. 100 consecutive runs of the namespace pass.
+- **Verification:** 4,117 tests (4,105 pass, 12 live skipped), build 0 warnings, format clean, coverage `KalTerm.Core` 98.3%,
+  `KalTerm.Kalshi` 96.7% (1,041 of 1,076 lines).
+- **M2 status:** every slice 2.1 to 2.8d is built and verified. The order book builder and its gap detection are M3 (the plan's
+  decision); the private channels are M6.

@@ -114,6 +114,8 @@ summary lands in `live-summary.txt` next to the test assembly:
 dotnet build KalTerm.sln -c Release
 $env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'   # plus KALSHI_KEY_ID and KALSHI_PRIVATE_KEY_PATH
 .\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-class "*LiveKalshiTests"
+# the WebSocket live tests (public channels; subscribe commands only):
+.\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-class "*LiveKalshiWebSocketTests"
 # one test only, for example the signed-account-read check:
 .\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-method "*TheServerAcceptsOurSignatureOnAnAuthenticatedRead"
 ```
