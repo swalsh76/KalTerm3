@@ -4,6 +4,7 @@ using KalTerm.Kalshi.Auth;
 using KalTerm.Kalshi.Configuration;
 using KalTerm.Kalshi.Models;
 using KalTerm.Kalshi.Rest;
+using static KalTerm.Kalshi.Tests.Live.LiveSupport;
 
 namespace KalTerm.Kalshi.Tests.Live;
 
@@ -25,28 +26,8 @@ public static class LiveGate
 /// </summary>
 public class LiveKalshiTests
 {
-    private const string Why = "set KALSHI_INTEGRATION=1 (with KALSHI_ENV, KALSHI_KEY_ID and KALSHI_PRIVATE_KEY_PATH) to run read-only tests against the real Kalshi API";
-
-    private static (KalshiSettings Settings, KalshiSigner Signer) Credentials()
-    {
-        var settings = KalshiSettings.FromEnvironment();
-        if (settings.KeyId is null || settings.PrivateKeyPath is null)
-        {
-            Assert.Skip("KALSHI_KEY_ID / KALSHI_PRIVATE_KEY_PATH are not configured");
-        }
-
-        Say($"target: {settings.Environment}, rest {settings.RestUrl.Host}");
-        return (settings, KalshiSigner.FromSettings(settings));
-    }
-
     private static KalshiRestClient Client(KalshiSettings settings, KalshiSigner signer) =>
         new(settings, new KalshiRestClientOptions { Signer = signer });
-
-    private static void Say(string line)
-    {
-        TestContext.Current.TestOutputHelper?.WriteLine(line);
-        File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "live-summary.txt"), line + Environment.NewLine);
-    }
 
     private static string Show(Dollars? price) => price is null ? "-" : price.Value.ToString();
 

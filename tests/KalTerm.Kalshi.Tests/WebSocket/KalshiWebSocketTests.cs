@@ -5,6 +5,7 @@ using KalTerm.Kalshi.Models;
 using KalTerm.Kalshi.Tests.Rest;
 using KalTerm.Kalshi.WebSocket;
 using Microsoft.Extensions.Logging;
+using static KalTerm.Kalshi.Tests.WebSocket.WsTestKit;
 
 namespace KalTerm.Kalshi.Tests.WebSocket;
 
@@ -46,37 +47,6 @@ public sealed class KalshiWebSocketTests : IDisposable
         var client = Client(queue: queue);
         await client.ConnectAsync(TestContext.Current.CancellationToken);
         return client;
-    }
-
-    /// <summary>Reads the stream until it ends, returning what arrived and how it ended (null: cleanly).</summary>
-    private static async Task<(List<WsMessage> Messages, Exception? End)> DrainAsync(KalshiWebSocket client)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        var messages = new List<WsMessage>();
-        try
-        {
-            await foreach (var message in client.Messages(timeout.Token))
-            {
-                messages.Add(message);
-            }
-
-            return (messages, null);
-        }
-        catch (KalshiWsException ex)
-        {
-            return (messages, ex);
-        }
-    }
-
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        while (!condition())
-        {
-            await Task.Delay(1, timeout.Token);
-        }
     }
 
     // ---- connecting -----------------------------------------------------------------------------------------------------
@@ -499,7 +469,7 @@ public sealed class KalshiWebSocketTests : IDisposable
             .Order(StringComparer.Ordinal);
 
         Assert.Equal(
-            ["CloseAsync", "ConnectAsync", "DisposeAsync", "Messages", "SubscribeAsync", "UnsubscribeAsync", "UpdateSubscriptionAsync", "get_IsConnected", "get_Subscriptions"],
+            ["CloseAsync", "ConnectAsync", "DisposeAsync", "Messages", "SubscribeAsync", "UnsubscribeAsync", "UpdateSubscriptionAsync", "get_IsConnected", "get_Stats", "get_Subscriptions"],
             names);
     }
 

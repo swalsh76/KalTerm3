@@ -16,7 +16,9 @@ public sealed class KalshiWebSocketOptions
 
     /// <summary>
     /// How many received messages may wait for the consumer. When the consumer falls further behind than this the connection
-    /// is closed and <see cref="KalshiWebSocket.Messages"/> ends with an error, which bounds memory. Default 500,000.
+    /// is closed, which bounds memory. With <see cref="AutoReconnect"/> the client then waits for the consumer to drain the queue
+    /// to half this limit and reconnects (the <c>reconnected</c> message says <c>overflow</c> and how many messages were
+    /// dropped, so the consumer can backfill); without it <see cref="KalshiWebSocket.Messages"/> ends with an error. Default 500,000.
     /// </summary>
     public int MaxQueueMessages { get; init; } = 500_000;
 

@@ -125,7 +125,7 @@ runs Python. Where the port is deliberately stricter or different, the vector sa
 | 2.8a | WebSocket models: envelope plus the public channels (ticker, trade, market and event lifecycle, order book snapshot and delta); pydantic-oracle vectors | done |
 | 2.8b | WebSocket client core: small socket interface, scriptable in-memory fake on a fake `TimeProvider`, a few real-socket tests against in-process Kestrel; connect, sign, subscribe, command ids, control markers for sequence tracking | done |
 | 2.8c | Reconnect with backoff, resubscribe, `reconnected` message (sequence-gap detection is the M3 order book builder's job) | done |
-| 2.8d | Overflow handling, stats, opt-in live test | |
+| 2.8d | Overflow handling (reconnect after the consumer drains), stats, opt-in live tests | done |
 
 Slice 2.8 decisions (2026-10-16): split into 2.8a-d, each its own PR; models cover public channels only (private `fill`,
 `user_order`, `market_position` wait for M6; the order book builder and gap recovery stay in M3); channel names pass through

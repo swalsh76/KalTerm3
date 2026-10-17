@@ -5,6 +5,7 @@ using KalTerm.Kalshi.Models;
 using KalTerm.Kalshi.Tests.Rest;
 using KalTerm.Kalshi.WebSocket;
 using Microsoft.Extensions.Logging;
+using static KalTerm.Kalshi.Tests.WebSocket.WsTestKit;
 
 namespace KalTerm.Kalshi.Tests.WebSocket;
 
@@ -62,54 +63,6 @@ public sealed class ReconnectTests : IDisposable
         _delays.Add(span);
         await Task.Yield();
     }
-
-    private static string Trade(int sid, int seq) =>
-        $$$"""{"type":"trade","sid":{{{sid}}},"seq":{{{seq}}},"msg":{"trade_id":"t{{{seq}}}","market_ticker":"M","yes_price_dollars":"0.5","no_price_dollars":"0.5","count_fp":"1.00"}}""";
-
-    private static void Subscribed(FakeWsConnection c, string sent, int sid) =>
-        c.Push($$$"""{"id":{{{FakeWsConnection.IdOf(sent)}}},"type":"subscribed","msg":{"channel":"x","sid":{{{sid}}}}}""");
-
-    private static void Error(FakeWsConnection c, string sent, int code, string text) =>
-        c.Push($$$"""{"id":{{{FakeWsConnection.IdOf(sent)}}},"type":"error","msg":{"code":{{{code}}},"msg":"{{{text}}}"}}""");
-
-    private static async Task<WsMessage> NextAsync(IAsyncEnumerator<WsMessage> stream)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        return await stream.MoveNextAsync().AsTask().WaitAsync(timeout.Token) ? stream.Current : throw new InvalidOperationException("the stream ended");
-    }
-
-    private static async Task<(List<WsMessage> Messages, Exception? End)> DrainAsync(KalshiWebSocket client)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        var messages = new List<WsMessage>();
-        try
-        {
-            await foreach (var message in client.Messages(timeout.Token))
-            {
-                messages.Add(message);
-            }
-
-            return (messages, null);
-        }
-        catch (KalshiWsException ex)
-        {
-            return (messages, ex);
-        }
-    }
-
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        while (!condition())
-        {
-            await Task.Delay(1, timeout.Token);
-        }
-    }
-
-    private static string ParamsOf(string sent) => JsonDocument.Parse(sent).RootElement.GetProperty("params").GetRawText();
 
     // ---- ports of the reference's reconnect tests -----------------------------------------------------------------------
 
@@ -481,35 +434,6 @@ public sealed class ReconnectTests : IDisposable
 
         Assert.Equal("a bug, not a network problem", Assert.IsType<KalshiWsException>(end).Message);
         Assert.Contains(_log.Entries, e => e.Level == LogLevel.Error);
-    }
-
-    [Fact]
-    public async Task HeldDataThatDoesNotFitTheQueueOverflowsInsteadOfBeingLost()
-    {
-        _connector.OnOpen = (n, c) => c.OnSend = sent =>
-        {
-            Subscribed(c, sent, n + 1);
-            if (n == 0)
-            {
-                c.PushClose();
-            }
-            else
-            {
-                for (var seq = 1; seq <= 5; seq++)
-                {
-                    c.Push(Trade(2, seq));
-                }
-            }
-        };
-        await using var client = Client(queue: 3);
-        await client.ConnectAsync(Token);
-        await client.SubscribeAsync("trade", cancellationToken: Token);
-        await WaitUntilAsync(() => _connector.At(1).CloseCalled); // the queue filled, so the client closed the connection
-
-        var (messages, end) = await DrainAsync(client);
-
-        Assert.Equal([KalshiWebSocket.ReconnectedType, "trade", "trade"], messages.Select(m => m.Type));
-        Assert.Equal("receive queue overflow", Assert.IsType<KalshiWsException>(end).Message);
     }
 
     [Fact]
