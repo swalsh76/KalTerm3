@@ -1,6 +1,6 @@
 # KalTerm plan
 
-**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0, M2. M1 spikes done: S-3, S-1a, S-1b; outstanding: S-2, S-4, S-1d. M3 waits for S-1d (server on order).
+**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0, M2. M1 spikes done: S-3, S-1a, S-1b, S-2, S-4; outstanding: S-1d. M3 waits for S-1d (server on order).
 
 ## 1. Goal
 
@@ -131,6 +131,22 @@ Slice 2.8 decisions (2026-10-16): split into 2.8a-d, each its own PR; models cov
 `user_order`, `market_position` wait for M6; the order book builder and gap recovery stay in M3); channel names pass through
 unchecked, as in the reference.
 
+### 6.3 Inputs from the spikes S-2 and S-4 (proposed; awaiting the owner's approval)
+
+Measurements and reasoning are in BUILD-LOG 2.4 and 2.5. Nothing here is decided until the owner approves it.
+
+**M3 ticker storage (S-2).** Proposed layout: one table, daily-partitioned, clustered columnstore ordered by `(market_id, ts)`. Rules that
+apply to any layout: partition by day and drop a day with `TRUNCATE ... WITH (PARTITIONS (n))`, never `DELETE`; `LOCK_ESCALATION = AUTO`
+on partitioned tables; the ingest writer retries on SQL errors 1205 and 4891; count rows with `COUNT_BIG(*)`, not `dm_db_partition_stats`;
+size the ingest buffer for a 30 s stall until the sealing method is measured. The hot-rowstore-plus-cold-columnstore layout (B) was
+measured and is not proposed: 11 s full scans while a day is hot, 6x the bytes per row, 10x the log, and a rollover job.
+
+**M8 installer (S-4).** Install the Visual C++ 2015-2022 x64 runtime, or ship `vcruntime140.dll` and `vcruntime140_1.dll` beside `libsodium.dll`;
+publish apps self-contained; preflight (read-only, exit 1 with "REFUSING") before any change; SQL Server from a generated configuration file
+(no key, no password) with TCP and named pipes disabled, Windows authentication only, virtual service accounts, every wait bounded; verification
+that asserts "no network exposure" (not "no TCP socket": the loopback admin connection always exists) and waits, bounded, for the
+delayed-start service after a reboot; disable the telemetry service and usage metrics (to be tested).
+
 ## 7. Risks
 
 - **Durability is unproven.** The premise of SQL Server is a hypothesis; M1 S-1 tests it first.
@@ -162,3 +178,7 @@ and the API contract tests.
 - Polly (or `Microsoft.Extensions.Http.Resilience`) for retry, circuit breaking and per-client
   policies. Revisit if M3 ingest or M6 trading needs more than the one hand-written read policy.
   The trading client must not retry writes blindly (orders are not idempotent without a client id).
+- S-2 follow-ups: measure the staging-and-switch re-seal of a sealed day (so ingest never waits on a rebuild); repeat the key ingest and
+  log-rate runs on the target server during S-1d; measure order book delta and trade layouts.
+- S-4 follow-ups: an install pass on a clean Windows 11 machine (topology A); disabling SQL Server telemetry from the configuration file;
+  a pass with a network attached (Windows Update, download paths).
