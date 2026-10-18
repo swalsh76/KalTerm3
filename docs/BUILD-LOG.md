@@ -557,3 +557,36 @@ the limit (polling every 50 ms, so no reconnect storm), reconnects, and the `rec
   `KalTerm.Kalshi` 96.7% (1,041 of 1,076 lines).
 - **M2 status:** every slice 2.1 to 2.8d is built and verified. The order book builder and its gap detection are M3 (the plan's
   decision); the private channels are M6.
+
+## 4. M2 Core summary (2026-10-17): done
+
+Gate (PLAN §6): parity tests green. Met. Slices 2.1 to 2.8d are built, each on its own branch and PR, each with the coverage gate
+and `dotnet format` clean. M2 never touched SQL.
+
+**Final numbers (after 2.8d):** 4,117 tests (4,105 pass, 12 opt-in live tests skipped by default and in CI), build 0 warnings,
+coverage `KalTerm.Core` 98.3% (351 of 357 lines), `KalTerm.Kalshi` 96.7% (1,041 of 1,076), gate 90% per assembly.
+
+**What exists**
+- `KalTerm.Core` (no I/O): fixed-point `Dollars` / `Contracts` / `Level` / `FeeMultiplier`, fees, token-bucket rate limiter, clock-skew maths.
+- `KalTerm.Kalshi`: configuration (the only place Kalshi hosts appear, enforced by a scan test), Ed25519 signer, GET-only REST client with
+  retries and pagination, the models for REST and the public WebSocket channels, and the WebSocket client (signed connect,
+  subscribe, reconnect with resubscribe, bounded stream with overflow handling and stats).
+- Differential tests against the Python reference: golden vectors for fixed-point, fees, rate limiter, configuration, Ed25519 signing,
+  clock skew, REST models (about 400 cases) and WebSocket models (414 cases); every place the port is deliberately stricter is recorded in
+  the data (`port: "error"` plus a reason), not hidden in a test.
+- Live evidence against production with a read-only key (BUILD-LOG 3.7d, 3.8d): REST models, strict parsing, signature acceptance
+  (401 unsigned, 200 signed), and WebSocket trade, lifecycle and order book streams including a real reconnect.
+
+**Lessons that recurred (apply them in M3 onwards)**
+1. *Exact, never rounded.* Prices and counts are read from the text of the JSON token; a value finer than its scale is refused. Real
+   production data (15,187 series, thousands of markets and messages) never tripped it.
+2. *Pin a client's public surface with an allow-list test,* not a blocklist of write-sounding words. Both clients have one.
+3. *Port the behaviour, then look for what the original got for free.* The reference runs on one thread; a threaded port needs state
+   changes applied as the reply is received, bounded buffers, and a restore that closes a link it could not finish (BUILD-LOG 3.8c, 3.8d).
+4. *Real sockets find what fakes cannot* (a send after dispose threw the wrong exception); fakes find what real sockets cannot
+   reproduce on demand (timeouts, overflow, mid-restore drops). Both are in the suite.
+5. *A flaky test is a bug.* Racy tests were made deterministic and the namespace re-run 60 to 100 times, rather than retried.
+6. *Scripted edits and large heredocs are fragile in this environment;* write the script to a file and run it.
+
+**Outstanding before M3:** S-1d (power cuts on the OptiPlex 7080, on order), and the unstarted spikes S-2 (time-series layout) and S-4
+(unattended install, clean VM). The order book builder and its gap detection (M3) and the private channels (M6) are deliberately not in M2.
