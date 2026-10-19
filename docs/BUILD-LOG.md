@@ -1284,3 +1284,13 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   open paths, the loopback exemption and its limits, throttle, cache, revocation after the cache expires); host options; the admin commands; and the client against **a real TLS server on loopback**
   (trusted, not trusted, changed, the token reaches only a trusted server, a certificate loaded from disk works as a server certificate).
 - A find: loading the stored certificate with ephemeral keys made Windows reject it as a server certificate; the default key storage works (the key is removed when the certificate object is disposed).
+- **Rolled out and checked live (2026-10-19, from the owner's workstation to kaldb over the LAN):** ingest `host-eb10d4d` (restarted first: migration 0004 is applied by ingest at start), then the
+  certificate (`cert init --host kaldb --ip 192.168.1.20`), user `steven` (admin) with a token created through `admin.ps1` and piped into `kterm login` without ever being printed, then API `api-eb10d4d`
+  with `-LanUrl https://192.168.1.20:5280 -OpenFirewall`. The firewall rule reads back as inbound TCP 5280, allow, **remote address: LocalSubnet**; the server listens on exactly `192.168.1.20:5280` and
+  `127.0.0.1:5280`. Checks: before `trust` the client refused the server and sent nothing; after `trust --fingerprint` (the fingerprint read on the server) and `login`, `kterm status`, `book` and `gaps`
+  work from this computer; a wrong token gives the "run kterm login" message; with no token every `/v1/*` path (including an unknown path) is a bare 401 and `/healthz` is 200; a malformed
+  Authorization header is 401; plain HTTP on the LAN address gets no answer; **a deliberately wrong pin gives the hard "certificate CHANGED" error naming both fingerprints, and the deliberate re-trust
+  warns about the difference**; on the server, loopback `http://127.0.0.1:5280` answers `/v1/status` and `/healthz` without a token and `/v1/markets` with 401 (so the hourly soak check is unchanged);
+  after 10 failed attempts in a minute the caller got 429 (even with the right token) while `/healthz` stayed open; `token list` shows the token's last use.
+- `tools\kaldb\kterm.ps1` (the remoting wrapper) now works for `status` only (the loopback exemption); data commands need a token, so use the CLI directly from a computer that trusts the server.
+- Not done: nothing is exposed except the API port; mDNS discovery, WebSocket push and per-user watchlists remain out of scope (parking lot / M5, M7).
