@@ -127,9 +127,39 @@ internal sealed class Harness : IDisposable
     private readonly TestConsole _out = new TestConsole().Width(140);
     private readonly TestConsole _err = new TestConsole().Width(140);
 
+    private readonly string _profile = Path.Combine(Path.GetTempPath(), "kalterm-cli-test-" + Guid.NewGuid().ToString("N"));
+    private readonly Queue<string> _typed = new();
+
     public Harness(Dictionary<string, string>? variables = null)
     {
         Variables = variables ?? [];
+        Pins = new PinStore(Path.Combine(_profile, "known-hosts.json"));
+        Tokens = new TokenStore(Path.Combine(_profile, "credentials.bin"));
+    }
+
+    public PinStore Pins { get; }
+
+    public TokenStore Tokens { get; }
+
+    /// <summary>What the server presents when <c>trust</c> reads its certificate.</summary>
+    public ServerIdentity Identity { get; set; } = new(new KalTerm.Security.CertificateInfo("CN=kaldb, O=KalTerm", new string('A', 8) + new string('B', 56), new DateTime(2026, 10, 19, 0, 0, 0, DateTimeKind.Utc), new DateTime(2028, 10, 18, 0, 0, 0, DateTimeKind.Utc), ["kaldb", "192.168.1.20"]));
+
+    public Exception? ProbeFails { get; set; }
+
+    public bool Interactive { get; set; }
+
+    public string Secret { get; set; } = string.Empty;
+
+    public List<(string Host, int Port)> Probed { get; } = [];
+
+    public List<(Uri Address, string Token)> TokenTries { get; } = [];
+
+    public void Type(params string[] lines)
+    {
+        foreach (var line in lines)
+        {
+            _typed.Enqueue(line);
+        }
     }
 
     public FakeApi Api { get; } = new();
@@ -158,6 +188,21 @@ internal sealed class Harness : IDisposable
                 ClientsCreated++;
                 return Api;
             },
+            CreateApiWithToken = (address, token) =>
+            {
+                TokenTries.Add((address, token));
+                return Api;
+            },
+            Pins = Pins,
+            Tokens = Tokens,
+            Probe = (host, port, _) =>
+            {
+                Probed.Add((host, port));
+                return ProbeFails is null ? Task.FromResult(Identity) : Task.FromException<ServerIdentity>(ProbeFails);
+            },
+            InteractiveInput = Interactive,
+            ReadLine = () => _typed.Count > 0 ? _typed.Dequeue() : null,
+            ReadSecret = () => Secret,
             Time = new AutoAdvanceTimeProvider(autoFire: false, utcStart: Samples.Now),
             GetVariable = name => Variables.GetValueOrDefault(name),
         };
@@ -168,5 +213,9 @@ internal sealed class Harness : IDisposable
     {
         _out.Dispose();
         _err.Dispose();
+        if (Directory.Exists(_profile))
+        {
+            Directory.Delete(_profile, recursive: true);
+        }
     }
 }

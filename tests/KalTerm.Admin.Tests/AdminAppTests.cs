@@ -99,6 +99,7 @@ public sealed class AdminAppTests : IDisposable
             In = new StringReader(_stdin),
             InteractiveInput = _interactive,
             ReadPassword = () => _typed,
+            CreateAccess = () => throw new InvalidOperationException("the backup commands need no users"),
             CreateServices = () => _createFails is not null
                 ? throw _createFails
                 : new AdminServices(_backups, _restores, new BackupTarget(_targetPath), Store, _connector),

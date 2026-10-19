@@ -219,6 +219,12 @@ differentials, 4 weekly fulls, 12 monthly fulls, configurable). The target needs
 from before and after the backup); restore never overwrites. Backups hold market data only; the key files and the service wrapper settings are **not** in them (documented in BUILD-LOG 5.12). A new
 `kalterm-admin` console (on the server) carries the commands; `kterm` stays read-only.
 
+**Auth, TLS and pinning (slice 4.5), approved 2026-10-19.** Named users with per-user tokens (random 256 bits, shown once, only the SHA-256 stored, revocable, optional expiry, roles read/admin). The API
+serves the LAN over HTTPS only (self-signed ECDSA certificate made on the server; clients pin its fingerprint on first use and a changed certificate is a hard error), every request there needs a token,
+and the process refuses to serve the network without both. A loopback plain-HTTP listener keeps `/healthz`, `/readyz` and `/v1/status` open for checks on the server itself. The Windows Firewall allows
+the API port from the local subnet only. `kalterm-admin` manages users, tokens and the certificate; `kterm trust`, `login` and `logout` are the client side. Per-user watchlists, alerts and layouts (M5/M7)
+will hang off the user table; mDNS discovery and WebSocket push are not part of 4.5.
+
 **Time zones (standing requirement for every client).** The database and the API are UTC. Client terminals show times in a **user-selectable time zone**: the default is the
 system's local zone, but the user can always choose any other zone (or UTC) and the choice is stored per user (with layouts, once M4 auth exists; until then a CLI option and
 an environment variable). The system zone is only a default, never a fixed pass-through. The CLI today prints UTC with a "UTC" suffix; the zone option (`--tz`, an IANA or

@@ -30,8 +30,11 @@ internal sealed class AdminEnvironment
     /// <summary>Asks a person for a password without showing it.</summary>
     public Func<string> ReadPassword { get; init; } = () => string.Empty;
 
-    /// <summary>Builds the services, or explains why they cannot be built (for example no backup target is configured).</summary>
+    /// <summary>Builds the backup services, or explains why they cannot be built (for example no backup target is configured).</summary>
     public required Func<AdminServices> CreateServices { get; init; }
+
+    /// <summary>Builds what the user, token and certificate commands need; these never need a backup target.</summary>
+    public required Func<AccessServices> CreateAccess { get; init; }
 }
 
 /// <summary>
@@ -51,7 +54,8 @@ internal static class AdminApp
 
     private static RootCommand BuildRoot(AdminEnvironment env)
     {
-        var root = new RootCommand("kalterm-admin: backup and restore for a KalTerm server (runs on the server)");
+        var root = new RootCommand("kalterm-admin: users, tokens, the TLS certificate, backup and restore for a KalTerm server (runs on the server)");
+        AdminAccessCommands.Add(root, env);
         var backup = new Command("backup", "Take, list and verify backups");
         var initTarget = new Command("init-target", "Write the marker file in the backup target (run once, with the share present)");
         initTarget.SetAction((_, ct) => Guarded(env, async services =>
@@ -207,7 +211,7 @@ internal static class AdminApp
         }
     }
 
-    private static int Fail(AdminEnvironment env, string message)
+    internal static int Fail(AdminEnvironment env, string message)
     {
         env.Error.WriteLine("error: " + message);
         return Failed;

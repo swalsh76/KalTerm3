@@ -31,6 +31,16 @@ Ingest only: the tickers whose order books are built and published (Ingest:Watch
 Ingest only: the folder the daily backups go to as the SERVER sees it (Ingest:BackupTarget), a folder or a \host\shareolder path. Omitted means no backups. The folder
 must carry the marker written by `tools\kaldbdmin.ps1 -- backup init-target`, and for a share the credential must be stored (`admin.ps1 -SetShareCredential`).
 
+.PARAMETER LanUrl
+API only: the address the network reaches the API on (Api:LanUrl), https with one specific IP address and a port, for example https://192.168.1.20:5280. Every request there needs a token.
+The server's certificate (`kalterm-admin cert init`) must exist first. Omitted means the API listens on loopback only.
+
+.PARAMETER TlsDirectory
+API only: the folder with the server's certificate (default C:\KalTerm	ls).
+
+.PARAMETER OpenFirewall
+API only, with -LanUrl: allow inbound TCP on the LanUrl's port from the local subnet only (a Windows Firewall rule named "KalTerm API"; made once, kept up to date).
+
 .PARAMETER Restart
 Stop the running task and start it from this release.
 
@@ -49,6 +59,9 @@ param(
     [string]$ApiUrl = 'http://127.0.0.1:5280',
     [string[]]$WatchList = @(),
     [string]$BackupTarget,
+    [string]$LanUrl,
+    [string]$TlsDirectory,
+    [switch]$OpenFirewall,
     [switch]$Restart,
     [switch]$PrintWrapper
 )
@@ -75,6 +88,18 @@ if ($BackupTarget) {
     if ($Service -ne 'ingest') { throw '-BackupTarget applies to the ingest service only.' }
     if ($BackupTarget -notmatch "^[^'`"`r`n]+$") { throw 'The backup target must not contain quotes or line breaks.' }
     $services.ingest.Env += "`$env:KALTERM_Ingest__BackupTarget = '$BackupTarget'"
+}
+if ($LanUrl -or $TlsDirectory -or $OpenFirewall) {
+    if ($Service -ne 'api') { throw '-LanUrl, -TlsDirectory and -OpenFirewall apply to the api service only.' }
+    if ($OpenFirewall -and -not $LanUrl) { throw '-OpenFirewall needs -LanUrl.' }
+    if ($LanUrl) {
+        if ($LanUrl -notmatch '^https://[0-9]{1,3}(\.[0-9]{1,3}){3}:[0-9]{2,5}$') { throw '-LanUrl must look like https://192.168.1.20:5280 (https, one IPv4 address, a port).' }
+        $services.api.Env += "`$env:KALTERM_Api__LanUrl = '$LanUrl'"
+    }
+    if ($TlsDirectory) {
+        if ($TlsDirectory -notmatch "^[^'`"`r`n]+$") { throw 'The TLS folder must not contain quotes or line breaks.' }
+        $services.api.Env += "`$env:KALTERM_Api__TlsDirectory = '$TlsDirectory'"
+    }
 }
 $spec = $services[$Service]
 
@@ -147,6 +172,17 @@ try {
 
     if ($spec.Status) {
         Copy-Item (Join-Path $PSScriptRoot $spec.Status) -Destination "$root\status.ps1" -ToSession $session -Force
+    }
+
+    if ($OpenFirewall) {
+        $port = [int]($LanUrl -replace '^.*:', '')
+        Invoke-Command -Session $session -ArgumentList $port -ScriptBlock {
+            param($port)
+            $existing = Get-NetFirewallRule -DisplayName 'KalTerm API' -ErrorAction SilentlyContinue
+            if ($existing) { $existing | Remove-NetFirewallRule }
+            New-NetFirewallRule -DisplayName 'KalTerm API' -Direction Inbound -Protocol TCP -LocalPort $port -RemoteAddress LocalSubnet -Action Allow -Profile Any | Out-Null
+            "firewall: inbound TCP $port allowed from the local subnet only"
+        }
     }
 
     Invoke-Command -Session $session -ArgumentList $root, $wrapper, $Name, $Restart.IsPresent, $spec.Task -ScriptBlock {

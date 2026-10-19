@@ -376,15 +376,61 @@ public class ApiHostOptionsTests
     }
 
     [Fact]
-    public void EveryBoundAddressMustBeLoopbackOrTheProcessRefusesToRun()
+    public void WithoutALanUrlEveryBoundAddressMustBeLoopbackOrTheProcessRefusesToRun()
     {
-        ApiHostOptions.EnsureAllLoopback(["http://127.0.0.1:5280", "http://[::1]:5280"]);
-        ApiHostOptions.EnsureAllLoopback([]);
+        var options = new ApiHostOptions();
+        options.EnsureOnlyConfiguredAddresses(["http://127.0.0.1:5280", "http://[::1]:5280"]);
+        options.EnsureOnlyConfiguredAddresses([]);
 
-        Assert.Throws<InvalidOperationException>(() => ApiHostOptions.EnsureAllLoopback(["http://127.0.0.1:5280", "http://0.0.0.0:5280"]));
-        Assert.Throws<InvalidOperationException>(() => ApiHostOptions.EnsureAllLoopback(["http://example.com:5280"]));
-        Assert.Throws<InvalidOperationException>(() => ApiHostOptions.EnsureAllLoopback(["garbage"]));
-        Assert.Throws<ArgumentNullException>(() => ApiHostOptions.EnsureAllLoopback(null!));
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["http://127.0.0.1:5280", "http://0.0.0.0:5280"]));
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["https://192.168.1.20:5280"]));
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["http://example.com:5280"]));
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["garbage"]));
+        Assert.Throws<ArgumentNullException>(() => options.EnsureOnlyConfiguredAddresses(null!));
+    }
+
+    [Fact]
+    public void WithALanUrlTheNetworkAddressIsAllowedOverHttpsAndNothingElseIs()
+    {
+        var options = new ApiHostOptions { LanUrl = "https://192.168.1.20:5280" };
+        options.Validate();
+
+        options.EnsureOnlyConfiguredAddresses(["http://127.0.0.1:5280", "https://192.168.1.20:5280"]);
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["http://192.168.1.20:5280"]));   // the right address without TLS
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["https://192.168.1.20:5281"]));   // another port
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["https://192.168.1.21:5280"]));   // another address
+        Assert.Throws<InvalidOperationException>(() => options.EnsureOnlyConfiguredAddresses(["https://0.0.0.0:5280"]));
+    }
+
+    [Fact]
+    public void TheLanAddressIsCheckedLikeTheLoopbackOne()
+    {
+        var lan = new ApiHostOptions { LanUrl = "https://192.168.1.20:5280" }.LanEndPoint();
+
+        Assert.Equal(("192.168.1.20", 5280), (lan!.Address.ToString(), lan.Port));
+        Assert.Null(new ApiHostOptions().LanEndPoint());
+        Assert.Null(new ApiHostOptions { LanUrl = " " }.LanEndPoint());
+        foreach (var bad in new[] { "http://192.168.1.20:5280", "https://192.168.1.20", "https://kaldb:5280", "https://0.0.0.0:5280", "https://[::]:5280", "nonsense" })
+        {
+            Assert.Throws<InvalidOperationException>(new ApiHostOptions { LanUrl = bad }.LanEndPoint);
+            Assert.Throws<InvalidOperationException>(new ApiHostOptions { LanUrl = bad }.Validate);
+        }
+    }
+
+    [Fact]
+    public void TheNetworkIsNeverServedWithoutTokensOrWithoutAPlaceForTheCertificate()
+    {
+        Assert.Throws<InvalidOperationException>(new ApiHostOptions { LanUrl = "https://192.168.1.20:5280", RequireToken = false }.Validate);
+        Assert.Throws<InvalidOperationException>(new ApiHostOptions { LanUrl = "https://192.168.1.20:5280", TlsDirectory = " " }.Validate);
+        new ApiHostOptions { RequireToken = false }.Validate();   // a development run on loopback may skip tokens
+        Assert.Equal(@"C:\KalTerm\tls", new ApiHostOptions().TlsDirectory);
+        Assert.True(new ApiHostOptions().RequireToken);
+    }
+
+    [Fact]
+    public void TheServingLineIsLoggedWithTheFingerprint()
+    {
+        ApiHostLog.Serving(NullLogger.Instance, "192.168.1.20:5280", "AA:BB");
     }
 
     [Fact]

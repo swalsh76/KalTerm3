@@ -12,6 +12,7 @@ return await AdminApp.RunAsync(
         InteractiveInput = !Console.IsInputRedirected,
         ReadPassword = ReadHidden,
         CreateServices = () => AdminComposition.Create(name => Environment.GetEnvironmentVariable("KALTERM_Ingest__" + name)),
+        CreateAccess = () => AdminComposition.CreateAccess(name => Environment.GetEnvironmentVariable((name == "TlsDirectory" ? "KALTERM_Api__" : "KALTERM_Ingest__") + name)),
     });
 
 static string ReadHidden()

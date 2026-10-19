@@ -1257,4 +1257,30 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   full backup into a new database took 13 s, the complete `DBCC CHECKDB` was clean and the per-day row counts agreed with the manifest while ingest kept writing; the same for the full + differential
   chain (14 s); `backup verify` (the proof the host runs after each full backup) passed; no scratch database and no staging file was left behind. Two defects found by this run and fixed: `backup list`
   did not connect to the share with the stored credential (it showed an empty folder), and `admin.ps1` bound the command words to its own `-Instance`/`-Database` parameters (now non-positional).
-- Not done yet: one ingest restart with `-BackupTarget` so the host takes the daily backup itself (the credential and the marker are in place).
+- Rolled out 2026-10-19: ingest `host-bae1930` with `-BackupTarget`; `kterm status` shows the Backup line (last good backup, last proof by restore ok).
+
+### 5.13 Slice 4.5: users and tokens, TLS and certificate pinning (2026-10-19)
+
+- Owner decisions: the loopback plain-HTTP listener keeps answering `/healthz`, `/readyz` and `/v1/status` **without a token** (the hourly soak check uses it; only local administrators can reach it
+  and they already have the database), everything else needs a token; the server's address (192.168.1.20) is a router reservation; the firewall rule is for the local subnet only; tokens do not expire
+  unless asked.
+- `KalTerm.Security` (new, shared): the self-signed server certificate (ECDSA P-256, SANs for the host names and addresses, 2 years), stored in a folder only SYSTEM and administrators can open with the
+  key's password protected for the machine (DPAPI), certificate fingerprints (SHA-256, upper-case hex; people may type colons or spaces), and the file-protection helper that `KalTerm.Backup` now shares.
+- Migration 0004: `app_user` (unique lower-case name, role `read` or `admin`, disabled flag) and `api_token` (SHA-256 of a 256-bit random token, label, created, optional expiry, last used to within
+  a minute, revoked). The token (`kt_` plus 43 characters) is shown once; a copy of the database holds nothing usable.
+- API: `Api:Url` stays the loopback listener; `Api:LanUrl` (https, one specific IP, an explicit port) adds the network listener with the certificate from `Api:TlsDirectory`. The process **refuses to start**
+  serving the network without tokens or without a certificate, and stops itself if it finds it is listening anywhere it was not configured to (loopback http, or exactly the LAN address over https).
+  Every request needs `Authorization: Bearer <token>` except `/healthz` and `/readyz` and, on the plain loopback listener only, `/v1/status` (a loopback listener reached by a remote caller, for example
+  through a proxy, gets no exemption). A refusal is always the same bare `401 {"error":"unauthorized"}`: unknown, expired, revoked and missing look alike. After 10 failures in a minute an address gets
+  `429 too_many_attempts` (with `Retry-After`) even with a good token. A known token is remembered for 30 seconds, so a revoked token can work for up to half a minute.
+- `kalterm-admin`: `user add|list|disable`, `token create|list|revoke` (create shows the token once), `cert init|show|rotate`. These need no backup target. `cert rotate` keeps the names and gives a new
+  fingerprint; it needs an API restart and every client must trust the new fingerprint again.
+- Client: for an https address the client accepts **only** the certificate whose fingerprint the user pinned (the usual authorities do not apply); an unknown server is `NotTrusted` and a different
+  certificate from the pinned one is a hard `Changed` error naming both fingerprints, and the token is never sent in either case. Pins live in `%APPDATA%\KalTerm\known-hosts.json`; tokens in
+  `%APPDATA%\KalTerm\credentials.bin` (DPAPI for the Windows user). `kterm trust host:port` shows the certificate and pins it only if the person types the first 8 characters of the fingerprint
+  (or passes the whole fingerprint with `--fingerprint`; without a keyboard and without `--fingerprint` the answer is no); `kterm login` tries the token on the server before storing it;
+  `kterm logout`. `KALTERM_API_TOKEN` supplies a token for scripts.
+- Tests: certificates and fingerprints; users and tokens on real tables on kaldb (hash only, expiry, revocation, disabled users, last-used once a minute); the middleware (uniform 401, bearer parsing,
+  open paths, the loopback exemption and its limits, throttle, cache, revocation after the cache expires); host options; the admin commands; and the client against **a real TLS server on loopback**
+  (trusted, not trusted, changed, the token reaches only a trusted server, a certificate loaded from disk works as a server certificate).
+- A find: loading the stored certificate with ephemeral keys made Windows reject it as a server certificate; the default key storage works (the key is removed when the certificate object is disposed).
