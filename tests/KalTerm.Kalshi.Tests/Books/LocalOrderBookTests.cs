@@ -142,4 +142,21 @@ public class LocalOrderBookTests
         Assert.Equal("seq 4, expected 2", gap.Detail);
         Assert.Equal(["A", "B"], tracker.Stale.Order());
     }
+
+    [Fact]
+    public void MarkingMarketsStaleMakesTheirBooksIgnoreDeltasUntilAFreshSnapshot()
+    {
+        var tracker = new BookTracker();
+        tracker.Process(Envelope("""{"type":"orderbook_snapshot","sid":1,"seq":1,"msg":{"market_ticker":"A","yes_dollars_fp":[["0.4000","1.00"]],"no_dollars_fp":[]}}"""));
+
+        tracker.MarkStale(["A"]);
+        var ignored = tracker.Process(Envelope("""{"type":"orderbook_delta","sid":1,"seq":2,"msg":{"market_ticker":"A","price_dollars":"0.4000","delta_fp":"1.00","side":"yes"}}"""));
+        Assert.Equal("1.00", tracker.Books["A"].Bids("yes")[0].Quantity.ToString());   // the delta was ignored
+        var fresh = tracker.Process(Envelope("""{"type":"orderbook_snapshot","sid":1,"seq":3,"msg":{"market_ticker":"A","yes_dollars_fp":[["0.5000","2.00"]],"no_dollars_fp":[]}}"""));
+
+        Assert.Empty(ignored);
+        Assert.Single(fresh);
+        Assert.Empty(tracker.Stale);
+        Assert.Throws<ArgumentNullException>(() => tracker.MarkStale(null!));
+    }
 }

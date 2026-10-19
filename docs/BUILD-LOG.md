@@ -1134,3 +1134,18 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - `gh pr merge` merged PR #35 while its CI was still running; it finished green, but the merge should wait for CI.
 
 **Left out (as planned).** Profiles, tokens, TLS and pinning (M4); live-updating views; the order book view (3.7); watchlists, alerts; anything that trades.
+
+### 5.8 Slice 3.7a/b: the order book builder and its publication (2026-10-19)
+
+- **3.7a** (committed earlier): `KalTerm.Kalshi.Books` (`LocalOrderBook`, `BookTracker`) ported from the reference and replayed against it with
+  `tools/vectors/generate_orderbook.py` (golden scenarios in `Vectors/orderbook.json`). One addition the reference lacks: `BookTracker.MarkStale`,
+  used when a book message cannot be read.
+- **3.7b**: the ingest process builds books for a static `Ingest:WatchList` (at most 100 markets; empty means no order book subscription, never an
+  empty market list, which Kalshi reads as every market). `KalshiWebSocket.RequestSnapshotAsync` sends `update_subscription` with `get_snapshot`.
+  `OrderBookKeeper` recovers a gap per market: ask for an in-stream snapshot, wait 5 s, else fall back to REST (marked approximate), and retry
+  old stale books every 30 s. It publishes changed books about once a second, and every book every 15 s (heartbeat), to `dbo.orderbook_state`
+  (migration 0002, top 100 levels per side as text, one row per market, no history). The API reads that table (slice 3.7c).
+- Verified: unit tests for the keeper, runner, ingestor, stream source, host options and level text; an end-to-end composition test (snapshot to a
+  row, and a market without a snapshot published as stale). Data, Ingest and Api suites pass on kaldb (160, 175, 117 tests). Locally the Data
+  coverage reads 42 % only because LocalDB is missing here; CI judges it.
+- Not rolled out: kaldb still runs the pre-3.7 build; the watch list goes live in slice 3.8 with the owner's go-ahead (ingest restart, migration 0002).

@@ -6,7 +6,7 @@ namespace KalTerm.Data.Tests;
 public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
 {
     [Fact]
-    public async Task CreatesTheFiveTablesAndTheJournal()
+    public async Task CreatesTheSixTablesAndTheJournal()
     {
         db.Require();
 
@@ -19,7 +19,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
             tables.Add(reader.GetString(0));
         }
 
-        Assert.Equal(["ingest_gap", "ingest_state", "market", "SchemaVersions", "ticker", "trade"], tables);
+        Assert.Equal(["ingest_gap", "ingest_state", "market", "orderbook_state", "SchemaVersions", "ticker", "trade"], tables);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
         var journal = await db.ScalarAsync<int>("SELECT COUNT(*) FROM dbo.SchemaVersions");
 
         Assert.Empty(again);
-        Assert.Equal(1, journal);
+        Assert.Equal(2, journal);
     }
 
     [Theory]

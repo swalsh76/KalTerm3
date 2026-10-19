@@ -1,9 +1,10 @@
+using System.Text.RegularExpressions;
 using KalTerm.Data;
 
 namespace KalTerm.Ingest.Hosting;
 
 /// <summary>What the ingest process reads from its configuration (the <c>Ingest</c> section of <c>appsettings.json</c> or <c>KALTERM_Ingest__*</c> variables).</summary>
-public sealed class IngestHostOptions
+public sealed partial class IngestHostOptions
 {
     /// <summary>The name of the configuration section.</summary>
     public const string SectionName = "Ingest";
@@ -22,6 +23,15 @@ public sealed class IngestHostOptions
 
     /// <summary>How many days past today get a partition boundary.</summary>
     public int PartitionDaysAhead { get; set; } = 7;
+
+    /// <summary>
+    /// The markets whose order books are built and published (<c>Ingest:WatchList:0</c>, <c>Ingest:WatchList:1</c>, ...). Empty means no order book subscription at
+    /// all. Changing it needs a restart in M3.
+    /// </summary>
+    public string[] WatchList { get; set; } = [];
+
+    /// <summary>The most markets on the watch list.</summary>
+    public const int MaxWatchList = 100;
 
     /// <summary>The database connection options these settings describe.</summary>
     /// <returns>The options.</returns>
@@ -44,5 +54,26 @@ public sealed class IngestHostOptions
         {
             throw new InvalidOperationException("Ingest:PartitionDaysAhead must be at least 1");
         }
+
+        if (WatchList.Length > MaxWatchList)
+        {
+            throw new InvalidOperationException($"Ingest:WatchList has {WatchList.Length} markets; the most is {MaxWatchList}");
+        }
+
+        foreach (var ticker in WatchList)
+        {
+            if (ticker is null || !TickerShape().IsMatch(ticker))
+            {
+                throw new InvalidOperationException($"Ingest:WatchList holds something that is not a market ticker: '{ticker}'");
+            }
+        }
+
+        if (WatchList.Distinct(StringComparer.Ordinal).Count() != WatchList.Length)
+        {
+            throw new InvalidOperationException("Ingest:WatchList names a market twice");
+        }
     }
+
+    [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", RegexOptions.CultureInvariant)]
+    private static partial Regex TickerShape();
 }

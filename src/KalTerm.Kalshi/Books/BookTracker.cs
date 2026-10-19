@@ -97,6 +97,17 @@ public sealed class BookTracker
         _removed.ExceptWith(list);
     }
 
+    /// <summary>
+    /// Marks markets stale without a message having said so: for a caller that has found something wrong the tracker cannot see (an unreadable message). A stale
+    /// book ignores deltas until a fresh snapshot arrives. Not part of the reference's tracker, which sets this only from its own checks.
+    /// </summary>
+    /// <param name="tickers">The markets.</param>
+    public void MarkStale(IEnumerable<string> tickers)
+    {
+        ArgumentNullException.ThrowIfNull(tickers);
+        _stale.UnionWith(tickers);
+    }
+
     /// <summary>Forgets a subscription's sequence state.</summary>
     /// <param name="sid">The subscription id.</param>
     public void EndSubscription(int sid) => _subscriptions.Remove(sid);

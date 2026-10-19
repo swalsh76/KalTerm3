@@ -1,6 +1,7 @@
 using KalTerm.Data.Gaps;
 using KalTerm.Data.Markets;
 using KalTerm.Data.Writing;
+using KalTerm.Ingest.Books;
 using KalTerm.Kalshi;
 using KalTerm.Kalshi.Models;
 using KalTerm.Kalshi.WebSocket;
@@ -28,7 +29,8 @@ public sealed record StreamIngestorOptions
 /// <param name="UnknownMarkets">Data messages for a market not in the catalog yet (not stored); combos are counted separately.</param>
 /// <param name="Combos">Data messages for combo (multivariate) markets, skipped by design (D8).</param>
 /// <param name="Malformed">Data messages whose payload could not be read.</param>
-/// <param name="Ignored">Messages of other types (including the sequence-number markers).</param>
+/// <param name="Ignored">Messages of other types (including the sequence-number markers when no order books are kept).</param>
+/// <param name="BookMessages">Order book snapshots, deltas, command errors and sequence markers handed to the book keeper.</param>
 /// <param name="Reconnects">Times the WebSocket client replaced the link.</param>
 /// <param name="GapsLogged">Gap rows stored.</param>
 /// <param name="GapsPending">Gap rows waiting for the database.</param>
@@ -41,6 +43,7 @@ public sealed record StreamIngestorStats(
     long Combos,
     long Malformed,
     long Ignored,
+    long BookMessages,
     long Reconnects,
     long GapsLogged,
     int GapsPending,
@@ -64,6 +67,7 @@ public sealed partial class StreamIngestor
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
     private readonly StreamIngestorOptions _options;
+    private readonly IBookHandler? _books;
     private readonly List<GapRecord> _pending = [];
     private long _tickerRows;
     private long _tradeRows;
@@ -71,6 +75,7 @@ public sealed partial class StreamIngestor
     private long _combos;
     private long _malformed;
     private long _ignored;
+    private long _bookMessages;
     private long _reconnects;
     private long _logged;
     private long _lost;
@@ -93,7 +98,8 @@ public sealed partial class StreamIngestor
         IGapLog gaps,
         StreamIngestorOptions? options = null,
         TimeProvider? time = null,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        IBookHandler? books = null)
     {
         ArgumentNullException.ThrowIfNull(ids);
         ArgumentNullException.ThrowIfNull(tickers);
@@ -110,6 +116,7 @@ public sealed partial class StreamIngestor
         _trades = trades;
         _gaps = gaps;
         _options = options;
+        _books = books;
         _time = time ?? TimeProvider.System;
         _logger = logger ?? NullLogger.Instance;
         _nextFlush = _time.GetUtcNow() + options.FlushInterval;
@@ -123,6 +130,7 @@ public sealed partial class StreamIngestor
         Interlocked.Read(ref _combos),
         Interlocked.Read(ref _malformed),
         Interlocked.Read(ref _ignored),
+        Interlocked.Read(ref _bookMessages),
         Interlocked.Read(ref _reconnects),
         Interlocked.Read(ref _logged),
         Volatile.Read(ref _pendingCount),
@@ -218,7 +226,12 @@ public sealed partial class StreamIngestor
                     }
 
                     break;
+                case "orderbook_snapshot" or "orderbook_delta" or "error" or KalshiWebSocket.ControlType when _books is not null:
+                    _books.Handle(message);
+                    Interlocked.Increment(ref _bookMessages);
+                    break;
                 case KalshiWebSocket.ReconnectedType when message.Payload() is ReconnectedMsg reconnected:
+                    _books?.Handle(message);
                     Interlocked.Increment(ref _reconnects);
                     AddGap(new GapRecord(
                         GapKinds.WsReconnected,

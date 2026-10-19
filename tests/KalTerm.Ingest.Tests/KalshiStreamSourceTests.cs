@@ -16,8 +16,8 @@ public sealed class KalshiStreamSourceTests : IDisposable
 
     public void Dispose() => _signer.Dispose();
 
-    private KalshiStreamSource Source() =>
-        new(KalshiSettings.Default, _signer, new KalshiWebSocketOptions { Connector = _connector, AutoReconnect = false });
+    private KalshiStreamSource Source(IReadOnlyList<string>? watchList = null) =>
+        new(KalshiSettings.Default, _signer, new KalshiWebSocketOptions { Connector = _connector, AutoReconnect = false }, watchList);
 
     [Fact]
     public async Task OpeningSubscribesToTheTickerAndTradeChannelsForEveryMarket()
@@ -76,5 +76,44 @@ public sealed class KalshiStreamSourceTests : IDisposable
         await Assert.ThrowsAsync<KalshiWsException>(() => Source().OpenAsync(TestContext.Current.CancellationToken));
 
         Assert.True(_connector.Connection.CloseCalled);
+    }
+
+    [Fact]
+    public async Task AWatchListAddsAnOrderBookSubscriptionNamingItsMarketsAndTheSessionExposesItsId()
+    {
+        _connector.OnOpen = (_, connection) => connection.AutoSubscribe(5);
+
+        await using var session = await Source(["A-1", "B-2"]).OpenAsync(TestContext.Current.CancellationToken);
+
+        var commands = _connector.Connection.Sent.Select(text => JsonDocument.Parse(text).RootElement).ToList();
+        Assert.Equal(["ticker", "trade", "orderbook_delta"], commands.Select(c => c.GetProperty("params").GetProperty("channels")[0].GetString()));
+        Assert.Equal(["A-1", "B-2"], commands[2].GetProperty("params").GetProperty("market_tickers").EnumerateArray().Select(t => t.GetString()));
+        Assert.Equal(5, session.OrderBookSid);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WithNoWatchListThereIsNoOrderBookSubscriptionNeverAnEmptyOneThatKalshiWouldReadAsEveryMarket(bool emptyList)
+    {
+        _connector.OnOpen = (_, connection) => connection.AutoSubscribe(5);
+
+        await using var session = await Source(emptyList ? [] : null).OpenAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, _connector.Connection.Sent.Count);
+        Assert.Null(session.OrderBookSid);
+    }
+
+    [Fact]
+    public async Task ASessionCanAskForAFreshSnapshotOfOneMarket()
+    {
+        _connector.OnOpen = (_, connection) => connection.AutoSubscribe(5);
+        await using var session = await Source(["A-1"]).OpenAsync(TestContext.Current.CancellationToken);
+
+        var id = await session.RequestSnapshotAsync(5, "A-1", TestContext.Current.CancellationToken);
+
+        var sent = JsonDocument.Parse(_connector.Connection.Sent[^1]).RootElement;
+        Assert.Equal(id, sent.GetProperty("id").GetInt32());
+        Assert.Equal("get_snapshot", sent.GetProperty("params").GetProperty("action").GetString());
     }
 }

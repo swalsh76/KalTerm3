@@ -34,6 +34,25 @@ public class IngestHostOptionsTests
 
         Assert.Throws<InvalidOperationException>(options.Validate);
     }
+
+
+    [Fact]
+    public void ADefaultOptionsHasNoWatchListAndANormalOneIsAccepted()
+    {
+        Assert.Empty(new IngestHostOptions().WatchList);
+        new IngestHostOptions { WatchList = ["KXBTC-26DEC31-T100000", "A.B_C-1"] }.Validate();
+        new IngestHostOptions { WatchList = [.. Enumerable.Range(0, IngestHostOptions.MaxWatchList).Select(i => "M-" + i)] }.Validate();
+    }
+
+    [Fact]
+    public void ABadWatchListIsRefused()
+    {
+        Assert.Throws<InvalidOperationException>(new IngestHostOptions { WatchList = [.. Enumerable.Range(0, IngestHostOptions.MaxWatchList + 1).Select(i => "M-" + i)] }.Validate);
+        Assert.Throws<InvalidOperationException>(new IngestHostOptions { WatchList = ["A", "A"] }.Validate);
+        Assert.Throws<InvalidOperationException>(new IngestHostOptions { WatchList = ["has space"] }.Validate);
+        Assert.Throws<InvalidOperationException>(new IngestHostOptions { WatchList = [""] }.Validate);
+        Assert.Throws<InvalidOperationException>(new IngestHostOptions { WatchList = ["A", null!] }.Validate);
+    }
 }
 
 public sealed class IngestWorkerTests
