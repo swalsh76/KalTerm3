@@ -68,7 +68,7 @@ try {
 
     if ($bad -ne 0) { throw "$bad files differ after the copy; not running" }
 
-    Invoke-Command -Session $session -ArgumentList (, $Suites), $work -ScriptBlock {
+    Invoke-Command -Session $session -ArgumentList $Suites, $work -ScriptBlock {
         param($suites, $dir)
         foreach ($n in $suites) {
             Remove-Item "$dir\last-$n.txt" -ErrorAction SilentlyContinue

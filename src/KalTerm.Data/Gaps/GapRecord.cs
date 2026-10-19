@@ -9,6 +9,12 @@ public static class GapKinds
     /// <summary>The WebSocket link was lost for good (the stream ended with an error).</summary>
     public const string WsLost = "ws_lost";
 
+    /// <summary>The ingest process could not get a WebSocket connection for a while (the span between the stream ending for good and the next one opening).</summary>
+    public const string WsDown = "ws_down";
+
+    /// <summary>The ingest process was not running: from its last heartbeat or clean stop to the next start.</summary>
+    public const string IngestDown = "ingest_down";
+
     /// <summary>A writer dropped rows: buffer full, a batch the database refused, or rows left at shutdown.</summary>
     public const string WriterDropped = "writer_dropped";
 }

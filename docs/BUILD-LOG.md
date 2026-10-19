@@ -997,3 +997,52 @@ On `kaldb` (shared memory, as SYSTEM, `tools/kaldb/run-db-tests.ps1`): Data 111 
 Not a use: reading `KalshiWebSocket.cs` whole and a directory listing that printed 89 KB were wasted context; a narrower listing (or the helper) would have done.
 
 **Local model trial: ended (owner, 2026-10-18).** One real use (above); accurate, but no saving over `grep`/`tail` on structured output, plus 16 s of latency (about 30 s cold) and about 12 GB of VRAM while loaded. The real token cost this slice was whole-file reads and noisy command output, which a local model does not fix. Discontinued and removed: Ollama, the 9 GB model, the helper, and its PATH and Startup entries. The untested case, long unstructured logs (the slice 3.8 soak), is not pursued unless the owner raises it.
+
+### 5.5 Slice 3.4b: the host (2026-10-19)
+
+**Built.**
+- `KalTerm.Data`: `IngestStateStore` (`IIngestState`, one `MERGE`; a value over 400 characters is refused, not cut), `PartitionMaintenance` (`IPartitionMaintenance`: boundaries for today through N days ahead), gap kinds `ingest_down` and `ws_down`.
+- `KalTerm.Ingest.IngestRunner` (no hosting dependency). **Start-up:** add partition boundaries (today + 7 days), load the market ids (a first full discovery pass if there are none), log the time since the last run as an `ingest_down` gap, mark the run `running`, start the writers.
+  A start-up failure is thrown and releases the writers. **Running:** three loops. The stream loop opens a stream, runs `StreamIngestor`, and replaces the stream whenever it ends or fails (waits 1 s, doubling to 60 s; the wait resets only once a stream has delivered data);
+  the span with no stream becomes a `ws_down` gap. The discovery loop follows `RefreshSchedule`; a failed pass is counted and logged and the next tick tries again. The maintenance loop writes a heartbeat to `ingest_state` every 15 s, tops up partitions hourly and logs one status line a minute.
+  Only recoverable errors (WebSocket, HTTP, socket, IO, timeout) are retried; anything else stops the run, after an orderly shutdown, and surfaces. **Stopping:** loops stop, the writers drain (10 s), the last gaps (including abandoned rows) are stored, the run is marked `stopped`; none of that can throw.
+  `ingest_state` holds one row, `run`: its time is the last heartbeat while running and the clean-stop time otherwise, so the next start knows how long it was down and whether the stop was clean (a crash loses at most one heartbeat interval at the start of the gap).
+- `StreamIngestor` can run for a later stream (counters and waiting gaps carry over) and gained `NoteGap` and `FlushAsync`. `IStreamSource` / `KalshiStreamSource` subscribe `ticker` and `trade` with no market list (every market).
+- `KalTerm.Ingest.Hosting`: `IngestHostOptions` (`Ingest:Server`, `Database`, `ProvisionMaxSizeGb`, `PartitionDaysAhead`), `DatabasePreparer` (a missing database is an error unless `ProvisionMaxSizeGb` is set, then it is created with that hard `MAXSIZE`; migrations run every start), `IngestComposition` (the real storage and Kalshi feed), `IngestWorker` (a `BackgroundService`: a failure logs, sets exit code 1 and stops the host).
+- `src/KalTerm.Ingest.Host`: the executable, 20 lines on the Generic Host. Settings: `appsettings.json` next to the exe, `KALTERM_Ingest__*` variables, command line; Kalshi settings from `KALSHI_*` (demo unless `KALSHI_ENV=production`, with the production banner).
+  Run: `dotnet run --project src/KalTerm.Ingest.Host -c Release`.
+
+**Decision recorded.** No coverage-gate exclusion for the Host assembly (the plan expected one): no test project loads it, so it never appears in the coverage reports.
+
+**Verified.** Local: format clean, no build warnings, 4,379 tests, 0 failed (74 skipped: the database tests, no LocalDB on this workstation; local gate Data 45%, Ingest 89.0% for that reason, judged on CI).
+On `kaldb` (`tools/kaldb/run-db-tests.ps1`): Data 118 of 118 run passed, Ingest 137 of 137 run passed. The end-to-end test provisions a database of its own (1 GB), runs the whole composition with a scripted feed, checks the ticker and trade rows, the markets, the `stopped` state, and then that a second run logs one `ingest_down` gap.
+The runner tests use the real clock with tiny intervals and wait for outcomes; 5 consecutive runs passed.
+Smoke run of the executable with no database: it logged "database 'KalTerm' does not exist ... set Ingest:ProvisionMaxSizeGb to create it", created nothing and exited with code 1.
+
+**Problems and fixes.**
+- The fake clock fires every timer at once, which cancels a `CancellationTokenSource(timeout, clock)` immediately and makes loops spin; the runner takes a `Schedule` seam and its tests run on the real clock.
+- The "stream delivered data" test used the last-data timestamp, which identical test timestamps defeat; the runner counts data messages instead.
+- The first retry design reset the wait on every successful open, so a server that accepts and drops a connection would be hit every second; it resets only after data arrived.
+- The host's content root was the current directory, so `appsettings.json` would be missed under a service or scheduled task; it is now the executable's folder.
+- `IWsConnector` / `IWsConnection` are internal to `KalTerm.Kalshi`; `KalTerm.Ingest.Tests` was added to its `InternalsVisibleTo` to reuse the scripted connection.
+- `tools/kaldb/run-db-tests.ps1` mangled the suite list when run with both suites (a nested `-ArgumentList`); fixed.
+- CI hit a race in a slice 3.2 test, `BulkWriterTests.ReportsUnhealthyAfterConsecutiveFailuresAndRecoversOnSuccess`: it waited for the sink to record the batch and then asserted the writer was healthy, but the writer notes the success after the sink returns. It now waits for the state it asserts on (8 clean runs; the failure itself was not reproducible locally).
+- This workstation has a SQL Server default instance reachable at `lpc:.` after all (the host's smoke run reached it), though no LocalDB; the project still runs database tests on `kaldb`.
+
+**Not done (per the plan): a live run.** Nothing in 3.4 has talked to Kalshi's WebSocket feed yet beyond the earlier live message tests. The optional short production read-only run, and then the soak in 3.8, each need the owner's go-ahead.
+
+#### 5.5.1 Live-style run on `kaldb` (started 2026-10-18 22:22 server time; owner's go-ahead for the production read-only feed, 100 GB database cap, SQL memory cap 20 GB)
+
+**Setup (once).** The read-only key file was copied to `kaldb:C:\KalTerm\secrets\` (readable by SYSTEM and Administrators only; never read or printed), `KALSHI_ENV=production`, `KALSHI_KEY_ID` and `KALSHI_PRIVATE_KEY_PATH` set as machine variables, and the instance's `max server memory` capped at 20,480 MB.
+The ingest runs as the scheduled task `KalTerm-Ingest` (SYSTEM, at boot, restarts 3 times a minute apart on failure, no time limit) from `C:\KalTerm\ingest\releases\<name>`; `release.txt` names the release, `run.ps1` is the wrapper (settings: `lpc:.\KALTERM`, database `KalTerm`, `ProvisionMaxSizeGb=100`; console log to `logs\ingest-<time>.log`, newest 30 kept).
+Tools: `tools/kaldb/deploy-ingest.ps1` (hash-synced release, task, wrapper; `-Restart` is a hard stop and start) and `tools/kaldb/ingest-status.ps1` (read-only status: task, process, last status line, warnings, database size, approximate row counts and rates, gaps, run state).
+
+**Not a blocker.** The soak runs from a pinned release folder; builds, tests and new releases never touch it, and a new release only runs after `-Restart`. Database test suites use databases of their own on the same instance and never touch `KalTerm` (they do share CPU and disk). Monitoring is read-only and on demand, plus an hourly session check that reports only anomalies.
+
+**First findings.**
+- First start: the host created the `KalTerm` database (`MAXSIZE` 100 GB, recovery simple), applied the schema, and discovered 120,367 open non-combo markets, all within about 27 s of starting; the feed was subscribed and streaming straight away.
+- First minutes: about 25,000 ticker rows and 4,000 trade rows a minute stored, 0 dropped, nothing buffered, process about 180 MB.
+- About a third of the feed's messages are for combo markets (`KXMVE...`), which D8 skips. They were counted as "unknown markets" and tripped a warning at every power of ten; they are now counted separately (`combos_skipped`) and quietly.
+- By accident (a bug in the deploy script's `-Restart` switch, fixed) the process was hard-killed and restarted a minute and a half in. That gave the first live proof of the crash path: one `ingest_down` gap, run state back to `running`, ingest resumed.
+
+**Bugs found in the new scripts.** The status script collapsed single-row query results (PowerShell unrolls a one-element array); the deploy script passed `[bool]$Restart` in an argument list, which PowerShell reads as a non-empty string, so it always restarted.

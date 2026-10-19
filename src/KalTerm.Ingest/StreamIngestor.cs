@@ -25,7 +25,8 @@ public sealed record StreamIngestorOptions
 /// <summary>A snapshot of a <see cref="StreamIngestor"/>.</summary>
 /// <param name="Tickers">Ticker rows handed to the writer.</param>
 /// <param name="Trades">Trade rows handed to the writer.</param>
-/// <param name="UnknownMarkets">Data messages for a market not in the catalog yet (not stored).</param>
+/// <param name="UnknownMarkets">Data messages for a market not in the catalog yet (not stored); combos are counted separately.</param>
+/// <param name="Combos">Data messages for combo (multivariate) markets, skipped by design (D8).</param>
 /// <param name="Malformed">Data messages whose payload could not be read.</param>
 /// <param name="Ignored">Messages of other types (including the sequence-number markers).</param>
 /// <param name="Reconnects">Times the WebSocket client replaced the link.</param>
@@ -37,6 +38,7 @@ public sealed record StreamIngestorStats(
     long Tickers,
     long Trades,
     long UnknownMarkets,
+    long Combos,
     long Malformed,
     long Ignored,
     long Reconnects,
@@ -47,10 +49,14 @@ public sealed record StreamIngestorStats(
 
 /// <summary>
 /// Turns the WebSocket message stream into rows for the writers and records every gap in the data: a replaced link, a link lost for good,
-/// and rows a writer had to drop. Gaps are kept and retried while the database is unavailable. Run it once per stream.
+/// and rows a writer had to drop. Gaps are kept and retried while the database is unavailable. It can be run again for a later stream: counters,
+/// the last data time and any waiting gaps carry over.
 /// </summary>
 public sealed partial class StreamIngestor
 {
+    /// <summary>The ticker prefix of combo (multivariate) markets, which are skipped (decision D8).</summary>
+    public const string ComboPrefix = "KXMVE";
+
     private readonly MarketIdMap _ids;
     private readonly IRowWriter<TickerRow> _tickers;
     private readonly IRowWriter<TradeRow> _trades;
@@ -62,6 +68,7 @@ public sealed partial class StreamIngestor
     private long _tickerRows;
     private long _tradeRows;
     private long _unknown;
+    private long _combos;
     private long _malformed;
     private long _ignored;
     private long _reconnects;
@@ -113,6 +120,7 @@ public sealed partial class StreamIngestor
         Interlocked.Read(ref _tickerRows),
         Interlocked.Read(ref _tradeRows),
         Interlocked.Read(ref _unknown),
+        Interlocked.Read(ref _combos),
         Interlocked.Read(ref _malformed),
         Interlocked.Read(ref _ignored),
         Interlocked.Read(ref _reconnects),
@@ -138,7 +146,7 @@ public sealed partial class StreamIngestor
                 Handle(message);
                 if (_time.GetUtcNow() >= _nextFlush)
                 {
-                    await FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await FlushCoreAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -151,9 +159,21 @@ public sealed partial class StreamIngestor
         finally
         {
             using var timeout = new CancellationTokenSource(_options.FinalFlushTimeout, _time);
-            await FlushAsync(timeout.Token).ConfigureAwait(false);
+            await FlushCoreAsync(timeout.Token).ConfigureAwait(false);
         }
     }
+
+    /// <summary>Records a gap that happened between streams. Call it only while <see cref="RunAsync"/> is not running; the next flush stores it.</summary>
+    /// <param name="kind">The gap kind, see <see cref="GapKinds"/>.</param>
+    /// <param name="from">When the gap began (UTC).</param>
+    /// <param name="to">When it ended (UTC).</param>
+    /// <param name="detail">Free text for the operator.</param>
+    public void NoteGap(string kind, DateTime from, DateTime to, string detail) => AddGap(new GapRecord(kind, from, to, detail));
+
+    /// <summary>Collects the writers' dropped ranges and stores the waiting gaps; a failed store leaves them for the next flush. Call it only while <see cref="RunAsync"/> is not running.</summary>
+    /// <param name="cancellationToken">Cancels the store.</param>
+    /// <returns>A task that completes when the flush has been attempted.</returns>
+    public Task FlushAsync(CancellationToken cancellationToken = default) => FlushCoreAsync(cancellationToken);
 
     private static bool IsPowerOfTen(long n)
     {
@@ -220,6 +240,13 @@ public sealed partial class StreamIngestor
 
     private void NoteUnknown(string ticker)
     {
+        if (ticker.StartsWith(ComboPrefix, StringComparison.Ordinal))
+        {
+            // Combos are out of scope (D8): the feed carries them for every subscription, so count them quietly.
+            Interlocked.Increment(ref _combos);
+            return;
+        }
+
         var count = Interlocked.Increment(ref _unknown);
         if (IsPowerOfTen(count))
         {
@@ -240,8 +267,7 @@ public sealed partial class StreamIngestor
         Volatile.Write(ref _pendingCount, _pending.Count);
     }
 
-    /// <summary>Collects the writers' dropped ranges and stores the waiting gaps; a failed store leaves them for the next flush.</summary>
-    private async Task FlushAsync(CancellationToken cancellationToken)
+    private async Task FlushCoreAsync(CancellationToken cancellationToken)
     {
         _nextFlush = _time.GetUtcNow() + _options.FlushInterval;
         AddDropped("ticker", _tickers.TakeDroppedRange());
