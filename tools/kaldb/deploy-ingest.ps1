@@ -35,6 +35,8 @@ if (-not $ComputerName -or -not $CredentialPath) { throw 'Pass -ComputerName and
 if (-not (Test-Path (Join-Path $ReleaseDir 'KalTerm.Ingest.Host.exe'))) { throw "No KalTerm.Ingest.Host.exe in $ReleaseDir" }
 if (-not $Name) { $Name = Split-Path $ReleaseDir -Leaf }
 $root = 'C:\KalTerm\ingest'
+# lpc:.\NAME is the named instance NAME, whose service is MSSQL$NAME; anything else is taken to be the default instance.
+$sqlService = if ($Instance -match '\\([^\\]+)$') { 'MSSQL$' + $Matches[1] } else { 'MSSQLSERVER' }
 
 $wrapper = @"
 `$ErrorActionPreference = 'Stop'
@@ -47,10 +49,28 @@ Get-ChildItem `$logDir -Filter 'ingest-*.log' | Sort-Object LastWriteTime -Desce
 `$env:KALTERM_Ingest__Server = '$Instance'
 `$env:KALTERM_Ingest__Database = '$Database'
 `$env:KALTERM_Ingest__ProvisionMaxSizeGb = '$ProvisionMaxSizeGb'
-Set-Location "`$root\releases\`$release"
-"`$(Get-Date -Format o) starting release `$release" | Out-File `$log -Append -Encoding ascii
-cmd.exe /c "KalTerm.Ingest.Host.exe >> ""`$log"" 2>&1"
-exit `$LASTEXITCODE
+function Write-Log(`$text) { "`$(Get-Date -Format o) `$text" | Out-File `$log -Append -Encoding ascii }
+
+# After a boot SQL Server may not be up yet (it is a delayed-start service): wait for it, bounded, then go on and let the host report if it is still down.
+`$sql = Get-Service '$sqlService' -ErrorAction SilentlyContinue
+if (`$sql) {
+    try { `$sql.WaitForStatus('Running', [TimeSpan]::FromMinutes(10)); Write-Log "SQL Server service is `$(`$sql.Status)" }
+    catch { Write-Log "SQL Server service is still `$(`$sql.Status) after 10 minutes; starting the host anyway" }
+}
+
+# Supervise the host: a clean exit (code 0, an orderly stop) ends this; any other exit is retried after a capped, growing wait.
+`$wait = 15
+while (`$true) {
+    Set-Location "`$root\releases\`$release"
+    Write-Log "starting release `$release"
+    cmd.exe /c "KalTerm.Ingest.Host.exe >> ""`$log"" 2>&1"
+    `$code = `$LASTEXITCODE
+    Write-Log "host exited with code `$code"
+    if (`$code -eq 0) { break }
+    Write-Log "retrying in `$wait s"
+    Start-Sleep -Seconds `$wait
+    `$wait = [Math]::Min(120, `$wait * 2)
+}
 "@
 
 $session = New-PSSession -ComputerName $ComputerName -Credential (Import-Clixml $CredentialPath)
