@@ -16,7 +16,7 @@ param(
     [Parameter(Mandatory)][string]$Path,
     [ValidateRange(0, 100)][double]$MinLinePercent = 90,
     [string[]]$Exclude = @('KalTerm.TestSupport'),
-    [string]$Include = 'KalTerm.*',
+    [string[]]$Include = @('KalTerm.*', 'kterm'),   # kterm is the CLI: its assembly is named after the command
     [hashtable]$AssemblyMinimum = @{ 'KalTerm.Core' = 95; 'KalTerm.Data' = 95 }
 )
 
@@ -33,7 +33,7 @@ foreach ($report in $reports) {
     $xml = [xml](Get-Content -LiteralPath $report.FullName -Raw)
     foreach ($package in $xml.coverage.packages.package) {
         if ($Exclude -contains $package.name) { continue }
-        if ($package.name -notlike $Include) { continue }
+        if (-not ($Include | Where-Object { $package.name -like $_ })) { continue }
         if (-not $assemblies.ContainsKey($package.name)) { $assemblies[$package.name] = @{} }
         $lines = $assemblies[$package.name]
         foreach ($class in $package.classes.class) {
@@ -47,7 +47,7 @@ foreach ($report in $reports) {
 }
 
 if ($assemblies.Count -eq 0) {
-    Write-Error "The reports under '$Path' list no assemblies to judge (included: $Include, excluded: $($Exclude -join ', '))."
+    Write-Error "The reports under '$Path' list no assemblies to judge (included: $($Include -join ', '), excluded: $($Exclude -join ', '))."
     exit 1
 }
 
@@ -62,7 +62,7 @@ foreach ($name in ($assemblies.Keys | Sort-Object)) {
     '{0} {1,-22} {2,6:N1}% lines ({3} of {4}), minimum {5:N1}%' -f $status, $name, $percent, $covered, $total, $minimum
     if ($percent -lt $minimum) { $failed = $true }
 }
-"merged $($reports.Count) report(s); judged: $Include; not judged: $($Exclude -join ', ')"
+"merged $($reports.Count) report(s); judged: $($Include -join ', '); not judged: $($Exclude -join ', ')"
 
 if ($failed) {
     Write-Error "Line coverage is below the gate for at least one assembly."

@@ -115,6 +115,13 @@ Run the read-only API (loopback only until TLS and tokens exist; default `http:/
 dotnet run --project src/KalTerm.Api.Host -c Release
 ```
 
+Read a KalTerm server with the CLI (`status` exits 2 when it finds problems). Locally against a running API, or on the server through remoting (the API listens on loopback only until M4; pass the host and a credential file, or set `KALTERM_TEST_HOST` and `KALTERM_TEST_CRED`):
+
+```powershell
+dotnet run --project src/KalTerm.Cli -c Release -- status
+.	ools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
+```
+
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in
 CI). **The owner granted standing permission (2026-10-16) for the assistant to run them itself**, within these limits:
 GET only and never an order; the key id and path come from the owner's User environment variables

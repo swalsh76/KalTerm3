@@ -1107,3 +1107,30 @@ Deployed beside the ingest as the scheduled task `KalTerm-Api` (SYSTEM, at boot,
 - The process uses about 45 MB and listens on `127.0.0.1:5280` only.
 
 **Not yet:** the API runs as SYSTEM with the same database rights as the ingest; a least-privilege login (read-only) is M8's. Nothing reaches it from outside the machine; the CLI (3.6) will reach it through remoting until M4 adds TLS and tokens.
+
+### 5.7 Slice 3.6: the CLI (2026-10-19)
+
+Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
+
+**Built.**
+- `KalTerm.Client`: `IKalTermApi` (status, markets, one market, ticks, trades, gaps) and `KalTermApiClient` over `HttpClient`. It only ever sends `GET`, builds the query in a fixed order with escaping, turns a refusal into an `ApiException` carrying the API's own error code and the fields it named, and an unreachable or slow API into an `ApiUnavailableException` naming the address. A separate library so the later UI reuses it.
+- `KalTerm.Cli` (the executable is `kterm`): `status`, `markets`, `market TICKER`, `ticks TICKER`, `trades TICKER`, `gaps`. Shared options: `--api URL` (or `KALTERM_API_URL`, default `http://127.0.0.1:5280`), `--json` (the API's exact JSON; for `market` just the market), `--width`, `--no-color`.
+  `markets` takes `--status`, `--event`, `--search/-q`, `--limit`, `--cursor`; `ticks` and `trades` take `--since 15m|2h|1d`, or `--start`/`--end` (times must carry an offset, as at the API), `--limit`, `--cursor`; `gaps` takes `--since` (default 24h) and `--limit`. A page with more behind it prints `More available: --cursor ...`.
+  `status` puts problems first, then ingest, streams, storage, markets and the gaps (downtime) of the last 24 hours with the note that ticker data in a gap is lost. **Exit codes:** 0 fine, 1 the API could not be reached or refused the request or the command line was wrong (one line, no stack trace), 2 `status` found problems.
+  Display only shortens: prices keep two decimals and lose trailing zeros (`0.560000` is `0.56`), counts get thousands separators and lose `.00`, times are UTC. `--json` keeps the exact strings.
+- `tools/kaldb/kterm.ps1 -ComputerName ... -CredentialPath ... [-Publish] -- <kterm arguments>`: publishes the CLI when asked, syncs it by hash to `C:\KalTerm\cli` on the server and runs it there (the API listens on loopback only until M4), returning the output and kterm's exit code.
+
+**Verified.** Local: format clean, no warnings, 4,690 tests, 0 failed (96 skipped: the database tests). New: 21 client tests (stubbed HTTP: URLs, escaping, every error path), 120 CLI tests (the real command-line parser and views over a fake API and Spectre's test console: output, exit codes, error messages, addresses, widths; formatting tables; the table layout). Coverage: `KalTerm.Client` 100%, `kterm` 94.6%.
+**Live on `kaldb`** (through `kterm.ps1`, against the running soak): every command, `--json`, and the failure cases (unknown market, bad `--since`, the API refusing `--limit 0`) with exit codes 1; `status` exit 0 with no problems.
+
+**Problems found, mostly only by running it for real.**
+- **Remoting mangles non-ASCII text.** The server-side process encodes output in the server's OEM code page and PowerShell decodes it differently on the way back: the `·` separator arrived as `ú` and Spectre's `─` table rules as `Ä`. Output is now plain ASCII (separators `|`, tables of dashes), and a test fails if any command prints a non-ASCII character.
+- **Spectre's `Table` squeezes every column** when one long cell does not fit, ignoring fixed widths (the gaps table lost its Id and wrapped "Length"). Tables are now `TextTable`: columns as wide as their widest cell, only the last column wraps with a hanging indent, and on a console too narrow for that the last column moves under each row.
+- `kterm.ps1` ran with `$ErrorActionPreference = 'Stop'`, so the CLI's own error line (stderr) became a terminating error and ended the session; stderr is now carried back as output and the exit code is returned.
+- Setting `[Console]::OutputEncoding` inside a remoting session fails ("The handle is invalid"); not needed once the output is ASCII.
+- **The coverage gate did not see the CLI**: its assembly is named `kterm` and the gate only judged `KalTerm.*`. `check-coverage.ps1 -Include` is now a list (`KalTerm.*`, `kterm`).
+- `dotnet format` (the fixing form) turned a compile error into a stub method that throws; run it only on a green build, and `--verify-no-changes` otherwise.
+- A scripted edit writing `\n` inside a C# string literal produced a real newline three times; such edits now use the editor tool or character codes.
+- `gh pr merge` merged PR #35 while its CI was still running; it finished green, but the merge should wait for CI.
+
+**Left out (as planned).** Profiles, tokens, TLS and pinning (M4); live-updating views; the order book view (3.7); watchlists, alerts; anything that trades.
