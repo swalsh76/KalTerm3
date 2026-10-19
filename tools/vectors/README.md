@@ -14,6 +14,7 @@ python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTe
 python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2    # needs: pip install pydantic
 python tools/vectors/generate_api_format.py --reference C:\Users\stebe\dev\KalshiTerm2
+python tools/vectors/generate_orderbook.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs the reference's dependencies, see below
 ```
 
 `generate_models.py` runs the reference's pydantic models over an adversarial corpus (JSON numbers where strings are
@@ -31,6 +32,8 @@ reference's real `load_private_key` and `KalshiSigner.headers()` as the oracle, 
 vectors of spike S-3 exactly.
 
 `generate_api_format.py` loads the reference server's `api/format.py` by path (standard library plus `kalshi_core.fixedpoint`): the decimal strings for prices and counts, the ISO-8601 time text and the opaque cursors the API sends. Its vectors go to `tests/KalTerm.Contracts.Tests/Vectors/`. The reference's cursor decoder also accepts the standard base64 alphabet (`+`, `/`); KalTerm's does not, and the generator leaves those inputs out.
+
+`generate_orderbook.py` replays scripted message streams (25 scenarios: gaps, resets, negative quantities, removed markets, interleaved subscriptions, a REST snapshot) through the reference `kalshi_core.orderbook.BookTracker` and records, after every step, the events it returned, every book it holds and the stale set; the .NET `BookTracker` must reproduce all of it. Importing that module pulls in the reference's own dependencies (`pip install pydantic pydantic-settings cryptography httpx websockets` in a throwaway venv outside the repo). Its vectors go to `tests/KalTerm.Kalshi.Tests/Vectors/`.
 
 `generate_config.py` reads the reference `config.py` statically with `ast` (it cannot be imported without
 pydantic): the URL maps, field defaults, constraints and variable prefix come from the source itself.
