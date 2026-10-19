@@ -20,6 +20,7 @@ Windows-only stack. KalshiTerm2 (Python, Postgres) is the reference implementati
 | 6 | MIT license, public repository. |
 | 7 | SQL Server 2025 **Enterprise** on the server; licensing is the owner's responsibility and is settled (2026-10-16). Spikes may run on any edition, but a result that depends on an Enterprise-only feature must say so. |
 | 8 | The server host runs **Windows Server 2025** (topology B and the S-1d target). The workstation runs Windows 11 Pro. |
+| 9 | Coverage gate (CI, line coverage per production assembly): **90%**, and **95% for `KalTerm.Core` and `KalTerm.Data`** (owner, 2026-10-18), where a defect costs most (money and fees; durability and retry). Set in `tools/ci/check-coverage.ps1`. |
 
 ## 3. Topologies
 

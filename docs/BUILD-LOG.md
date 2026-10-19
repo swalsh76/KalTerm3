@@ -914,3 +914,8 @@ Limits: 30 s runs on an empty table with one writer; compression, log growth and
   start-up before the writers start, and keep adding ahead of the clock.** `PartitionManager` says so; the writer database tests add their boundaries first.
 - The harness blocks `Remove-Item` even inside a script that runs on the server; use `[System.IO.File]::Delete` there.
 - Fake clock tests: `AutoAdvanceTimeProvider` in manual mode leaves cancelled timers in its queue, so tests pump until their condition holds instead of firing a counted number of timers; 25 consecutive runs of the unit suite passed.
+
+**Coverage gate raised (2026-10-18, owner's decision).** 95% line coverage for `KalTerm.Core` and `KalTerm.Data`, 90% for the rest (PLAN.md decision 9;
+`check-coverage.ps1 -AssemblyMinimum`). `KalTerm.Data` was at 94.1% on CI, so the DbUp log adapter moved to its own internal class (`LoggerUpgradeLog`) and is tested at every
+level, which also covers the generated logger methods. What remains uncovered is deliberate: the provisioner's wait for a database that is not yet online (it needs a database stuck offline
+for up to 60 s), one loop-exit line in the writer, and the null-return branch of the settings read.
