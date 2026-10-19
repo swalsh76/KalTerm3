@@ -24,6 +24,9 @@ The published folder on this machine.
 .PARAMETER Name
 The release name on the server; defaults to the folder name.
 
+.PARAMETER WatchList
+Ingest only: the tickers whose order books are built and published (Ingest:WatchList, at most 100). Omitted means no order book subscription.
+
 .PARAMETER Restart
 Stop the running task and start it from this release.
 
@@ -40,6 +43,7 @@ param(
     [string]$Database = 'KalTerm',
     [int]$ProvisionMaxSizeGb = 100,
     [string]$ApiUrl = 'http://127.0.0.1:5280',
+    [string[]]$WatchList = @(),
     [switch]$Restart,
     [switch]$PrintWrapper
 )
@@ -53,6 +57,13 @@ $services = @{
     api    = @{
         Root = 'C:\KalTerm\api'; Task = 'KalTerm-Api'; Exe = 'KalTerm.Api.Host.exe'; Prefix = 'api'; Status = $null
         Env  = @("`$env:KALTERM_Api__Server = '$Instance'", "`$env:KALTERM_Api__Database = '$Database'", "`$env:KALTERM_Api__Url = '$ApiUrl'")
+    }
+}
+if ($WatchList.Count -gt 0) {
+    if ($Service -ne 'ingest') { throw '-WatchList applies to the ingest service only.' }
+    for ($i = 0; $i -lt $WatchList.Count; $i++) {
+        if ($WatchList[$i] -notmatch '^[A-Za-z0-9._-]+$') { throw "Not a ticker: entry $i" }
+        $services.ingest.Env += "`$env:KALTERM_Ingest__WatchList__$i = '$($WatchList[$i])'"
     }
 }
 $spec = $services[$Service]

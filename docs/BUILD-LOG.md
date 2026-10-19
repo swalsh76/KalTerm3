@@ -1158,3 +1158,15 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   (KXTEMPMIAH-26OCT1912-T85.99, KXTRUMPSAY-26OCT26-SUPE, KXTRUMPSAY-26OCT26-MELA) were followed for 60 s: 3 snapshots, 33 deltas, 0 gaps, no crossed book,
   and all three built books equalled the REST books read right after the window. Test: `LiveKalshiWebSocketTests.ABookBuiltFromTheLiveStream...`.
 - Not rolled out: kaldb still runs the pre-3.7 build; the watch list goes live in slice 3.8 with the owner's go-ahead (ingest restart, migration 0002).
+
+### 5.9 Slice 3.8: the rollout on kaldb, the M3 gate (2026-10-19)
+
+- Owner approved the restart and production as the feed. Watch list: the 50 markets with the most ticker rows in the last hour among active markets closing
+  in more than 3 days (picked from kaldb's own data, read-only). `deploy-service.ps1` gained `-WatchList` (ingest only; written as `KALTERM_Ingest__WatchList__N`
+  lines in the wrapper). Pass `-ReleaseDir` as an absolute path (a relative one broke the file hashing; nothing had been switched at that point).
+- Ingest `host-d475ac4` restarted 09:56 server time (hard stop; the downtime is the third `ingest_down` gap); migration 0002 applied on start; log showed
+  `books=50/50` within two minutes. API `api-d475ac4` restarted afterwards.
+- Gate through `kterm` on kaldb (CLI republished with `-Publish`): `status` passes with a Books line (`50 watched, none stale`), `book` lists all 50
+  (empty books of ended matches show as `-`), `book TICKER --depth 4` prints a ladder with derived asks and a 0.02 spread, `book NOPE-1` is `not found` (exit 1).
+  Book-versus-REST equality was shown by the live test in 5.8 (3 of 3 equal after 33 deltas).
+- The soak continued on the same database throughout; ticker rows resumed at about 35,000 per minute.
