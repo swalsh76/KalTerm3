@@ -9,7 +9,7 @@ using static KalTerm.Cli.Display;
 namespace KalTerm.Cli;
 
 /// <summary>
-/// The command line: <c>status</c>, <c>markets</c>, <c>market</c>, <c>ticks</c>, <c>trades</c> and <c>gaps</c>. Everything is read-only. Exit codes: 0 fine, 1 the API
+/// The command line: <c>status</c>, <c>markets</c>, <c>market</c>, <c>ticks</c>, <c>trades</c>, <c>book</c> and <c>gaps</c>. Everything is read-only. Exit codes: 0 fine, 1 the API
 /// could not be reached or refused the request (or the command line was wrong), 2 <c>status</c> found problems that need attention.
 /// </summary>
 internal static partial class CliApp
@@ -100,6 +100,28 @@ internal static partial class CliApp
             (client, ticker, query, asJson, ct) => ReadTicks(env, client, ticker, query, asJson, ct)));
         root.Subcommands.Add(WindowCommand("trades", "Trades of a market, oldest first (the latest ones unless --since or --start is given)", env, Run,
             (client, ticker, query, asJson, ct) => ReadTrades(env, client, ticker, query, asJson, ct)));
+
+        // ---- book ----
+        var bookTicker = new Argument<string?>("ticker") { Description = "The market ticker; without it, a summary of every watched market", Arity = ArgumentArity.ZeroOrOne };
+        var bookDepth = new Option<int>("--depth") { Description = "How many price levels to show on each side (1 to 100)", DefaultValueFactory = _ => 10 };
+        var book = new Command("book", "The order book of a watched market (bids, derived asks, spread), or a summary of all watched markets");
+        book.Arguments.Add(bookTicker);
+        book.Options.Add(bookDepth);
+        book.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var depth = parsed.GetValue(bookDepth);
+            if (parsed.GetValue(bookTicker) is { } ticker)
+            {
+                var one = await client.GetOrderBookAsync(ticker, depth, ct).ConfigureAwait(false);
+                Print(env, asJson, one, Views.Book(one, env.Out.Profile.Width));
+                return Ok;
+            }
+
+            var all = await client.GetOrderBooksAsync(1, ct).ConfigureAwait(false);
+            Print(env, asJson, all, Views.Books(all, env.Out.Profile.Width));
+            return Ok;
+        }));
+        root.Subcommands.Add(book);
 
         // ---- gaps ----
         var gapSince = new Option<string?>("--since") { Description = "How far back to look, for example 30m, 12h or 7d (default 24h)" };

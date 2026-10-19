@@ -454,4 +454,103 @@ public sealed class CommandTests : IDisposable
         Assert.Contains(lines, line => line.TrimStart().StartsWith("the previous run did not stop cleanly;", StringComparison.Ordinal));
         Assert.All(lines, line => Assert.True(line.TrimEnd('\r').Length <= 80, $"line wider than the console: {line}"));
     }
+
+    // ---- book -----------------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task TheStatusShowsTheBooksLine()
+    {
+        await _cli.RunAsync("status");
+        Assert.Contains("2 watched, none stale, published 3s ago", _cli.Output, StringComparison.Ordinal);
+
+        using var second = new Harness();
+        second.Api.Status = Status() with { Books = new BooksStatusDto(3, 1, 2, 70) };
+        await second.RunAsync("status");
+
+        Assert.Contains("3 watched, 1 stale, 2 approximate, published 70s ago", second.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BookWithATickerPrintsTheLadderWithDerivedAsksAndTheSpread()
+    {
+        var exit = await _cli.RunAsync("book", "A-1", "--depth", "4");
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Equal([("A-1", (int?)4)], _cli.Api.BookQueries);
+        var lines = _cli.Output.Split('\n');
+        int Line(string text) => Array.FindIndex(lines, l => l.Contains(text, StringComparison.Ordinal));
+        // The no bids 0.55 and 0.54 become yes asks 0.45 and 0.46; the lowest ask sits next to the spread, above the bids.
+        Assert.True(Line("0.46") < Line("0.45"));
+        Assert.True(Line("0.45") < Line("spread 0.04"));
+        Assert.True(Line("spread 0.04") < Line("0.41"));
+        Assert.True(Line("0.41") < Line("0.40"));
+        Assert.Contains("1,500", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("live", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("published 2s ago", _cli.Output, StringComparison.Ordinal);
+        Assert.Empty(_cli.Error);
+    }
+
+    [Theory]
+    [InlineData(true, false, "STALE", "do not trust these levels")]
+    [InlineData(false, true, "APPROXIMATE", "may be slightly off")]
+    public async Task AStaleOrApproximateBookSaysSo(bool stale, bool approximate, string flag, string warning)
+    {
+        _cli.Api.Book = Book("A-1", stale, approximate);
+
+        await _cli.RunAsync("book", "A-1");
+
+        Assert.Contains(flag, _cli.Output, StringComparison.Ordinal);
+        Assert.Contains(warning, _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BookWithoutATickerSummarisesEveryWatchedMarket()
+    {
+        _cli.Api.Books = new OrderBookPage([Book("A-1"), Book("B-2", stale: true), Book("C-3", approximate: true), Book("D-4") with { YesBids = [], NoBids = [] }]);
+
+        var exit = await _cli.RunAsync("book");
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Equal([(int?)1], _cli.Api.BooksDepths);
+        Assert.Contains("A-1", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("0.41", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("0.45", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("0.04", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("STALE", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("APPROX", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("4 watched", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BookWithNothingWatchedSaysHowToWatchSomething()
+    {
+        _cli.Api.Books = new OrderBookPage([]);
+
+        var exit = await _cli.RunAsync("book");
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Contains("No markets are watched", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("book", "A-1")]
+    [InlineData("book")]
+    public async Task BookAsJsonIsTheApisJson(params string[] args)
+    {
+        var exit = await _cli.RunAsync([.. args, "--json"]);
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Equal(args.Length == 2 ? ApiJson.Serialize(_cli.Api.Book!) : ApiJson.Serialize(_cli.Api.Books), _cli.Output.Trim());
+    }
+
+    [Fact]
+    public async Task AnUnwatchedMarketIsReportedAsNotFound()
+    {
+        _cli.Api.Book = null;
+
+        var exit = await _cli.RunAsync("book", "NOPE-1");
+
+        Assert.Equal(CliApp.Failed, exit);
+        Assert.Contains("not found", _cli.Error, StringComparison.Ordinal);
+    }
 }

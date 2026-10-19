@@ -457,3 +457,97 @@ public class StatusReaderEmptyTests(DatabaseFixture db) : IClassFixture<Database
         Assert.True(status.DataFileBytes > 0);
     }
 }
+
+public class BookReaderTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+{
+    private static readonly DateTime T0 = new(2026, 10, 19, 12, 0, 0, 250, DateTimeKind.Utc);
+
+    private async Task SeedAsync()
+    {
+        var a = await ReaderSeed.MarketAsync(db, "BK-A");
+        var b = await ReaderSeed.MarketAsync(db, "BK-B");
+        await new Books.BookStateStore(new DataSource(db.Options)).SaveAsync(
+            [
+                new Books.BookState(b, T0, T0.AddSeconds(2), true, true, [], []),
+                new Books.BookState(a, T0.AddSeconds(-1), T0.AddSeconds(1), false, false, [new(560_000, 1_850), new(550_000, 100)], [new(430_000, 5)]),
+            ],
+            TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task BooksAreListedInTickerOrderWithTheirLevelsDecodedAndTimesInUtc()
+    {
+        db.Require();
+        await SeedAsync();
+
+        var books = await new BookReader(new DataSource(db.Options)).ListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["BK-A", "BK-B"], books.Select(b => b.Ticker));
+        var first = books[0];
+        Assert.Equal([new Books.BookLevel(560_000, 1_850), new Books.BookLevel(550_000, 100)], first.YesLevels);
+        Assert.Equal([new Books.BookLevel(430_000, 5)], first.NoLevels);
+        Assert.Equal((T0.AddSeconds(-1), T0.AddSeconds(1), DateTimeKind.Utc, false, false), (first.UpdatedAt, first.PublishedAt, first.PublishedAt.Kind, first.Stale, first.Approximate));
+        Assert.True(books[1].Stale && books[1].Approximate);
+        Assert.Empty(books[1].YesLevels);
+    }
+
+    [Fact]
+    public async Task OneBookIsFoundByTickerAndAnUnpublishedMarketHasNone()
+    {
+        db.Require();
+        await SeedAsync();
+        var reader = new BookReader(new DataSource(db.Options));
+
+        var found = await reader.GetAsync("BK-B", TestContext.Current.CancellationToken);
+        var missing = await reader.GetAsync("BK-NONE", TestContext.Current.CancellationToken);
+
+        Assert.True(found!.Stale);
+        Assert.Null(missing);
+        await Assert.ThrowsAsync<ArgumentException>(() => reader.GetAsync(" ", TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task TheStatusSummarisesThePublishedBooks()
+    {
+        db.Require();
+        await SeedAsync();
+
+        var status = await new StatusReader(new DataSource(db.Options)).ReadAsync(DateTime.UtcNow, TimeSpan.FromHours(24), TestContext.Current.CancellationToken);
+
+        Assert.Equal(new BookStatus(2, 1, 1, T0.AddSeconds(2)), status.Books);
+    }
+}
+
+public class BookReaderEmptyTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+{
+    [Fact]
+    public async Task NoBooksPublishedIsAnEmptyListAndAZeroSummary()
+    {
+        db.Require();
+
+        var books = await new BookReader(new DataSource(db.Options)).ListAsync(TestContext.Current.CancellationToken);
+        var status = await new StatusReader(new DataSource(db.Options)).ReadAsync(DateTime.UtcNow, TimeSpan.FromHours(24), TestContext.Current.CancellationToken);
+
+        Assert.Empty(books);
+        Assert.Equal(new BookStatus(0, 0, 0, null), status.Books);
+    }
+}
+
+public class BookReaderLegacyDatabaseTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+{
+    [Fact]
+    public async Task ADatabaseFromBeforeSchemaVersionTwoHasNoBooksInsteadOfAnError()
+    {
+        db.Require();
+        await db.ExecuteAsync("DROP TABLE dbo.orderbook_state");
+        var source = new DataSource(db.Options);
+
+        var books = await new BookReader(source).ListAsync(TestContext.Current.CancellationToken);
+        var one = await new BookReader(source).GetAsync("ANY-1", TestContext.Current.CancellationToken);
+        var status = await new StatusReader(source).ReadAsync(DateTime.UtcNow, TimeSpan.FromHours(24), TestContext.Current.CancellationToken);
+
+        Assert.Empty(books);
+        Assert.Null(one);
+        Assert.Null(status.Books);
+    }
+}

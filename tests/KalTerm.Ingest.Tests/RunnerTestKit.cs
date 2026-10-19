@@ -138,6 +138,30 @@ internal sealed class ScriptedSession : IStreamSession
 
     public WsStats Stats { get; } = new(0, 100, 0, 0, 0);
 
+    /// <summary>The order book subscription's id; settable so a test can move it, as a reconnect does.</summary>
+    public int? OrderBookSid { get; set; }
+
+    /// <summary>Every snapshot request made, with the command id handed back.</summary>
+    public List<(int Sid, string Ticker, int Id)> SnapshotRequests { get; } = [];
+
+    /// <summary>When set, the next snapshot requests fail with this.</summary>
+    public Exception? SnapshotRequestFails { get; set; }
+
+    public Task<int> RequestSnapshotAsync(int sid, string ticker, CancellationToken cancellationToken = default)
+    {
+        if (SnapshotRequestFails is not null)
+        {
+            return Task.FromException<int>(SnapshotRequestFails);
+        }
+
+        lock (SnapshotRequests)
+        {
+            var id = 100 + SnapshotRequests.Count;
+            SnapshotRequests.Add((sid, ticker, id));
+            return Task.FromResult(id);
+        }
+    }
+
     public void Push(WsMessage message) => _channel.Writer.TryWrite(message);
 
     /// <summary>Ends the stream normally.</summary>

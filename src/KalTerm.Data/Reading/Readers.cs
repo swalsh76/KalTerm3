@@ -1,5 +1,6 @@
 using System.Data;
 using Dapper;
+using KalTerm.Data.Books;
 using KalTerm.Data.State;
 
 namespace KalTerm.Data.Reading;
@@ -25,6 +26,9 @@ public sealed record ReaderOptions
 internal static class ReaderSupport
 {
     public const int MaxLimit = 1_000;
+
+    /// <summary>SQL Server's error for a table that does not exist.</summary>
+    public const int InvalidObjectName = 208;
 
     /// <summary>A varchar parameter. Dapper sends strings as nvarchar, which turns a varchar comparison into a scan; this keeps it a seek.</summary>
     public static DbString Ansi(string? value, int length) => new() { Value = value, IsAnsi = true, Length = length, IsFixedLength = false };
@@ -282,7 +286,8 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
             file.MaxBytes,
             await DiskFreeAsync(connection, cancellationToken).ConfigureAwait(false),
             markets,
-            gaps);
+            gaps,
+            await BooksAsync(connection, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task<DateTime?> NewestAsync(IDbConnection connection, string table, DateTime now, CancellationToken cancellationToken)
@@ -303,6 +308,26 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
         return null;
     }
 
+    private async Task<BookStatus?> BooksAsync(IDbConnection connection, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var total = await connection.QuerySingleAsync<(int Watched, int Stale, int Approximate, DateTime? Newest)>(ReaderSupport.Command(
+                """
+                SELECT COUNT(*) AS Watched, ISNULL(SUM(CAST(is_stale AS int)), 0) AS Stale, ISNULL(SUM(CAST(is_approximate AS int)), 0) AS Approximate, MAX(published_at) AS Newest
+                FROM dbo.orderbook_state
+                """,
+                null,
+                _options,
+                cancellationToken)).ConfigureAwait(false);
+            return new BookStatus(total.Watched, total.Stale, total.Approximate, total.Newest is { } newest ? DateTime.SpecifyKind(newest, DateTimeKind.Utc) : null);
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == ReaderSupport.InvalidObjectName)
+        {
+            return null;   // a database from before schema v2: no books are published yet
+        }
+    }
+
     private async Task<long?> DiskFreeAsync(IDbConnection connection, CancellationToken cancellationToken)
     {
         try
@@ -319,6 +344,58 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
             return null;
         }
     }
+}
+
+/// <summary><see cref="IBookReader"/> over <c>dbo.orderbook_state</c>.</summary>
+/// <param name="source">Opens connections.</param>
+/// <param name="options">Limits; <see langword="null"/> for the defaults.</param>
+public sealed class BookReader(DataSource source, ReaderOptions? options = null) : IBookReader
+{
+    private const string Select = """
+        SELECT m.ticker AS Ticker, s.updated_at AS UpdatedAt, s.published_at AS PublishedAt, s.is_stale AS Stale, s.is_approximate AS Approximate, s.yes_levels AS YesLevels, s.no_levels AS NoLevels
+        FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id
+        """;
+
+    private readonly ReaderOptions _options = ReaderOptionsCheck.Checked(options);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<StoredBook>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        var rows = await QueryAsync($"{Select} ORDER BY m.ticker", null, cancellationToken).ConfigureAwait(false);
+        return [.. rows.Select(ToBook)];
+    }
+
+    /// <inheritdoc/>
+    public async Task<StoredBook?> GetAsync(string ticker, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ticker);
+        var rows = await QueryAsync($"{Select} WHERE m.ticker = @ticker", new { ticker = ReaderSupport.Ansi(ticker, 128) }, cancellationToken).ConfigureAwait(false);
+        return rows.Count == 0 ? null : ToBook(rows[0]);
+    }
+
+    private static StoredBook ToBook(Row row) => new(
+        row.Ticker,
+        DateTime.SpecifyKind(row.UpdatedAt, DateTimeKind.Utc),
+        DateTime.SpecifyKind(row.PublishedAt, DateTimeKind.Utc),
+        row.Stale,
+        row.Approximate,
+        BookLevelText.Decode(row.YesLevels),
+        BookLevelText.Decode(row.NoLevels));
+
+    private async Task<List<Row>> QueryAsync(string sql, object? parameters, CancellationToken cancellationToken)
+    {
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return [.. await connection.QueryAsync<Row>(ReaderSupport.Command(sql, parameters, _options, cancellationToken)).ConfigureAwait(false)];
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == ReaderSupport.InvalidObjectName)
+        {
+            return [];   // a database from before schema v2: no books are published yet
+        }
+    }
+
+    private sealed record Row(string Ticker, DateTime UpdatedAt, DateTime PublishedAt, bool Stale, bool Approximate, string YesLevels, string NoLevels);
 }
 
 internal static class ReaderOptionsCheck

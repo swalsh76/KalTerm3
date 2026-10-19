@@ -289,4 +289,38 @@ public class StreamIngestorTests
         Assert.Equal((2L, 1L, 1L), (stats.Combos, stats.UnknownMarkets, stats.Tickers));
         Assert.Empty(_trades.Rows);
     }
+
+    private sealed class RecordingBooks : Books.IBookHandler
+    {
+        public List<string> Types { get; } = [];
+
+        public void Handle(KalTerm.Kalshi.Models.WsMessage message) => Types.Add(message.Type);
+    }
+
+    [Fact]
+    public async Task BookMessagesGoToTheBookKeeperAndAreCountedApartFromEverythingElse()
+    {
+        var books = new RecordingBooks();
+        var ingestor = new StreamIngestor(_ids, _tickers, _trades, _gaps, null, _clock, NullLogger.Instance, books);
+        var snapshot = Message("orderbook_snapshot", """{"market_ticker":"A-1","yes_dollars_fp":[],"no_dollars_fp":[]}""");
+        var delta = Message("orderbook_delta", """{"market_ticker":"A-1","price_dollars":"0.4000","delta_fp":"1.00","side":"yes"}""");
+        var control = new KalTerm.Kalshi.Models.WsMessage(KalshiWebSocket.ControlType, Sid: 1, Seq: 4, ReceivedAt: Start);
+        var error = new KalTerm.Kalshi.Models.WsMessage("error", Id: 3, ReceivedAt: Start);
+
+        await ingestor.RunAsync(Stream([snapshot, delta, control, error, Ticker("A-1"), Reconnected(Start.AddSeconds(1)), Message("market_lifecycle_v2", """{"event_type":"created"}""")]), TestContext.Current.CancellationToken);
+
+        Assert.Equal(["orderbook_snapshot", "orderbook_delta", "control", "error", "reconnected"], books.Types);
+        var stats = ingestor.Stats;
+        Assert.Equal((4L, 1L, 1L, 1L), (stats.BookMessages, stats.Reconnects, stats.Tickers, stats.Ignored));
+    }
+
+    [Fact]
+    public async Task WithoutABookKeeperOrderBookMessagesAreJustIgnored()
+    {
+        var ingestor = Ingestor();
+
+        await ingestor.RunAsync(Stream([Message("orderbook_snapshot", """{"market_ticker":"A-1","yes_dollars_fp":[],"no_dollars_fp":[]}"""), new KalTerm.Kalshi.Models.WsMessage("error", Id: 3, ReceivedAt: Start)]), TestContext.Current.CancellationToken);
+
+        Assert.Equal((0L, 2L), (ingestor.Stats.BookMessages, ingestor.Stats.Ignored));
+    }
 }

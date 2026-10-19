@@ -5,6 +5,7 @@ using KalTerm.Data.Gaps;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
+using KalTerm.Ingest.Books;
 using KalTerm.Kalshi.WebSocket;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,6 +33,9 @@ public sealed record IngestRunnerOptions
     /// <summary>The longest wait between attempts to open a stream. Default 60 seconds.</summary>
     public TimeSpan StreamRetryMax { get; init; } = TimeSpan.FromSeconds(60);
 
+    /// <summary>How often changed order books are written to the database. Default 1 second.</summary>
+    public TimeSpan BookPublishInterval { get; init; } = TimeSpan.FromSeconds(1);
+
     /// <summary>The longest the final state write and gap flush wait at shutdown. Default 10 seconds.</summary>
     public TimeSpan StopTimeout { get; init; } = TimeSpan.FromSeconds(10);
 
@@ -42,7 +46,7 @@ public sealed record IngestRunnerOptions
     public void Validate()
     {
         if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
-            || StreamRetryBase <= TimeSpan.Zero || StopTimeout <= TimeSpan.Zero)
+            || StreamRetryBase <= TimeSpan.Zero || StopTimeout <= TimeSpan.Zero || BookPublishInterval <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(IngestRunnerOptions), "every interval and timeout must be positive");
         }
@@ -63,6 +67,7 @@ public sealed record IngestRunnerOptions
 /// <param name="LastDiscovery">The last completed discovery pass.</param>
 /// <param name="LastDiscoveryAt">When it completed.</param>
 /// <param name="DiscoveryFailures">Discovery passes that failed.</param>
+/// <param name="Books">The order book keeper's counters, when books are kept.</param>
 public sealed record IngestStatus(
     DateTimeOffset StartedAt,
     bool StreamConnected,
@@ -73,7 +78,8 @@ public sealed record IngestStatus(
     BulkWriterStats Trades,
     DiscoveryResult? LastDiscovery,
     DateTimeOffset? LastDiscoveryAt,
-    long DiscoveryFailures);
+    long DiscoveryFailures,
+    BookKeeperStats? Books = null);
 
 /// <summary>
 /// The ingest process, minus hosting. Starting: day partitions are added ahead, the market ids are loaded (a first full discovery pass if there
@@ -97,6 +103,7 @@ public sealed partial class IngestRunner
     private readonly TimeProvider _time;
     private readonly ILogger _logger;
     private readonly StreamIngestor _ingestor;
+    private readonly IBookKeeper? _books;
     private long _restarts;
     private long _discoveryFailures;
     private DateTimeOffset _startedAt;
@@ -118,6 +125,7 @@ public sealed partial class IngestRunner
     /// <param name="ingestorOptions">Tuning of the stream ingestor; <see langword="null"/> for the defaults.</param>
     /// <param name="time">The clock.</param>
     /// <param name="logger">Receives the log.</param>
+    /// <param name="books">Keeps and publishes the order books of the watch list; <see langword="null"/> when none are kept.</param>
     public IngestRunner(
         IMarketStore store,
         MarketIdMap ids,
@@ -131,7 +139,8 @@ public sealed partial class IngestRunner
         IngestRunnerOptions? options = null,
         StreamIngestorOptions? ingestorOptions = null,
         TimeProvider? time = null,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        IBookKeeper? books = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(ids);
@@ -155,7 +164,8 @@ public sealed partial class IngestRunner
         _partitions = partitions;
         _time = time ?? TimeProvider.System;
         _logger = logger ?? NullLogger.Instance;
-        _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger);
+        _books = books;
+        _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger, books);
     }
 
     /// <summary>Everything the runner counts, right now.</summary>
@@ -174,7 +184,8 @@ public sealed partial class IngestRunner
                 _trades.Stats,
                 _lastDiscovery,
                 _lastDiscoveryAt,
-                Interlocked.Read(ref _discoveryFailures));
+                Interlocked.Read(ref _discoveryFailures),
+                _books?.Stats);
         }
     }
 
@@ -198,7 +209,12 @@ public sealed partial class IngestRunner
         LogStarted(_logger, _ids.Count);
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(stopToken);
-        Task[] loops = [Guard(StreamLoopAsync, linked), Guard(DiscoveryLoopAsync, linked), Guard(MaintenanceLoopAsync, linked)];
+        List<Task> loops = [Guard(StreamLoopAsync, linked), Guard(DiscoveryLoopAsync, linked), Guard(MaintenanceLoopAsync, linked)];
+        if (_books is not null)
+        {
+            loops.Add(Guard(BookLoopAsync, linked));
+        }
+
         try
         {
             await Task.WhenAll(loops).ConfigureAwait(false);
@@ -279,6 +295,7 @@ public sealed partial class IngestRunner
                 }
 
                 _session = session;
+                _books?.SessionOpened(session);
                 await _ingestor.RunAsync(session.Messages(cancellationToken), cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -292,6 +309,7 @@ public sealed partial class IngestRunner
             finally
             {
                 _session = null;
+                _books?.SessionClosed();
                 if (session is not null)
                 {
                     await session.DisposeAsync().ConfigureAwait(false);
@@ -353,6 +371,16 @@ public sealed partial class IngestRunner
         }
     }
 
+    /// <summary>Writes the order books to the database every <see cref="IngestRunnerOptions.BookPublishInterval"/>; a failed write is logged and retried on the next tick.</summary>
+    private async Task BookLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await Task.Delay(_options.BookPublishInterval, _time, cancellationToken).ConfigureAwait(false);
+            await TryAsync("order book publish", () => _books!.PublishAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     private async Task MaintenanceLoopAsync(CancellationToken cancellationToken)
     {
         var nextPartitions = _time.GetUtcNow() + _options.PartitionCheckInterval;
@@ -372,7 +400,7 @@ public sealed partial class IngestRunner
             {
                 nextStatus = now + _options.StatusInterval;
                 var status = Status;
-                LogStatus(_logger, status.StreamConnected, status.Ingest.Tickers, status.Ingest.Trades, status.Ingest.UnknownMarkets, status.Ingest.Combos, status.Ingest.Reconnects, status.Tickers.Buffered + status.Trades.Buffered, status.Tickers.Dropped + status.Trades.Dropped, status.Ingest.GapsPending, status.StreamRestarts, status.DiscoveryFailures);
+                LogStatus(_logger, status.StreamConnected, status.Ingest.Tickers, status.Ingest.Trades, status.Ingest.UnknownMarkets, status.Ingest.Combos, status.Ingest.Reconnects, status.Tickers.Buffered + status.Trades.Buffered, status.Tickers.Dropped + status.Trades.Dropped, status.Ingest.GapsPending, status.StreamRestarts, status.DiscoveryFailures, status.Books?.Fresh ?? 0, status.Books?.Watched ?? 0);
             }
         }
     }
@@ -400,6 +428,11 @@ public sealed partial class IngestRunner
     {
         try
         {
+            if (_books is not null)
+            {
+                await _books.StopAsync().ConfigureAwait(false);
+            }
+
             await DisposeWritersAsync().ConfigureAwait(false);
             using var timeout = new CancellationTokenSource(_options.StopTimeout, _time);
             await _ingestor.FlushAsync(timeout.Token).ConfigureAwait(false);
@@ -438,6 +471,6 @@ public sealed partial class IngestRunner
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "status: connected={Connected} tickers={Tickers} trades={Trades} unknown_markets={Unknown} combos_skipped={Combos} reconnects={Reconnects} buffered={Buffered} dropped={Dropped} gaps_pending={GapsPending} stream_restarts={Restarts} discovery_failures={DiscoveryFailures}")]
-    private static partial void LogStatus(ILogger logger, bool connected, long tickers, long trades, long unknown, long combos, long reconnects, int buffered, long dropped, int gapsPending, long restarts, long discoveryFailures);
+        Message = "status: connected={Connected} tickers={Tickers} trades={Trades} unknown_markets={Unknown} combos_skipped={Combos} reconnects={Reconnects} buffered={Buffered} dropped={Dropped} gaps_pending={GapsPending} stream_restarts={Restarts} discovery_failures={DiscoveryFailures} books={BooksFresh}/{BooksWatched}")]
+    private static partial void LogStatus(ILogger logger, bool connected, long tickers, long trades, long unknown, long combos, long reconnects, int buffered, long dropped, int gapsPending, long restarts, long discoveryFailures, int booksFresh, int booksWatched);
 }

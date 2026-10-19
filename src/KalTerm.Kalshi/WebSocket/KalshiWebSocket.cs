@@ -226,6 +226,35 @@ public sealed partial class KalshiWebSocket : IAsyncDisposable
         return current!;
     }
 
+    /// <summary>
+    /// Asks for a fresh in-stream order book snapshot of one market of a subscription and returns the command's id. Kalshi has no separate acknowledgement: the
+    /// reply is an <c>orderbook_snapshot</c> message in the stream (echoing the id and carrying the subscription's next sequence number), and a rejected command
+    /// arrives as an <c>error</c> message with the same id. Like every command here it is an <c>update_subscription</c>; it cannot place or change an order.
+    /// </summary>
+    /// <param name="sid">The order book subscription.</param>
+    /// <param name="marketTicker">The market.</param>
+    /// <param name="cancellationToken">Cancels the send.</param>
+    /// <returns>The command id, to match the reply.</returns>
+    public async Task<int> RequestSnapshotAsync(int sid, string marketTicker, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(marketTicker);
+        var connection = _connection;
+        if (connection is null || !_connected)
+        {
+            throw new KalshiWsException("not connected");
+        }
+
+        var id = Interlocked.Increment(ref _nextId);
+        var parameters = new JsonObject
+        {
+            ["sid"] = sid,
+            ["market_tickers"] = new JsonArray(JsonValue.Create(marketTicker)),
+            ["action"] = "get_snapshot",
+        };
+        await connection.SendAsync(new JsonObject { ["id"] = id, ["cmd"] = "update_subscription", ["params"] = parameters }.ToJsonString(), cancellationToken).ConfigureAwait(false);
+        return id;
+    }
+
     /// <summary>Ends a subscription.</summary>
     /// <param name="sid">The subscription.</param>
     /// <param name="cancellationToken">Cancels the wait.</param>

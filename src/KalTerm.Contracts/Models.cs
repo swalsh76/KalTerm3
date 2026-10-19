@@ -130,6 +130,7 @@ public sealed record GapSummaryDto(int WindowHours, long Count, IReadOnlyDiction
 /// <param name="Storage">Storage use.</param>
 /// <param name="Markets">Market counts by status.</param>
 /// <param name="Gaps">Recent gaps.</param>
+/// <param name="Books">The published order books.</param>
 public sealed record StatusDto(
     string Time,
     IReadOnlyList<string> Problems,
@@ -137,7 +138,46 @@ public sealed record StatusDto(
     StreamsDto Streams,
     StorageDto Storage,
     IReadOnlyDictionary<string, long> Markets,
-    GapSummaryDto Gaps);
+    GapSummaryDto Gaps,
+    BooksStatusDto Books);
+
+/// <summary>The published order books in total.</summary>
+/// <param name="Watched">How many markets have a published book.</param>
+/// <param name="Stale">How many of them are stale: messages were missed and recovery has not finished.</param>
+/// <param name="Approximate">How many were rebuilt from a REST snapshot, which cannot be aligned with the live stream.</param>
+/// <param name="PublishedAgeSeconds">How long ago the newest row was written; <see langword="null"/> when none is published.</param>
+public sealed record BooksStatusDto(int Watched, int Stale, int Approximate, long? PublishedAgeSeconds);
+
+/// <summary>One price level of an order book.</summary>
+/// <param name="Price">The price, dollars.</param>
+/// <param name="Quantity">The resting contracts.</param>
+public sealed record BookLevelDto(string Price, string Quantity);
+
+/// <summary>
+/// One market's order book as the ingest process last published it. Kalshi sends bids only; the asks are the other side's bids turned around
+/// (a yes ask at <c>1 - p</c> for a no bid at <c>p</c>), so a client derives them. Levels are best (highest) price first.
+/// </summary>
+/// <param name="Ticker">The market.</param>
+/// <param name="UpdatedAt">When the book last changed.</param>
+/// <param name="PublishedAt">When the ingest process last wrote it.</param>
+/// <param name="AgeSeconds">How long ago that was.</param>
+/// <param name="Stale">Messages were missed (or there is no book yet) and recovery has not finished: do not trust the levels.</param>
+/// <param name="Approximate">Rebuilt from a REST snapshot, which cannot be aligned with the live stream.</param>
+/// <param name="YesBids">Yes bids, best first, cut to the requested depth.</param>
+/// <param name="NoBids">No bids, best first, cut to the requested depth.</param>
+public sealed record OrderBookDto(
+    string Ticker,
+    string UpdatedAt,
+    string PublishedAt,
+    long AgeSeconds,
+    bool Stale,
+    bool Approximate,
+    IReadOnlyList<BookLevelDto> YesBids,
+    IReadOnlyList<BookLevelDto> NoBids);
+
+/// <summary>The published order books, in ticker order.</summary>
+/// <param name="Books">The books.</param>
+public sealed record OrderBookPage(IReadOnlyList<OrderBookDto> Books);
 
 /// <summary>The body of the health checks.</summary>
 /// <param name="Status"><c>ok</c> for liveness; <c>ready</c> or <c>not_ready</c> for readiness.</param>

@@ -1,6 +1,7 @@
 using System.Net;
 using KalTerm.Contracts;
 using KalTerm.Data;
+using KalTerm.Data.Books;
 using KalTerm.Data.Gaps;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
@@ -114,5 +115,33 @@ public sealed class DatabaseEndpointTests(DatabaseFixture db) : IClassFixture<Da
         Assert.Equal(DatabaseFixture.MaxSizeBytes, status.Storage.MaxBytes);
         Assert.DoesNotContain(status.Problems, p => p.Contains("ingest", StringComparison.OrdinalIgnoreCase) || p.Contains("ticker", StringComparison.Ordinal) || p.Contains("trade data", StringComparison.Ordinal));
         Assert.Equal("ready", ready.Status);
+    }
+
+    [Fact]
+    public async Task PublishedBooksComeBackThroughTheEndpointsAndTheStatusCountsThem()
+    {
+        db.Require();
+        var now = DateTime.UtcNow;
+        var live = await MarketAsync("DB-BOOK-A");
+        var stale = await MarketAsync("DB-BOOK-B");
+        await new BookStateStore(new DataSource(db.Options)).SaveAsync(
+            [
+                new BookState(live, now.AddSeconds(-5), now.AddSeconds(-1), false, false, [new BookLevel(410_000, 150), new BookLevel(400_000, 500)], [new BookLevel(550_000, 200)]),
+                new BookState(stale, now, now.AddSeconds(-1), true, false, [], []),
+            ],
+            TestContext.Current.CancellationToken);
+
+        await using var api = await ApiTestHost.StartWithDatabaseAsync(new DataSource(db.Options));
+        var all = await api.GetAsync<OrderBookPage>("/v1/orderbooks");
+        var one = await api.GetAsync<OrderBookDto>("/v1/markets/DB-BOOK-A/orderbook?depth=1");
+        var (missing, _) = await api.GetAsync("/v1/markets/DB-NOPE/orderbook");
+        var status = await api.GetAsync<StatusDto>("/v1/status");
+
+        Assert.Equal(["DB-BOOK-A", "DB-BOOK-B"], all.Books.Select(b => b.Ticker).Where(t => t.StartsWith("DB-BOOK", StringComparison.Ordinal)));
+        Assert.Equal([new BookLevelDto("0.410000", "1.50")], one.YesBids);
+        Assert.Equal([new BookLevelDto("0.550000", "2.00")], one.NoBids);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        Assert.Equal((2, 1), (status.Books.Watched, status.Books.Stale));
+        Assert.Contains(status.Problems, p => p.Contains("order books are stale", StringComparison.Ordinal));
     }
 }

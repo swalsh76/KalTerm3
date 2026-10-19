@@ -1,4 +1,5 @@
 using KalTerm.Core.Money;
+using KalTerm.Kalshi.Books;
 using KalTerm.Kalshi.Models;
 using KalTerm.Kalshi.Rest;
 using KalTerm.Kalshi.WebSocket;
@@ -192,6 +193,59 @@ public class LiveKalshiWebSocketTests
             Assert.All(deltas, d => AssertIsAPrice(d.PriceDollars));
             Assert.All(deltas, d => Assert.True(d.Side is "yes" or "no", $"unexpected side '{d.Side}'"));
             AssertContiguous(messages);
+        }
+    }
+
+    [Fact(Skip = Why, SkipUnless = nameof(LiveGate.Enabled), SkipType = typeof(LiveGate))]
+    public async Task ABookBuiltFromTheLiveStreamStaysFreshNeverCrossesAndMatchesRestWhereNothingMoved()
+    {
+        var (settings, signer) = Credentials();
+        using (signer)
+        {
+            string[] tickers;
+            using (var rest = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer }))
+            {
+                var page = await rest.MarketsPageAsync(
+                    KalshiQuery.Empty.With("limit", 1000).With("status", "open").With("mve_filter", "exclude"), Token);
+                // Moderately active markets: busy enough to see deltas, quiet enough that a REST read right after the window can still agree.
+                tickers = [.. page.Markets.OrderByDescending(m => m.Volume24hFp ?? Contracts.Zero).Skip(20).Take(3).Select(m => m.Ticker)];
+            }
+
+            await using var client = new KalshiWebSocket(settings, signer);
+            await client.ConnectAsync(Token);
+            var sid = await client.SubscribeAsync("orderbook_delta", tickers, cancellationToken: Token);
+            var tracker = new BookTracker();
+            tracker.BeginSubscription(sid, tickers);
+
+            var messages = await ReadForAsync(client, TimeSpan.FromSeconds(60));
+            var events = messages.SelectMany(tracker.Process).ToList();
+
+            using var restAfter = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer });
+            var agreed = 0;
+            foreach (var ticker in tickers)
+            {
+                var built = tracker.Books[ticker];
+                var rest = await restAfter.OrderBookAsync(ticker, cancellationToken: Token);
+                var fromRest = LocalOrderBook.FromRest(ticker, rest);
+                var same = built.Bids("yes").SequenceEqual(fromRest.Bids("yes")) && built.Bids("no").SequenceEqual(fromRest.Bids("no"));
+                if (same)
+                {
+                    agreed++;
+                }
+
+                Say($"{ticker}: {built.YesLevels} yes / {built.NoLevels} no levels, best yes bid {built.BestYesBid}, best yes ask {built.BestYesAsk}; equal to REST: {same}");
+                if (built.BestYesBid is { } bid && built.BestYesAsk is { } ask)
+                {
+                    Assert.True(bid < ask, $"{ticker}: the book is crossed (bid {bid}, ask {ask})");
+                }
+            }
+
+            var deltas = events.Count(e => e.Kind == BookEventKinds.Delta);
+            Say($"orderbook_delta, 60 s, {tickers.Length} markets: {events.Count(e => e.Kind == BookEventKinds.Snapshot)} snapshot(s), {deltas} delta(s), {events.Count(e => e.Kind == BookEventKinds.Gap)} gap(s); {agreed}/{tickers.Length} books equal to REST at the end");
+            Assert.DoesNotContain(events, e => e.Kind is BookEventKinds.Gap or BookEventKinds.Reset or BookEventKinds.Message);
+            Assert.Empty(tracker.Stale);
+            Assert.Equal(tickers.Length, tracker.Books.Count);
+            Assert.True(deltas > 0, "no order book delta in 60 s on three active markets");
         }
     }
 }

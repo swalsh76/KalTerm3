@@ -187,7 +187,7 @@ analytics (M5 onward), combo markets.
 | 3.4 | Stream ingest (WebSocket to writers, gap log) and the host | done (BUILD-LOG 5.4 pipeline, 5.5 host) |
 | 3.5 | `KalTerm.Api` and `KalTerm.Contracts` (loopback, read endpoints) | done (BUILD-LOG 5.6) |
 | 3.6 | `KalTerm.Cli` (market view, status including downtime and gaps) | done (BUILD-LOG 5.7) |
-| 3.7 | In-memory order book builder, sequence-gap detection, `book` view | |
+| 3.7 | In-memory order book builder, sequence-gap detection, `book` view | done (BUILD-LOG 5.8); not yet rolled out on `kaldb` (3.8) |
 | 3.8 | End to end on `kaldb`: the M3 gate (demo feed ingests and the CLI reads it) | |
 
 **Dev tooling trial: local model for bulk digestion (owner, 2026-10-18): ended the same day.** A local model (Ollama, `qwen2.5-coder:14b`) was tried for digesting large test and log output during slice 3.4a and discontinued by the owner; it, the helper script and the model files were removed from the workstation. On structured output (tests, builds, coverage) `grep`, `tail` and `check-coverage.ps1` are exact, instant and as cheap, and the trial rules still required reading failures from the raw output, so it saved nothing (BUILD-LOG 5.4). Not to be revisited unless the owner raises it.

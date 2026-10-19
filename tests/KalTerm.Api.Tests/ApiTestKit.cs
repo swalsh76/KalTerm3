@@ -1,5 +1,6 @@
 using KalTerm.Contracts;
 using KalTerm.Data;
+using KalTerm.Data.Books;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,6 +19,15 @@ internal static class Samples
         new(ticker, "EV-" + ticker, "binary", status, "Yes", "No", NowUtc.AddHours(-5), NowUtc.AddDays(1), null, null, string.Empty, null, NowUtc.AddHours(-4), NowUtc.AddMinutes(-1));
 
     public static StoredTick Tick(DateTime ts, long price = 560_000) => new(ts, price, price - 10_000, price + 10_000, 1_000, 2_050, 123_400, 9_900, null);
+
+    public static StoredBook Book(string ticker, bool stale = false, bool approximate = false, int levels = 3) => new(
+        ticker,
+        NowUtc.AddSeconds(-10),
+        NowUtc.AddSeconds(-2),
+        stale,
+        approximate,
+        [.. Enumerable.Range(0, levels).Select(i => new BookLevel(410_000 - (i * 10_000), 150 + i))],
+        [.. Enumerable.Range(0, levels).Select(i => new BookLevel(550_000 - (i * 10_000), 200))]);
 
     public static StoredTrade Trade(DateTime ts, string id, byte side = 1, bool block = false) => new(ts, id, 400_000, 600_000, 300, side, block);
 }
@@ -81,6 +91,16 @@ internal sealed class FakeGaps : IGapReader
     }
 }
 
+internal sealed class FakeBooks : IBookReader
+{
+    public List<StoredBook> Books { get; } = [];
+
+    public Task<IReadOnlyList<StoredBook>> ListAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<StoredBook>>([.. Books]);
+
+    public Task<StoredBook?> GetAsync(string ticker, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Books.FirstOrDefault(b => b.Ticker == ticker));
+}
+
 internal sealed class FakeStatus : IStatusReader
 {
     public StatusSnapshot Snapshot { get; set; } = new(null, null, null, 1_000, null, null, new Dictionary<string, long>(), new Dictionary<string, long>());
@@ -112,6 +132,8 @@ internal sealed class FakeReaders
 
     public FakeGaps Gaps { get; } = new();
 
+    public FakeBooks Books { get; } = new();
+
     public FakeStatus Status { get; } = new();
 
     public FakeReadiness Readiness { get; } = new();
@@ -122,6 +144,7 @@ internal sealed class FakeReaders
         services.AddSingleton<ITickReader>(Ticks);
         services.AddSingleton<ITradeReader>(Trades);
         services.AddSingleton<IGapReader>(Gaps);
+        services.AddSingleton<IBookReader>(Books);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
     }

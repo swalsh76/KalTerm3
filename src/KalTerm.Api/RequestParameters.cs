@@ -55,6 +55,23 @@ internal sealed partial class RequestParameters(IQueryCollection query)
         return value;
     }
 
+    /// <summary>How many order book levels a side: absent gives the default; present must be a whole number from 1 to the maximum.</summary>
+    public int Depth(int defaultValue, int max)
+    {
+        if (Single("depth") is not { } text)
+        {
+            return defaultValue;
+        }
+
+        if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var value) || value < 1 || value > max)
+        {
+            _invalid.Add("depth");
+            return defaultValue;
+        }
+
+        return value;
+    }
+
     /// <summary>A lowercase status such as <c>active</c>.</summary>
     public string? Status() => Matching("status", StatusShape());
 

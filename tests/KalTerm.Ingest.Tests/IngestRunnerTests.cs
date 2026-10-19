@@ -2,6 +2,7 @@ using KalTerm.Data.Gaps;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
+using KalTerm.Ingest.Books;
 using KalTerm.Kalshi.Models;
 using KalTerm.Kalshi.WebSocket;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -20,6 +21,7 @@ public class IngestRunnerTests
         StreamRetryBase = TimeSpan.FromMilliseconds(10),
         StreamRetryMax = TimeSpan.FromMilliseconds(40),
         StopTimeout = TimeSpan.FromSeconds(5),
+        BookPublishInterval = TimeSpan.FromMilliseconds(20),
         Schedule = now => (now.AddMilliseconds(30), PassKind.Incremental),
     };
 
@@ -29,7 +31,7 @@ public class IngestRunnerTests
         private readonly CancellationTokenSource _stop = new();
         private int _listings;
 
-        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null)
+        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null)
         {
             var markets = catalog?.ToList() ?? [];
             Source = new ScriptedSource(open);
@@ -55,7 +57,8 @@ public class IngestRunnerTests
                 options ?? Fast,
                 new StreamIngestorOptions { FlushInterval = TimeSpan.FromMilliseconds(20) },
                 TimeProvider.System,
-                Log);
+                Log,
+                books);
         }
 
         public FakeMarketStore Store { get; } = new();
@@ -413,6 +416,7 @@ public class IngestRunnerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { StopTimeout = TimeSpan.Zero }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { StreamRetryBase = TimeSpan.FromSeconds(5), StreamRetryMax = TimeSpan.FromSeconds(1) }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { PartitionDaysAhead = 0 }.Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BookPublishInterval = TimeSpan.Zero }.Validate());
         new IngestRunnerOptions().Validate();
 
         using var rig = new Rig(Sessions([]));
@@ -426,5 +430,125 @@ public class IngestRunnerTests
         Assert.Throws<ArgumentNullException>(() => new IngestRunner(rig.Store, rig.Ids, rig.Discovery, rig.Source, rig.Tickers, rig.Trades, null!, rig.State, rig.Partitions));
         Assert.Throws<ArgumentNullException>(() => new IngestRunner(rig.Store, rig.Ids, rig.Discovery, rig.Source, rig.Tickers, rig.Trades, rig.Gaps, null!, rig.Partitions));
         Assert.Throws<ArgumentNullException>(() => new IngestRunner(rig.Store, rig.Ids, rig.Discovery, rig.Source, rig.Tickers, rig.Trades, rig.Gaps, rig.State, null!));
+    }
+
+    // ---- order books ----------------------------------------------------------------------------------------------------------------
+
+    private sealed class FakeKeeper : IBookKeeper
+    {
+        private readonly Lock _sync = new();
+        private int _publishes;
+
+        public List<string> Calls { get; } = [];
+
+        public List<IStreamSession> Sessions { get; } = [];
+
+        public int Publishes => Volatile.Read(ref _publishes);
+
+        public Exception? PublishFails { get; set; }
+
+        public bool Stopped { get; private set; }
+
+        public BookKeeperStats Stats => new(3, 2, 1, 4, 5, 6, 7, 8);
+
+        public void SessionOpened(IStreamSession session)
+        {
+            lock (_sync)
+            {
+                Calls.Add("opened");
+                Sessions.Add(session);
+            }
+        }
+
+        public void SessionClosed()
+        {
+            lock (_sync)
+            {
+                Calls.Add("closed");
+            }
+        }
+
+        public void Handle(KalTerm.Kalshi.Models.WsMessage message)
+        {
+            lock (_sync)
+            {
+                Calls.Add("handle:" + message.Type);
+            }
+        }
+
+        public Task PublishAsync(CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _publishes);
+            return PublishFails is null ? Task.CompletedTask : Task.FromException(PublishFails);
+        }
+
+        public Task StopAsync()
+        {
+            Stopped = true;
+            return Task.CompletedTask;
+        }
+
+        public string[] CallList()
+        {
+            lock (_sync)
+            {
+                return [.. Calls];
+            }
+        }
+    }
+
+    [Fact]
+    public async Task TheBookKeeperIsToldWhenAStreamOpensAndClosesGetsItsMessagesIsPublishedAndStoppedAtShutdown()
+    {
+        var keeper = new FakeKeeper();
+        var sessions = new List<ScriptedSession>();
+        using var rig = new Rig(Sessions(sessions), books: keeper);
+        await rig.SeedAsync("A-1");
+
+        rig.Start();
+        await Wait.UntilAsync(() => rig.Source.Opens >= 1, "the first stream to open");
+        At(sessions, 0).Push(Message("orderbook_snapshot", """{"market_ticker":"A-1","yes_dollars_fp":[],"no_dollars_fp":[]}"""));
+        await Wait.UntilAsync(() => keeper.CallList().Contains("handle:orderbook_snapshot"), "the book message to be handed over");
+        await Wait.UntilAsync(() => keeper.Publishes >= 3, "several publishes");
+        At(sessions, 0).Fail(new Kalshi.WebSocket.KalshiWsException("lost"));
+        await Wait.UntilAsync(() => rig.Source.Opens >= 2, "the stream to be replaced");
+        await rig.StopAsync();
+
+        Assert.Same(At(sessions, 0), keeper.Sessions[0]);
+        var calls = keeper.CallList();
+        Assert.Equal("opened", calls[0]);
+        Assert.True(calls.IndexOf("closed") > calls.IndexOf("handle:orderbook_snapshot"));
+        Assert.Equal(2, calls.Count(c => c == "opened"));
+        Assert.True(keeper.Stopped);
+        Assert.Equal(8, rig.Runner.Status.Books!.Published);
+        Assert.Contains(rig.Log.Lines, l => l.Contains("books=2/3", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AFailedBookPublishIsLoggedAndTheRunCarriesOn()
+    {
+        var keeper = new FakeKeeper { PublishFails = new InvalidOperationException("database is down") };
+        using var rig = new Rig(Sessions([]), books: keeper);
+        await rig.SeedAsync("A-1");
+
+        rig.Start();
+        await Wait.UntilAsync(() => keeper.Publishes >= 3 && rig.Log.Lines.Any(l => l.Contains("order book publish failed", StringComparison.Ordinal)), "failed publishes to be logged");
+        keeper.PublishFails = null;
+        var before = keeper.Publishes;
+        await Wait.UntilAsync(() => keeper.Publishes > before + 2, "publishing to carry on");
+        await rig.StopAsync();
+    }
+
+    [Fact]
+    public async Task WithoutABookKeeperThereIsNoBookLoopAndNoBookStatus()
+    {
+        using var rig = new Rig(Sessions([]));
+        await rig.SeedAsync("A-1");
+
+        rig.Start();
+        await Wait.UntilAsync(() => rig.Source.Opens >= 1, "the first stream to open");
+        await rig.StopAsync();
+
+        Assert.Null(rig.Runner.Status.Books);
     }
 }

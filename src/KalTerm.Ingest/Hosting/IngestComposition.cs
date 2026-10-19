@@ -1,8 +1,10 @@
 using KalTerm.Data;
+using KalTerm.Data.Books;
 using KalTerm.Data.Gaps;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
+using KalTerm.Ingest.Books;
 using KalTerm.Kalshi.Auth;
 using KalTerm.Kalshi.Configuration;
 using KalTerm.Kalshi.Models;
@@ -17,12 +19,16 @@ namespace KalTerm.Ingest.Hosting;
 /// <param name="ListUpdatedSince">The incremental market listing.</param>
 /// <param name="Runner">Runner tuning.</param>
 /// <param name="Time">The clock.</param>
+/// <param name="OrderBookRest">The REST order book fallback.</param>
+/// <param name="Keeper">Tuning of the order book keeper.</param>
 internal sealed record IngestOverrides(
     IStreamSource? Source = null,
     Func<CancellationToken, IAsyncEnumerable<Market>>? ListOpenMarkets = null,
     Func<DateTimeOffset, CancellationToken, IAsyncEnumerable<Market>>? ListUpdatedSince = null,
     IngestRunnerOptions? Runner = null,
-    TimeProvider? Time = null);
+    TimeProvider? Time = null,
+    IOrderBookRest? OrderBookRest = null,
+    OrderBookKeeperOptions? Keeper = null);
 
 /// <summary>Builds the real ingest process from its settings and runs it: database ready, then the <see cref="IngestRunner"/> over real storage and the Kalshi feed.</summary>
 public static class IngestComposition
@@ -59,7 +65,8 @@ public static class IngestComposition
 
             var listOpen = overrides?.ListOpenMarkets;
             var listUpdated = overrides?.ListUpdatedSince;
-            if (listOpen is null || listUpdated is null)
+            var keepBooks = options.WatchList.Length > 0;
+            if (listOpen is null || listUpdated is null || (keepBooks && overrides?.OrderBookRest is null))
             {
                 rest = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer, Logger = loggerFactory.CreateLogger<KalshiRestClient>() });
                 var client = rest;
@@ -67,11 +74,16 @@ public static class IngestComposition
                 listUpdated ??= (since, ct) => client.IterateMarketsUpdatedSinceAsync(since, ct);
             }
 
+            OrderBookKeeper? keeper = keepBooks
+                ? new OrderBookKeeper(options.WatchList, overrides?.OrderBookRest ?? new RestOrderBook(rest!), new BookStateStore(data), ids, overrides?.Keeper, time, loggerFactory.CreateLogger<OrderBookKeeper>())
+                : null;
+
             var source = overrides?.Source
                 ?? new KalshiStreamSource(
                     settings,
                     signer ?? throw new AuthException($"{KalshiSettings.KeyIdVariable} and {KalshiSettings.PrivateKeyPathVariable} must both be set to read the WebSocket feed"),
-                    new Kalshi.WebSocket.KalshiWebSocketOptions { Logger = loggerFactory.CreateLogger<Kalshi.WebSocket.KalshiWebSocket>() });
+                    new Kalshi.WebSocket.KalshiWebSocketOptions { Logger = loggerFactory.CreateLogger<Kalshi.WebSocket.KalshiWebSocket>() },
+                    options.WatchList);
 
             var writerLogger = loggerFactory.CreateLogger(typeof(BulkWriter<>).Namespace!);
             var runner = new IngestRunner(
@@ -87,8 +99,16 @@ public static class IngestComposition
                 overrides?.Runner ?? new IngestRunnerOptions { PartitionDaysAhead = options.PartitionDaysAhead },
                 null,
                 time,
-                loggerFactory.CreateLogger<IngestRunner>());
-            await runner.RunAsync(cancellationToken).ConfigureAwait(false);
+                loggerFactory.CreateLogger<IngestRunner>(),
+                keeper);
+            try
+            {
+                await runner.RunAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                keeper?.Dispose();
+            }
         }
         finally
         {

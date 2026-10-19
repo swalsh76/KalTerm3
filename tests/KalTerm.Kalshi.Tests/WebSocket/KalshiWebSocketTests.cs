@@ -457,19 +457,62 @@ public sealed class KalshiWebSocketTests : IDisposable
         Assert.Null(end);
     }
 
+    // ---- requesting a snapshot ------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task ASnapshotRequestIsAnUpdateSubscriptionGetSnapshotCommandForOneMarket()
+    {
+        await using var client = await ConnectedAsync();
+
+        var id = await client.RequestSnapshotAsync(5, "KX-1", TestContext.Current.CancellationToken);
+
+        var sent = JsonDocument.Parse(_connector.Connection.Sent.Single()).RootElement;
+        Assert.Equal((id, "update_subscription"), (sent.GetProperty("id").GetInt32(), sent.GetProperty("cmd").GetString()));
+        Assert.Equal("""{"sid":5,"market_tickers":["KX-1"],"action":"get_snapshot"}""", sent.GetProperty("params").GetRawText());
+    }
+
+    [Fact]
+    public async Task EachSnapshotRequestGetsItsOwnIdAndTheRepliesComeThroughTheStreamWithThatId()
+    {
+        await using var client = await ConnectedAsync();
+        var first = await client.RequestSnapshotAsync(5, "KX-1", TestContext.Current.CancellationToken);
+        var second = await client.RequestSnapshotAsync(5, "KX-2", TestContext.Current.CancellationToken);
+        _connector.Connection.Push($$$"""{"id":{{{first}}},"type":"orderbook_snapshot","sid":5,"seq":3,"msg":{"market_ticker":"KX-1","yes_dollars_fp":[],"no_dollars_fp":[]}}""");
+        _connector.Connection.Push($$$"""{"id":{{{second}}},"type":"error","msg":{"code":6,"msg":"rejected"}}""");
+        await using var stream = client.Messages(TestContext.Current.CancellationToken).GetAsyncEnumerator(TestContext.Current.CancellationToken);
+
+        var snapshot = await WsTestKit.NextAsync(stream);
+        var error = await WsTestKit.NextAsync(stream);
+
+        Assert.NotEqual(first, second);
+        Assert.Equal(("orderbook_snapshot", first, 3L), (snapshot.Type, snapshot.Id, snapshot.Seq));
+        Assert.Equal(("error", second), (error.Type, error.Id));
+    }
+
+    [Fact]
+    public async Task ASnapshotRequestNeedsAConnectionAndAMarket()
+    {
+        var client = Client();
+        await using var _ = client;
+
+        await Assert.ThrowsAsync<KalshiWsException>(() => client.RequestSnapshotAsync(5, "KX-1", TestContext.Current.CancellationToken));
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
+        await Assert.ThrowsAsync<ArgumentException>(() => client.RequestSnapshotAsync(5, " ", TestContext.Current.CancellationToken));
+    }
+
     // ---- the public surface ---------------------------------------------------------------------------------------------
 
     [Fact]
     public void TheClientsPublicSurfaceIsExactlyTheApprovedSubscriptionMethods()
     {
-        // An allow-list, as for the REST client: the only commands are subscribe, unsubscribe and update_subscription.
+        // An allow-list, as for the REST client: the only commands are subscribe, unsubscribe and update_subscription (RequestSnapshotAsync is an update_subscription).
         var names = typeof(KalshiWebSocket)
             .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)
             .Select(m => m.Name)
             .Order(StringComparer.Ordinal);
 
         Assert.Equal(
-            ["CloseAsync", "ConnectAsync", "DisposeAsync", "Messages", "SubscribeAsync", "UnsubscribeAsync", "UpdateSubscriptionAsync", "get_IsConnected", "get_Stats", "get_Subscriptions"],
+            ["CloseAsync", "ConnectAsync", "DisposeAsync", "Messages", "RequestSnapshotAsync", "SubscribeAsync", "UnsubscribeAsync", "UpdateSubscriptionAsync", "get_IsConnected", "get_Stats", "get_Subscriptions"],
             names);
     }
 

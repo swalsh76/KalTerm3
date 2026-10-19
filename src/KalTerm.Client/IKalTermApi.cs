@@ -55,6 +55,20 @@ public interface IKalTermApi
     /// <returns>The page.</returns>
     Task<TradePage> GetTradesAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default);
 
+    /// <summary>The published order books of every watched market, in ticker order.</summary>
+    /// <param name="depth">The most levels a side; the server's default (10) when <see langword="null"/>.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The books; empty when no market is watched.</returns>
+    Task<OrderBookPage> GetOrderBooksAsync(int? depth = null, CancellationToken cancellationToken = default);
+
+    /// <summary>The published order book of one watched market.</summary>
+    /// <param name="ticker">The ticker.</param>
+    /// <param name="depth">The most levels a side; the server's default (10) when <see langword="null"/>.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The book.</returns>
+    /// <exception cref="ApiException">The API refused or the market is not watched (<c>not_found</c>).</exception>
+    Task<OrderBookDto> GetOrderBookAsync(string ticker, int? depth = null, CancellationToken cancellationToken = default);
+
     /// <summary>Gaps overlapping a window, newest first.</summary>
     /// <param name="query">Window and limit (a cursor is ignored: gaps are not paged).</param>
     /// <param name="cancellationToken">Cancels the call.</param>

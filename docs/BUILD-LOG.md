@@ -1134,3 +1134,27 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - `gh pr merge` merged PR #35 while its CI was still running; it finished green, but the merge should wait for CI.
 
 **Left out (as planned).** Profiles, tokens, TLS and pinning (M4); live-updating views; the order book view (3.7); watchlists, alerts; anything that trades.
+
+### 5.8 Slice 3.7: the order book builder, its publication and the `book` view (2026-10-19)
+
+- **3.7a** (committed earlier): `KalTerm.Kalshi.Books` (`LocalOrderBook`, `BookTracker`) ported from the reference and replayed against it with
+  `tools/vectors/generate_orderbook.py` (golden scenarios in `Vectors/orderbook.json`). One addition the reference lacks: `BookTracker.MarkStale`,
+  used when a book message cannot be read.
+- **3.7b**: the ingest process builds books for a static `Ingest:WatchList` (at most 100 markets; empty means no order book subscription, never an
+  empty market list, which Kalshi reads as every market). `KalshiWebSocket.RequestSnapshotAsync` sends `update_subscription` with `get_snapshot`.
+  `OrderBookKeeper` recovers a gap per market: ask for an in-stream snapshot, wait 5 s, else fall back to REST (marked approximate), and retry
+  old stale books every 30 s. It publishes changed books about once a second, and every book every 15 s (heartbeat), to `dbo.orderbook_state`
+  (migration 0002, top 100 levels per side as text, one row per market, no history). The API reads that table (slice 3.7c).
+- Verified: unit tests for the keeper, runner, ingestor, stream source, host options and level text; an end-to-end composition test (snapshot to a
+  row, and a market without a snapshot published as stale). Data, Ingest and Api suites pass on kaldb (160, 175, 117 tests). Locally the Data
+  coverage reads 42 % only because LocalDB is missing here; CI judges it.
+- **3.7c**: `dbo.orderbook_state` is read by `BookReader` (and summarised in `StatusReader`; a database without migration 0002 reads as "no books" instead of failing).
+  The API gains `GET /v1/orderbooks?depth=N` and `GET /v1/markets/{ticker}/orderbook?depth=N` (depth 1 to 100, default 10; 404 for a market that is not
+  watched), and `/v1/status` a `books` section: a stale book is a problem, and so are books not rewritten for 60 s while ingest says it is running.
+  Kalshi sends bids only, so the contract carries `yes_bids` and `no_bids`; asks are derived by the client (`kterm book`: a yes ask is 1 minus a no bid,
+  computed on whole micro-dollars). `kterm book` lists all watched markets (best bid, ask, spread, STALE/APPROX flag, age); `kterm book TICKER --depth N`
+  prints the ladder. `kterm status` has a Books line.
+- Live check (2026-10-19, production, public `orderbook_delta` channel, subscribe only, plus three REST book reads): three moderately active markets
+  (KXTEMPMIAH-26OCT1912-T85.99, KXTRUMPSAY-26OCT26-SUPE, KXTRUMPSAY-26OCT26-MELA) were followed for 60 s: 3 snapshots, 33 deltas, 0 gaps, no crossed book,
+  and all three built books equalled the REST books read right after the window. Test: `LiveKalshiWebSocketTests.ABookBuiltFromTheLiveStream...`.
+- Not rolled out: kaldb still runs the pre-3.7 build; the watch list goes live in slice 3.8 with the owner's go-ahead (ingest restart, migration 0002).

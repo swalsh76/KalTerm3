@@ -19,7 +19,7 @@ public sealed class KalTermApiClientTests
     [Fact]
     public async Task StatusIsOneGetOfTheStatusRoute()
     {
-        var status = new StatusDto("2026-10-18T22:30:15.000000+00:00", [], new IngestStateDto("running", null, 3), new StreamsDto(new StreamDto(null, null), new StreamDto(null, null)), new StorageDto(1, null, null), new Dictionary<string, long>(), new GapSummaryDto(24, 0, new Dictionary<string, long>(), "note"));
+        var status = new StatusDto("2026-10-18T22:30:15.000000+00:00", [], new IngestStateDto("running", null, 3), new StreamsDto(new StreamDto(null, null), new StreamDto(null, null)), new StorageDto(1, null, null), new Dictionary<string, long>(), new GapSummaryDto(24, 0, new Dictionary<string, long>(), "note"), new BooksStatusDto(0, 0, 0, null));
         var stub = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, Json(status));
         using var client = Client(stub);
 
@@ -218,5 +218,27 @@ public sealed class KalTermApiClientTests
         Assert.Equal("the API could not be reached", new ApiUnavailableException().Message);
         Assert.Equal("m", new ApiUnavailableException("m").Message);
         Assert.Same(inner, new ApiUnavailableException("m", inner).InnerException);
+    }
+
+    [Fact]
+    public async Task OrderBooksSendTheDepthOnlyWhenGivenAndEscapeTheTicker()
+    {
+        var book = new OrderBookDto("A/B", "2026-10-19T12:00:00.000000+00:00", "2026-10-19T12:00:00.000000+00:00", 0, false, false, [], []);
+        var stub = new StubHttpMessageHandler()
+            .Respond(HttpStatusCode.OK, Json(new OrderBookPage([book])))
+            .Respond(HttpStatusCode.OK, Json(new OrderBookPage([])))
+            .Respond(HttpStatusCode.OK, Json(book));
+        using var client = Client(stub);
+
+        var all = await client.GetOrderBooksAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await client.GetOrderBooksAsync(25, TestContext.Current.CancellationToken);
+        var one = await client.GetOrderBookAsync("A/B", 3, TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            ["http://127.0.0.1:5280/v1/orderbooks", "http://127.0.0.1:5280/v1/orderbooks?depth=25", "http://127.0.0.1:5280/v1/markets/A%2FB/orderbook?depth=3"],
+            stub.Requests.Select(r => r.Uri.AbsoluteUri));
+        Assert.All(stub.Requests, r => Assert.Equal(HttpMethod.Get, r.Method));
+        Assert.Single(all.Books);
+        Assert.Equal("A/B", one.Ticker);
     }
 }

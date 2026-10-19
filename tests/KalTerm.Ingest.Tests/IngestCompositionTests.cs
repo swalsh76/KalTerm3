@@ -164,4 +164,38 @@ public sealed class IngestCompositionTests : IAsyncLifetime
 
         Assert.Equal(1, await ScalarAsync<int>($"SELECT COUNT(*) FROM dbo.ingest_gap WHERE kind = '{GapKinds.IngestDown}' AND detail LIKE '%stopped cleanly%'"));
     }
+
+    [Fact]
+    public async Task AWatchListPublishesBuiltBooksAndMarksAMarketWithNoSnapshotYetAsStale()
+    {
+        await Requirement.RequireLocalDbAsync();
+        var settings = KalshiSettings.Create(KalshiEnvironment.Demo, "test-key", KeyFile());
+        var session = new ScriptedSession { OrderBookSid = 7 };
+        var source = new ScriptedSource(_ => Task.FromResult<IStreamSession>(session));
+        var overrides = Overrides(source) with
+        {
+            Runner = new IngestRunnerOptions
+            {
+                HeartbeatInterval = TimeSpan.FromMilliseconds(50),
+                BookPublishInterval = TimeSpan.FromMilliseconds(50),
+                Schedule = now => (now.AddHours(1), PassKind.Full),
+            },
+        };
+        var options = Options();
+        options.WatchList = ["E-1", "E-2"];
+        using var stop = new CancellationTokenSource();
+
+        var run = IngestComposition.RunAsync(options, settings, NullLoggerFactory.Instance, overrides, stop.Token);
+        await Wait.UntilAsync(() => source.Opens >= 1, "the stream to open");
+        session.Push(Message("orderbook_snapshot", """{"market_ticker":"E-1","yes_dollars_fp":[["0.4000","5.00"],["0.4100","1.50"]],"no_dollars_fp":[["0.5500","2.00"]]}""", DateTimeOffset.UtcNow, sid: 7, seq: 1));
+        await Wait.UntilAsync(() => ScalarAsync<int>("SELECT COUNT(*) FROM dbo.orderbook_state").GetAwaiter().GetResult() >= 2, "both books to be published");
+        await Wait.UntilAsync(() => ScalarAsync<string>("SELECT yes_levels FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-1'").GetAwaiter().GetResult().Length > 0, "the snapshot to be published");
+        await stop.CancelAsync();
+        await run;
+
+        Assert.Equal("410000:150;400000:500", await ScalarAsync<string>("SELECT yes_levels FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-1'"));
+        Assert.Equal("550000:200", await ScalarAsync<string>("SELECT no_levels FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-1'"));
+        Assert.False(await ScalarAsync<bool>("SELECT is_stale FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-1'"));
+        Assert.True(await ScalarAsync<bool>("SELECT is_stale FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-2'"));
+    }
 }
