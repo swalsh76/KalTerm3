@@ -133,6 +133,239 @@ this tests SQL Server's recovery, not the drive; it does not contradict 2.2.
   `System.Security.Cryptography.Pkcs` 9.0.18, which carries known advisories. Irrelevant for a local
   spike; pin a patched version when the real client dependency is chosen.
 
+### 2.4 S-2 time-series layout, workstation (2026-10-17): done, A-ordered recommended
+
+Question: which layout carries the ticker stream (the dominant one) and still serves screener and chart queries, over a 14-day
+window? Code: branch `spike/s2-timeseries` (local, not merged, like S-1), `spikes/s2-timeseries/S2.Layouts`. Results files and
+logs are outside the repository (`C:\KalTermSpikes\s2`). Same machine as 2.2 and 2.3 (device cache on); SQL Server `max server memory`
+capped at 16 GB for the runs and restored afterwards; each database had a hard `MAXSIZE` (80 GB data, 40 GB log) and was dropped.
+
+**Layouts.** All three read through one view, so the query text is identical.
+- **A:** one table, daily-partitioned clustered columnstore.
+- **A-ordered:** as A with `ORDER (market_id, ts)`; each sealed day is rebuilt (ordered) after it loads, about 25 s per 60 M-row day.
+- **B:** a daily-partitioned rowstore for recent days (clustered on `(ts, market_id)` plus a `(market_id, ts)` index) and a cold
+  daily-partitioned columnstore; the day-end job moves yesterday across by `SWITCH` out, `INSERT ... SELECT` and `TRUNCATE` of the stage.
+
+**Workload.** A deterministic synthetic ticker stream: 8,000 markets with a heavy-tailed activity distribution (a few markets
+produce most updates), prices as random walks in whole cents held as 10^-6 dollars, sizes in hundredths, cumulative volume, 10
+columns, about 90 bytes as a row. 700 rows/s (the reference's measured ticker rate) is 60.48 M rows a day; 13 historical days
+(786 M rows) were bulk-loaded, then day 14 was written live: 700, 3,500 and 14,000 rows/s (1x, 5x, 20x) and unthrottled, 60 s each,
+in one-second batches, with a reader looking up the latest row of a hot market every 100 ms.
+
+**The harness was verified before it was trusted.** `verify` loads a small dataset into each layout and compares every query's result,
+row for row, with an independent in-memory computation over the same generated rows; it also checks that ingest adds exactly the rows
+written, that retention removes exactly the right rows, and that day-end conserves every row. A negative control (one row deleted
+behind its back) makes it fail, as it must. The verifier and a scaled-down dry run found two real problems before the long runs
+(findings 2 and 7 below).
+
+| 13 days (786 M rows) | A | A-ordered | B (rerun) |
+|---|---|---|---|
+| Storage | 15,642 MB, 20.9 B/row | 15,492 MB, 20.7 B/row | cold 15,233 MB, 22.0 B/row; **hot day 7,009 MB, 121.5 B/row** |
+| Ingest 1x / 5x / 20x, batch p99 | 42 / 24 / 245 ms | 49 / 46 / 188 ms | 12 / 21 / 66 ms |
+| Ingest unthrottled | 229,000 rows/s, p99 207 ms | 215,000 rows/s, p99 233 ms | 206,000 rows/s, p99 72 ms |
+| Batches over 1 s, deadlocks | 0, 0 | 0, 0 | 0, 0 |
+| Log per ingested row (5x / 20x) | 17 / 14 B | 16 / 14 B | 180 / 141 B |
+| q1 latest row per market, last hour (warm) | 291 ms | 224 ms | 458 ms |
+| q2 one market, raw rows, 24 h (warm) | 241 ms | **110 ms** | 124 ms |
+| q3 one market, per minute, 24 h (warm) | 302 ms | **33 ms** | 63 ms |
+| q4 every market, per hour, 24 h, full scan (warm) | 1.2 s | 1.3 s | **11.4 s** (a day is hot) |
+| q5 one market, per hour, all days (warm) | 162 ms | 149 ms | 202 ms |
+| `TRUNCATE` of the oldest day (60.5 M rows) | 8 ms | 5 ms | 13 ms |
+| `DELETE` of one day | 127 s, 13.1 GB of log | 198 s, 13.9 GB of log | 125 s, 13.1 GB of log |
+| Day-end work, with 1x ingest running | compress today's row groups 0.8 s, no pause | ordered rebuild of yesterday **27 s; ingest stalled 27 s** (1 deadlock, retried) | switch out **3.7 s** (ingest stalled; 1 retry), move to cold **82 s**, `TRUNCATE` of the stage 2 ms; **readers blocked 85 s** |
+| After the rollover (B) | | | q1 262 ms, q2 96 ms, q3 21 ms, q4 1.26 s, q5 414 ms |
+
+Pass criteria, fixed before the runs: sustain at least 5x the expected peak (about 4,000 rows/s) with batch p99 under 500 ms;
+chart queries (q2, q3) under 200 ms warm; the full scan (q4) under 5 s; dropping a day under 1 s without a log blow-up; on a tie the
+simpler layout wins. **A:** misses the chart criterion narrowly (241 and 302 ms). **A-ordered:** meets every criterion. **B:** meets
+the chart and ingest criteria and **fails the full scan (11.4 s) while a day is in the hot rowstore**; after the rollover it passes.
+All three drop a day in milliseconds with `TRUNCATE`.
+
+**Findings (apply them to the M3 schema):**
+1. **Partition by day and drop a day with `TRUNCATE ... WITH (PARTITIONS (n))`.** 5 to 13 ms, 164 to 303 KB of log, against a
+   `DELETE` of the same rows: 2 to 3 minutes and 13 to 14 GB of log, which would nearly fill the 20 GB log cap. The storage governor must
+   drop partitions, never delete rows.
+2. **`LOCK_ESCALATION = AUTO` on every partitioned table.** Without it, sealing one day's partition deadlocked with ingest into another
+   (found by the verifier on the ordered layout).
+3. **The ingest writer must retry** on error 1205 (deadlock victim) and **error 4891** ("insert bulk failed due to a schema change of the
+   target table"): a partition `SWITCH` invalidates an in-flight bulk insert. B's first run died on the second one.
+4. **Ordering the columnstore by `(market_id, ts)` costs nothing in space** (20.7 against 20.9 B/row) and speeds the single-market
+   chart queries (q3 9x: 302 to 33 ms). Note on noise: the same structure compressed to 20.5 to 24.8 B/row across runs and points
+   (B's cold tier read 23.8 B/row at 7 days in the first attempt and 21.2 in the rerun), so ordered-versus-unordered storage differences
+   below about 10% are within run-to-run variation.
+5. **Rowstore is expensive:** 122 B/row (about 6x the columnstore) and about 10x the log per row. A hot rowstore tier is affordable for
+   one day (7 to 8.6 GB), not for several, and it makes the full-scan query 9x slower while it holds the last day.
+6. **`INSERT ... WITH (TABLOCK)` into the cold columnstore blocks readers of the view for the whole move (82 s).** Without `TABLOCK` the
+   rows do not compress directly.
+7. **`sys.dm_db_partition_stats.row_count` is unreliable for columnstore** (it overstated rows by up to 1.5x during delta-store
+   transitions). Count with `COUNT_BIG(*)`.
+8. Rebuilding a sealed day with the ordered `REBUILD PARTITION` takes 24 to 27 s per 60 M rows but **blocks ingest into that partition for
+   the duration**. The remedy (rebuild into a staging table, then `SWITCH` it in, so the live table is never locked) was **not measured**.
+   Until it is, ingest must buffer at least 30 s of data (about 20,000 rows at 700 rows/s).
+
+**Run-to-run noise.** The first ingest test after a fresh load costs more than the later ones, and by a varying amount (B's first test
+logged 896 B/row in the first attempt and 271 in the rerun; the ordered layout's logged 106 against 16 at 5x). The steady-state rows
+(5x and up) are the comparison. The unthrottled test varied by more than 40% between B's two runs (138,000 and 206,000 rows/s) while the machine
+was busier in the first. The reader's latency under the unthrottled flood (1.5 s on columnstore, 2.9 s on the hot rowstore) is the cost
+of a flood 300x the real rate and is not a layout difference.
+
+**Caveats.** Synthetic data (random walks, whole cents); real data may compress differently. Only the ticker stream was measured; order
+book deltas and trades were not. This workstation's NVMe acknowledges write-through writes from volatile cache (2.2), so **ingest and
+log-rate figures are optimistic** until the key runs are repeated on the target server during S-1d. Storage and query figures do not depend on
+the flush path.
+
+**Recommendation (not yet approved by the owner): A-ordered**: one daily-partitioned, ordered clustered columnstore. It meets every
+criterion with the least machinery (no hot/cold tiers, no rollover job, no view). Its one weakness is the sealing pause (finding 8). B's
+advantage is a shorter pause (3.7 s) at the price of a second table, a view, a stage table and a rollover job, 7 to 8.6 GB of rowstore a day, and
+the slow full scan. Open work: measure the staging-and-switch re-seal before the M3 schema is final.
+
+### 2.5 S-4 unattended install on a clean machine (2026-10-18): done, passed
+
+Question: on a pristine Windows Server 2025, with nobody at the console, can we load `libsodium.dll` and sign Ed25519 exactly as the
+Python reference does, and install the KalTerm SQL Server instance with Windows authentication only and **no network exposure**, every wait
+bounded, a preflight that refuses when a prerequisite is missing, and survival of a reboot? Code: branch `spike/s4-install` (local, not
+merged), `spikes/s4-install` (host and guest PowerShell, an answer-file template, and `LibsodiumProbe`, a self-contained console app that
+signs the 21 committed vectors with the product's own `Ed25519PrivateKey`). Nothing secret is committed: the VM's administrator password is
+random and kept in a DPAPI-protected file outside the repository.
+
+**Setup.** Hyper-V generation 2 VM (4 vCPU, 8 GB, 80 GB dynamic disk, no network adapter), installed unattended from the Windows Server 2025
+evaluation ISO (Standard, Desktop Experience) with an `autounattend.xml` on a small ISO built with the built-in IMAPI2 classes (no ADK):
+**7.2 minutes** from start to a usable guest, then a checkpoint named `clean` (18.4 GB on disk). Files go in over PowerShell Direct; every step
+runs as SYSTEM in a scheduled task with a timeout, as a service installer would run. SQL Server media: the 2025 Enterprise Developer
+set already on this workstation (`C:\SQL2025\EntDev_ENU`).
+
+**Result: two consecutive runs from the checkpoint, 15 of 15 steps each, about 6 minutes of step time each (362 s and 364 s):**
+
+| Step | Result |
+|---|---|
+| The pristine OS cannot load libsodium (documents the runtime requirement) | fails as expected, exit 255 |
+| Preflight refuses while the Visual C++ runtime is missing | exit 1, "REFUSING" |
+| Runtime install `-WhatIf`; install; install again | no change; 5 s; idempotent |
+| Probe once the runtime is there, as SYSTEM | 21 of 21 vectors signed exactly |
+| Preflight passes; refuses when disk space is short; a refused install changes nothing; install `-WhatIf` changes nothing | as designed |
+| Unattended SQL Server install, as SYSTEM | **exit 0 in 182 s and 185 s** |
+| Probe after SQL Server | 21 of 21 |
+| Reboot: the instance comes up on its own and verifies | up and answering **108 s** after the wait began (delayed start) |
+| A second install | refused (the instance exists) |
+
+**What the installed instance looks like:** Enterprise Developer 17.0.1000.7; named instance `KALTERM`; service account
+`NT Service\MSSQL$KALTERM`; `IsIntegratedSecurityOnly = 1`; protocols in the registry Sm = 1, Np = 0, Tcp = 0 (set from the
+configuration file with `TCPENABLED=0` and `NPENABLED=0`); data, logs, tempdb and backups under a chosen directory.
+
+**Findings (apply them to M8):**
+1. **The Visual C++ 2015-2022 x64 runtime is a hard requirement.** A clean Windows Server has none, and the product's signer then fails with
+   `DllNotFoundException: Unable to load DLL 'libsodium' or one of its dependencies` (as Administrator and as SYSTEM alike). Investigated
+   from the checkpoint: installing only the runtime (3 s, `VC_REDIST_X64.EXE` ships in the SQL media under `redist\VisualStudioShell\VCRuntimes`)
+   fixes it; so does placing `vcruntime140.dll` and `vcruntime140_1.dll` next to `libsodium.dll` (app-local, nothing installed). The installer
+   must do one of the two (app-local DLLs must come from the official redistributable under Microsoft's redistribution terms), and the
+   preflight now checks for the runtime.
+2. **"Shared memory only" means "no network exposure", not "no TCP socket".** SQL Server always opens a Dedicated Admin Connection on
+   loopback (127.0.0.1 and ::1, a high port), reachable only by sysadmins; `remote admin connections = 0` keeps it local, and it cannot be turned
+   off. The local named pipe `\\.\pipe\MSSQL$KALTERM\sql\query` also accepts local connections but is not reachable over the network (port 445
+   is closed). The verification therefore asserts: protocols disabled in the registry; no SQL Server listener on a non-loopback address; the
+   machine address refuses TCP 1433; the pipe is not reachable over the network. (The first version treated the loopback listener and the local
+   pipe as failures, and its "TCP refused" check connected by instance name, which needs SQL Browser, so it could pass for the wrong reason.)
+3. **The service is Automatic (Delayed Start):** about two minutes after boot it answers. Anything that checks it after a reboot (the
+   installer's `verify`, a health check) must wait, bounded, for it.
+4. **Setup also installs the SQL Server Agent and the telemetry (CEIP) service and enables usage metrics.** For a trading terminal telemetry
+   should be off; the setup parameters for that were **not tested** here (M8).
+5. **Self-contained publishing needs no .NET runtime on the target** (the probe is 79 MB); only the native runtime above is needed.
+6. Harness lessons: a blank-disk install DVD shows "Press any key to boot from CD or DVD" and gives up in seconds, so the VM script presses a key
+   through Hyper-V's keyboard interface; PowerShell transcripts log caught errors as `TerminatingError`, so monitors must not treat them as
+   failures; `Set-VM` takes `-AutomaticCheckpointsEnabled`, not `-AutomaticCheckpointType`.
+
+**Limits.** Windows Server 2025 only (decision 8); topology A (a single Windows 11 box) is not covered. The VM had no network, so Windows
+Update and download behaviour are untested. Setup ran as SYSTEM in a scheduled task, equivalent to but not identical with a real installer.
+Evaluation media (180 days), not a licensed install.
+
+### 2.6 The target server and S-1a on its drive (2026-10-18): done
+
+**The box.** A Dell **OptiPlex 7060** (not the 7080 Micro that was ordered; the owner did not take the difference up with the seller): service tag
+3YY93Y2, BIOS 1.32.0, Intel Core i7-8700 (6 cores, 12 threads, 3.2 GHz, 8th-generation desktop part), 31.8 GB RAM, one NVMe drive, an Intel
+I219-LM NIC. Windows Server 2025 **Datacenter Evaluation** (build 26100; S-4 tested Standard, same engine), installed by hand from the
+evaluation ISO, hostname `kaldb`, 192.168.1.20 on the workstation's LAN. BIOS: AHCI/NVMe mode, **AC Recovery = Power On**. The NIC first
+negotiated 10 Mbps (a cable or port problem) and was fixed to 1 Gbps.
+
+**Remote management.** WinRM on 5985 with the firewall rule limited to the workstation's address; a local administrator account `kalterm`
+whose credential is kept in a DPAPI-protected file on the workstation (the assistant uses it without ever seeing the password);
+`LocalAccountTokenFilterPolicy = 1` (without it Windows strips the administrator rights from a network logon by a local account other than
+the built-in Administrator, and WinRM answers "Access is denied"; revisit before production); this workstation's WinRM client trusts exactly
+that one address; RDP enabled for the workstation only; High-performance power plan; automatic Windows Update off for the test period
+(**re-enable before production**: a surprise reboot ruins a run).
+
+**The drive.** A generic, unbranded NVMe: `SSD 1TB`, firmware SN15108, 954 GB, wear 0%, 45 C. Windows reports `IsPowerProtected = False` and
+`IsDeviceCacheEnabled = True`: no power-loss protection and a volatile cache, the S-1a situation.
+
+**S-1a on this drive** (`diskspd` 2.x from Microsoft's GitHub release, signature verified; the same scripts as 2.2, branch
+`spike/s1d-power-cuts`; cache on / off / on, the off state set through the registry value `UserWriteCacheSetting` under the device's
+`Device Parameters\Disk` key plus a reboot, then restored):
+
+| 4K write, queue depth 1 | Workstation WD SN580, cache on | Workstation, cache off | **Server, cache on (A1 / A2)** | Server, cache off |
+|---|---|---|---|---|
+| write-through (`-Sw`) | **23 us** | 215 us | **314 / 295 us** | 573 us |
+| no-buffer + write-through (`-Sh`) | 19 us | 209 us | 302 / 372 us | 325 us |
+| random 8K write-through | 26 us | 233 us | 254 / 245 us | 452 us |
+| 4K write + `FlushFileBuffers` | 228 us | 488 us | 1.1 to 1.9 ms | 1.1 ms |
+| SQL single-thread autocommit, mean | 48 us | 234 us | **303 us** (3,299 commits/s) | not run |
+
+The workstation's drive acknowledged write-through writes 10x faster than its flash could commit them when its cache was on (the
+KalshiTerm2 failure mode). The server's drive takes about 0.3 ms either way, the order of a real flash commit: **the red-flag
+signature is absent**. An explicit flush is slow on this drive (0.8 to 1.6 ms extra); SQL's log does not use it, checkpoints do.
+
+**SQL Server on the server.** Installed with the S-4 scripts (VC++ runtime 2 s, preflight 11 of 11, unattended setup 221 s, verification
+passed: shared memory, Windows authentication only, no listener on a non-loopback address); data under `C:\KalTerm\data`; Windows
+Defender exclusions for that folder and `sqlservr.exe` only (real-time protection stays on).
+
+### 2.7 S-1d real power cuts on the target server (2026-10-18): passed
+
+Question: after a real cord pull under write load, is every commit SQL Server acknowledged still there, and is the database intact?
+Code: branch `spike/s1d-power-cuts` (local, not merged), `spikes/s1d-server`, program `S1d.PowerCut`.
+
+**Method.** The writer runs **on the server** (8 threads; a single-row autocommit or a 100-row transaction; each row is `(id, SHA-256 of
+the id)`; a checkpoint every 5 s so a cut is likely to land while data pages are being written) and talks to SQL Server over shared
+memory, as the product will, so no TCP listener was opened and "shared memory only" stayed intact. The moment SQL Server acknowledges a
+commit the writer sends it, over a no-delay TCP connection, to a **ledger on the workstation** (a machine that is not being cut), which
+appends it to a file and keeps the highest acknowledged id per thread. After the cut the verifier waits (bounded) for the instance, runs
+`DBCC CHECKDB (all errors, extended logical checks)`, and checks that every acknowledged id up to each thread's last is present with a
+valid checksum, against **every ledger of the database so far**, so older data is re-proved after each later crash. Settings:
+`DELAYED_DURABILITY = DISABLED`, `PAGE_VERIFY = CHECKSUM`, simple recovery, device cache at its default (**on**). The ledger detects a
+silent power loss by a 15 s read timeout (a powered-off machine sends no FIN or reset).
+
+**The harness was proven before any cut.** Self-test: the verifier detects a deleted acknowledged row, a corrupted payload, a fallen row
+count and a wholly zeroed data page. Two rehearsals on a separate database: a hard kill of `sqlservr.exe` under load (8.3 M acknowledged
+rows, genuine crash recovery in 3 s) and a hard kill of the writer (15.7 M rows across both cycles), both passed. A negative control
+(a forged ledger claiming a million rows SQL Server never wrote) failed with 999,900 acknowledged rows missing, exit code 1.
+
+| Real cord pull | Cycle 1 | Cycle 2 | Cycle 3 |
+|---|---|---|---|
+| Load before the cut | 26 s | 56 s | 48 s |
+| Acknowledgements in the ledger | 181,928 | 360,386 | 304,527 |
+| Server's own evidence | Kernel-Power 41, event 6008 | same | same |
+| SQL crash recovery | 8,691 rolled forward, 1 back | 19,888 forward, 4 back | 23,647 forward, 3 back |
+| Power-on to usable (the box powered itself on) | about 30 s | about 30 s | about 30 s |
+| Acknowledged rows verified (cumulative) | 9,174,395 | 27,426,457 | **42,839,572** |
+| **Missing acknowledged rows** | **0** | **0** | **0** |
+| Bad checksums; `CHECKDB` | 0; clean | 0; clean | 0; clean |
+| Rows beyond the acknowledged ones (in flight at the cut; allowed either way) | 100 | 101 | 203 |
+
+**Result: passed (3 of 3).** With the drive's write cache enabled and no power-loss protection, SQL Server's commits survived real cord pulls.
+This matches the S-1a latency result for this drive. The database always ended up ahead of the ledger, never behind. The PLAN section 6
+M3 gate ("S-1d has passed on the target server") is met on this machine.
+
+**Limits (these belong in any decision that leans on this result).**
+- Three cuts are evidence, not proof; each cut came 26 to 56 s into the load. More cuts, longer runs and a heavier data-page workload would
+  raise confidence.
+- A loss in the last few milliseconds before a cut would show only as a ledger undercount, not as a missing row; the direction of the
+  error is safe but the test is blind to it.
+- One unbranded drive in a single-drive box. A different drive may behave differently, so the product's installer `verify` must still
+  report `IsPowerProtected` and the device cache state and warn when there is no power-loss protection.
+- The OS and the data share the drive. Windows came back cleanly all three times (no repair prompts, no file-system errors seen).
+
+**Lessons.** Detect a silent power loss with a read timeout, not a connection event. PowerShell parameter names must not collide with
+common-parameter aliases (`-Db` is `-Debug`'s alias). The harness's own path guard blocks `Remove-Item` on paths under the spike folder
+(a false positive on paths with spaces or wildcards), so tools delete databases through SQL and leave files in place. Write scripts to
+files; large heredocs and backslash-heavy one-liners are fragile here.
+
 ## 3. M2 Core
 
 ### 3.1 Fixed-point money (2026-10-16): done

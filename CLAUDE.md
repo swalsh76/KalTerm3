@@ -17,8 +17,8 @@ oracle. No code is shared.
 
 ## Status
 
-M0 and **M2 Core are done** (BUILD-LOG §4). Spikes S-3, S-1a and S-1b are done; S-2 and S-4 are not
-started. Do not start M3 until S-1d (real power cuts) has passed on the target server (PLAN.md §6.1). S-1a found that this workstation's consumer NVMe acknowledges write-through writes
+M0 and **M2 Core are done** (BUILD-LOG §4). All M1 spikes are done (BUILD-LOG 2.1 to 2.7); S-1d (real power cuts) passed on the target server, so M3 may start. The
+spike proposals in PLAN.md 6.3 await approval. S-1a found that this workstation's consumer NVMe acknowledges write-through writes
 from volatile cache (BUILD-LOG §2.2).
 
 ## Non-negotiables

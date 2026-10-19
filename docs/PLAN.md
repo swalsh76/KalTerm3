@@ -1,6 +1,6 @@
 # KalTerm plan
 
-**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0, M2. M1 spikes done: S-3, S-1a, S-1b; outstanding: S-2, S-4, S-1d. M3 waits for S-1d (server on order).
+**Status: APPROVED by the owner (2026-10-16).** Source of truth. Milestones done: M0, M2. M1 spikes done: all (S-3, S-1a, S-1b, S-1d, S-2, S-4). **M3 may start**: S-1d passed on the target server (BUILD-LOG 2.7).
 
 ## 1. Goal
 
@@ -67,7 +67,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M0 Scaffold** | Solution, CI, analyzers, central package management | CI green on an empty solution |
 | **M1 Spikes** (throwaway, measured) | **S-1 durability:** `diskspd` write-through benchmark on the target volume, then SQL Server commit latency, then 3 hard power cuts under load with `DBCC CHECKDB` after each. **S-2 time-series layout:** daily partitioned columnstore vs hot rowstore plus cold columnstore; insert rate, storage per million rows, query latency. **S-3 Ed25519:** signing library choice, verified against the Python signing vectors. **S-4 install:** unattended instance install on a clean VM | go/no-go; S-1 failing ends the SQL Server path. S-1 runs in stages (§6.1) |
 | **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green; may start once S-1a and S-1b have passed (M2 never touches SQL). **Met 2026-10-17** (BUILD-LOG §4) |
-| **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** |
+| **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** (**met 2026-10-18**, BUILD-LOG 2.7) |
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire |
 | **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead |
@@ -84,9 +84,12 @@ volume, the daily driver) must not be hard-cut. So S-1 is staged, safest first. 
 |---|---|---|---|
 | **S-1a** | workstation | `diskspd` write-through latency, then SQL Server commit latency, compared with each other and the drive's physical flush time | Early warning. Commits far faster than the drive can physically commit is the KalshiTerm2 signature: stop and discuss |
 | **S-1b** | workstation | Hard-kill `sqlservr.exe` under write load, then `DBCC CHECKDB` and a row-level verify | The engine's own recovery. Does **not** prove the drive flushes |
-| **S-1d** | target server (refurbished OptiPlex 7080 MFF, on order) | 3 hard power cuts (cord pulled) under load; after each, `DBCC CHECKDB`, every acknowledged commit present, every row's checksum valid | The authoritative gate, on the target volume |
+| **S-1d** | target server (Dell OptiPlex 7060, i7-8700, 32 GB, 1 TB NVMe, hostname `kaldb`; delivered 2026-10-18) | 3 hard power cuts (cord pulled) under load; after each, `DBCC CHECKDB`, every acknowledged commit present, every row's checksum valid | The authoritative gate, on the target volume |
 
 There is no S-1c: real cuts on the workstation are skipped in favour of the server box.
+
+**S-1d result (2026-10-18): passed, 3 of 3 cord pulls** with the device cache on and no power-loss protection: 42.8 M acknowledged rows
+verified, none missing, no bad checksums, `CHECKDB` clean each time (BUILD-LOG 2.6 and 2.7). Limits are recorded there.
 
 Load and verify protocol: the writer inserts rows whose content is a checksum of the row id, in a mix
 of single-row and batched small transactions, with `DELAYED_DURABILITY = DISABLED` and
@@ -131,6 +134,22 @@ Slice 2.8 decisions (2026-10-16): split into 2.8a-d, each its own PR; models cov
 `user_order`, `market_position` wait for M6; the order book builder and gap recovery stay in M3); channel names pass through
 unchecked, as in the reference.
 
+### 6.3 Inputs from the spikes S-2 and S-4 (proposed; awaiting the owner's approval)
+
+Measurements and reasoning are in BUILD-LOG 2.4 and 2.5. Nothing here is decided until the owner approves it.
+
+**M3 ticker storage (S-2).** Proposed layout: one table, daily-partitioned, clustered columnstore ordered by `(market_id, ts)`. Rules that
+apply to any layout: partition by day and drop a day with `TRUNCATE ... WITH (PARTITIONS (n))`, never `DELETE`; `LOCK_ESCALATION = AUTO`
+on partitioned tables; the ingest writer retries on SQL errors 1205 and 4891; count rows with `COUNT_BIG(*)`, not `dm_db_partition_stats`;
+size the ingest buffer for a 30 s stall until the sealing method is measured. The hot-rowstore-plus-cold-columnstore layout (B) was
+measured and is not proposed: 11 s full scans while a day is hot, 6x the bytes per row, 10x the log, and a rollover job.
+
+**M8 installer (S-4).** Install the Visual C++ 2015-2022 x64 runtime, or ship `vcruntime140.dll` and `vcruntime140_1.dll` beside `libsodium.dll`;
+publish apps self-contained; preflight (read-only, exit 1 with "REFUSING") before any change; SQL Server from a generated configuration file
+(no key, no password) with TCP and named pipes disabled, Windows authentication only, virtual service accounts, every wait bounded; verification
+that asserts "no network exposure" (not "no TCP socket": the loopback admin connection always exists) and waits, bounded, for the
+delayed-start service after a reboot; disable the telemetry service and usage metrics (to be tested).
+
 ## 7. Risks
 
 - **Durability is unproven.** The premise of SQL Server is a hypothesis; M1 S-1 tests it first.
@@ -139,12 +158,16 @@ unchecked, as in the reference.
   with the device cache on, this drive acknowledges write-through writes (SQL's commit path) from
   volatile cache, about 10 times faster than the flash can commit (BUILD-LOG §2.2). The server needs
   either a power-loss-protected drive or its device cache disabled and verified; decide after S-1d.
+  **Update 2026-10-18:** the server's drive (an unbranded NVMe, also without power-loss protection) does not show that signature, and
+  SQL Server survived three real cord pulls with the cache on (BUILD-LOG 2.6, 2.7). The risk stays open for any other drive: the
+  installer's `verify` reports `IsPowerProtected` and the cache state and warns.
 - **Rewrite cost.** KalshiTerm2 phases 0 to 6 are complete; this repeats them. Keep milestones tight.
 - **Ed25519** is not in the .NET 10 base library (confirmed by S-3). Decision: NSec.Cryptography
   (libsodium; ships one native `libsodium.dll`). BouncyCastle is the managed fallback. Remaining
-  check, in S-4: `libsodium.dll` loads on a clean machine.
-- **Server 2025 on the OptiPlex 7080:** a consumer-class box; confirm drivers (NIC, storage) install
-  before relying on it. Check at the start of S-1d.
+  check, in S-4: `libsodium.dll` loads on a clean machine. **Resolved in S-4:** it does, once the Visual C++ 2015-2022 x64 runtime is
+  present (a clean Windows Server has none); see section 6.3 and BUILD-LOG 2.5.
+- **Server 2025 on the OptiPlex:** a consumer-class box. Checked at the start of S-1d: the NIC (Intel I219-LM, driver 12.19.2.57) and the NVMe drive were usable
+  after a plain install (the delivered model is an OptiPlex 7060, not the 7080 originally ordered). Its one NIC first negotiated 10 Mbps (cable).
 - **Workstation impact** in single-box mode: cap SQL Server memory, measure.
 - **Arbitrary machines:** existing SQL Server, no domain, non-English locale, restricted execution policy.
 
@@ -162,3 +185,7 @@ and the API contract tests.
 - Polly (or `Microsoft.Extensions.Http.Resilience`) for retry, circuit breaking and per-client
   policies. Revisit if M3 ingest or M6 trading needs more than the one hand-written read policy.
   The trading client must not retry writes blindly (orders are not idempotent without a client id).
+- S-2 follow-ups: measure the staging-and-switch re-seal of a sealed day (so ingest never waits on a rebuild); repeat the key ingest and
+  log-rate runs on the target server (S-1d is done, the server is available); measure order book delta and trade layouts.
+- S-4 follow-ups: an install pass on a clean Windows 11 machine (topology A); disabling SQL Server telemetry from the configuration file;
+  a pass with a network attached (Windows Update, download paths).
