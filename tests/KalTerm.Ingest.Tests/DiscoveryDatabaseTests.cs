@@ -25,10 +25,10 @@ public class DiscoveryDatabaseTests(DatabaseFixture db) : IClassFixture<Database
         Assert.Equal(2_500, firstResult.Added.Count);
         Assert.Equal(2_400, secondResult.Matched);
         Assert.Equal(10, secondResult.Added.Count);
-        Assert.Equal(100, secondResult.Removed.Count);
-        Assert.Equal(2_510, ids.Count);
-        Assert.Equal(100L, await db.ScalarAsync<long>("SELECT COUNT_BIG(*) FROM dbo.market WHERE status = 'unlisted'"));
-        Assert.Equal(2_410L, await db.ScalarAsync<long>("SELECT COUNT_BIG(*) FROM dbo.market WHERE status = 'active'"));
+        Assert.Equal(100, secondResult.Removed.Count(ticker => ticker.StartsWith("D-", StringComparison.Ordinal)));
+        Assert.Equal(2_510, ids.Count);   // only this test's markets went through this map
+        Assert.Equal(100L, await db.ScalarAsync<long>("SELECT COUNT_BIG(*) FROM dbo.market WHERE ticker LIKE 'D-%' AND status = 'unlisted'"));
+        Assert.Equal(2_410L, await db.ScalarAsync<long>("SELECT COUNT_BIG(*) FROM dbo.market WHERE ticker LIKE 'D-%' AND status = 'active'"));
     }
 
     [Fact]

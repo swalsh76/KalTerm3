@@ -20,7 +20,7 @@ public class MarketUnlistTests(DatabaseFixture db) : IClassFixture<DatabaseFixtu
 
         var unlisted = await store.MarkUnlistedAsync(passStart, TestContext.Current.CancellationToken);
 
-        Assert.Equal(["B", "D"], unlisted.Order());
+        Assert.Equal(["B", "D"], unlisted.Where(t => t is "A" or "B" or "C" or "D").Order());   // the other test in this class shares the database
         Assert.Equal("active", await db.ScalarAsync<string>("SELECT status FROM dbo.market WHERE ticker = 'A'"));
         Assert.Equal(MarketStore.UnlistedStatus, await db.ScalarAsync<string>("SELECT status FROM dbo.market WHERE ticker = 'B'"));
         Assert.Equal("settled", await db.ScalarAsync<string>("SELECT status FROM dbo.market WHERE ticker = 'C'"));
@@ -37,6 +37,6 @@ public class MarketUnlistTests(DatabaseFixture db) : IClassFixture<DatabaseFixtu
         await store.UpsertAsync([Record("R", "active")], T0.AddMinutes(10), TestContext.Current.CancellationToken);
 
         Assert.Equal("active", await db.ScalarAsync<string>("SELECT status FROM dbo.market WHERE ticker = 'R'"));
-        Assert.Empty(await store.MarkUnlistedAsync(T0.AddMinutes(10), TestContext.Current.CancellationToken));
+        Assert.DoesNotContain("R", await store.MarkUnlistedAsync(T0.AddMinutes(10), TestContext.Current.CancellationToken));
     }
 }
