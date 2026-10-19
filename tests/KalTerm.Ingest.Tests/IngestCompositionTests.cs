@@ -151,6 +151,8 @@ public sealed class IngestCompositionTests : IAsyncLifetime
         Assert.Equal("trade-1", await ScalarAsync<string>("SELECT trade_id FROM dbo.trade"));
         var state = await new IngestStateStore(Source()).GetAsync(IngestStateKeys.Run, TestContext.Current.CancellationToken);
         Assert.Equal(IngestStateKeys.Stopped, state!.Value);
+        var governed = await new IngestStateStore(Source()).GetAsync(KalTerm.Data.Governor.GovernorStateKeys.Last, TestContext.Current.CancellationToken);
+        Assert.StartsWith("ok ", governed!.Value, StringComparison.Ordinal);
         Assert.Equal(0, await ScalarAsync<int>($"SELECT COUNT(*) FROM dbo.ingest_gap WHERE kind = '{GapKinds.IngestDown}'"));
 
         // Run 2: the time since the clean stop of run 1 is recorded as downtime.

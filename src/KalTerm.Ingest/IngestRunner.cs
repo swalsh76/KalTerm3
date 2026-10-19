@@ -2,6 +2,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using KalTerm.Data;
 using KalTerm.Data.Gaps;
+using KalTerm.Data.Governor;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
@@ -24,6 +25,9 @@ public sealed record IngestRunnerOptions
     /// <summary>How often the boundaries are topped up while running. Default 1 hour.</summary>
     public TimeSpan PartitionCheckInterval { get; init; } = TimeSpan.FromHours(1);
 
+    /// <summary>How often the storage governor checks retention and the size budget. Default 15 minutes.</summary>
+    public TimeSpan GovernorCheckInterval { get; init; } = TimeSpan.FromMinutes(15);
+
     /// <summary>How often a status line is logged. Default 1 minute.</summary>
     public TimeSpan StatusInterval { get; init; } = TimeSpan.FromMinutes(1);
 
@@ -45,7 +49,7 @@ public sealed record IngestRunnerOptions
     /// <summary>Throws <see cref="ArgumentOutOfRangeException"/> if a value cannot work.</summary>
     public void Validate()
     {
-        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
+        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
             || StreamRetryBase <= TimeSpan.Zero || StopTimeout <= TimeSpan.Zero || BookPublishInterval <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(IngestRunnerOptions), "every interval and timeout must be positive");
@@ -104,6 +108,7 @@ public sealed partial class IngestRunner
     private readonly ILogger _logger;
     private readonly StreamIngestor _ingestor;
     private readonly IBookKeeper? _books;
+    private readonly IStorageGovernor? _governor;
     private long _restarts;
     private long _discoveryFailures;
     private DateTimeOffset _startedAt;
@@ -126,6 +131,7 @@ public sealed partial class IngestRunner
     /// <param name="time">The clock.</param>
     /// <param name="logger">Receives the log.</param>
     /// <param name="books">Keeps and publishes the order books of the watch list; <see langword="null"/> when none are kept.</param>
+    /// <param name="governor">Applies the retention and the size budget; <see langword="null"/> when none is kept.</param>
     public IngestRunner(
         IMarketStore store,
         MarketIdMap ids,
@@ -140,7 +146,8 @@ public sealed partial class IngestRunner
         StreamIngestorOptions? ingestorOptions = null,
         TimeProvider? time = null,
         ILogger? logger = null,
-        IBookKeeper? books = null)
+        IBookKeeper? books = null,
+        IStorageGovernor? governor = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(ids);
@@ -165,6 +172,7 @@ public sealed partial class IngestRunner
         _time = time ?? TimeProvider.System;
         _logger = logger ?? NullLogger.Instance;
         _books = books;
+        _governor = governor;
         _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger, books);
     }
 
@@ -385,6 +393,7 @@ public sealed partial class IngestRunner
     {
         var nextPartitions = _time.GetUtcNow() + _options.PartitionCheckInterval;
         var nextStatus = _time.GetUtcNow() + _options.StatusInterval;
+        var nextGovernor = _time.GetUtcNow();
         while (!cancellationToken.IsCancellationRequested)
         {
             await Task.Delay(_options.HeartbeatInterval, _time, cancellationToken).ConfigureAwait(false);
@@ -394,6 +403,12 @@ public sealed partial class IngestRunner
             {
                 nextPartitions = now + _options.PartitionCheckInterval;
                 await TryAsync("partitions", () => _partitions.EnsureAheadAsync(DateOnly.FromDateTime(now.UtcDateTime), _options.PartitionDaysAhead, cancellationToken), cancellationToken).ConfigureAwait(false);
+            }
+
+            if (_governor is not null && now >= nextGovernor)
+            {
+                nextGovernor = now + _options.GovernorCheckInterval;
+                await TryAsync("storage governor", () => _governor.CheckAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
             }
 
             if (now >= nextStatus)

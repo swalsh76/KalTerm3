@@ -22,6 +22,7 @@ public class IngestRunnerTests
         StreamRetryMax = TimeSpan.FromMilliseconds(40),
         StopTimeout = TimeSpan.FromSeconds(5),
         BookPublishInterval = TimeSpan.FromMilliseconds(20),
+        GovernorCheckInterval = TimeSpan.FromMilliseconds(40),
         Schedule = now => (now.AddMilliseconds(30), PassKind.Incremental),
     };
 
@@ -31,7 +32,7 @@ public class IngestRunnerTests
         private readonly CancellationTokenSource _stop = new();
         private int _listings;
 
-        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null)
+        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null)
         {
             var markets = catalog?.ToList() ?? [];
             Source = new ScriptedSource(open);
@@ -58,7 +59,8 @@ public class IngestRunnerTests
                 new StreamIngestorOptions { FlushInterval = TimeSpan.FromMilliseconds(20) },
                 TimeProvider.System,
                 Log,
-                books);
+                books,
+                governor);
         }
 
         public FakeMarketStore Store { get; } = new();
@@ -417,6 +419,7 @@ public class IngestRunnerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { StreamRetryBase = TimeSpan.FromSeconds(5), StreamRetryMax = TimeSpan.FromSeconds(1) }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { PartitionDaysAhead = 0 }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BookPublishInterval = TimeSpan.Zero }.Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { GovernorCheckInterval = TimeSpan.Zero }.Validate());
         new IngestRunnerOptions().Validate();
 
         using var rig = new Rig(Sessions([]));
@@ -550,5 +553,34 @@ public class IngestRunnerTests
         await rig.StopAsync();
 
         Assert.Null(rig.Runner.Status.Books);
+    }
+
+    [Fact]
+    public async Task TheStorageGovernorIsCheckedRightAwayAndThenOnItsInterval()
+    {
+        var governor = new FakeGovernor();
+        using var rig = new Rig(Sessions([]), governor: governor);
+
+        rig.Start();
+        await Wait.UntilAsync(() => governor.Checks >= 3, "three governor checks");
+        await rig.StopAsync();
+
+        Assert.True(governor.Checks >= 3);
+    }
+
+    [Fact]
+    public async Task AGovernorThatFailsIsLoggedAndTheRunCarriesOn()
+    {
+        var governor = new FakeGovernor { Failure = new InvalidOperationException("governor broke") };
+        var sessions = new List<ScriptedSession>();
+        using var rig = new Rig(Sessions(sessions), governor: governor);
+        await rig.SeedAsync("A-1");
+
+        rig.Start();
+        await Wait.UntilAsync(() => governor.Checks >= 2, "two failing checks");
+        await Wait.UntilAsync(() => rig.Source.Opens >= 1, "the stream to open");
+        await rig.StopAsync();
+
+        Assert.Contains(rig.Log.Lines, l => l.Contains("governor broke", StringComparison.Ordinal));
     }
 }

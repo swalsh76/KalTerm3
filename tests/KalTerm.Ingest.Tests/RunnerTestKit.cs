@@ -218,4 +218,24 @@ internal sealed class ListLogger : ILogger
             _lines.Add($"{logLevel}: {formatter(state, exception)}");
         }
     }
+
+
+}
+
+/// <summary>A governor that counts its checks and can be told to fail.</summary>
+internal sealed class FakeGovernor : KalTerm.Data.Governor.IStorageGovernor
+{
+    private int _checks;
+
+    public int Checks => Volatile.Read(ref _checks);
+
+    public Exception? Failure { get; set; }
+
+    public Task<KalTerm.Data.Governor.GovernorReport> CheckAsync(CancellationToken cancellationToken = default)
+    {
+        Interlocked.Increment(ref _checks);
+        return Failure is null
+            ? Task.FromResult(new KalTerm.Data.Governor.GovernorReport(DateTime.UtcNow, KalTerm.Data.Governor.BudgetLevel.Ok, 1, [], null))
+            : Task.FromException<KalTerm.Data.Governor.GovernorReport>(Failure);
+    }
 }
