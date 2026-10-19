@@ -141,9 +141,9 @@ public sealed class SqlBackupTests(DatabaseFixture db) : IClassFixture<DatabaseF
         {
             await database.BackupAsync(BackupKind.Full, path, TestContext.Current.CancellationToken);
             var bytes = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
-            for (var i = bytes.Length / 2; i < bytes.Length / 2 + 4096 && i < bytes.Length; i++)
+            for (var i = 0; i < bytes.Length; i += 256)
             {
-                bytes[i] ^= 0xFF;   // damage the middle of the file
+                bytes[i] ^= 0xFF;   // damage every 256th byte: wherever the pages sit, some of them are hit (an uncompressed small backup has long unused stretches)
             }
 
             await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
