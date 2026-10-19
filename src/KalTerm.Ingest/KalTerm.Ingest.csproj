@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>KalTerm.Ingest</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KalTerm.Core\KalTerm.Core.csproj" />
+    <ProjectReference Include="..\KalTerm.Kalshi\KalTerm.Kalshi.csproj" />
+    <ProjectReference Include="..\KalTerm.Data\KalTerm.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KalTerm.Ingest.Tests" />
+  </ItemGroup>
+</Project>

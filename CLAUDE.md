@@ -116,6 +116,8 @@ $env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'   # plus KALSHI_KEY_ID
 .\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-class "*LiveKalshiTests"
 # the WebSocket live tests (public channels; subscribe commands only):
 .\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-class "*LiveKalshiWebSocketTests"
+# market discovery (sizing; the updated-since probe; a full pass then two incremental passes; about 130 requests in all; none touches a database):
+.\tests\KalTerm.Ingest.Tests\bin\Release\net10.0\KalTerm.Ingest.Tests.exe --filter-class "*LiveDiscoveryTests"
 # one test only, for example the signed-account-read check:
 .\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-method "*TheServerAcceptsOurSignatureOnAnAuthenticatedRead"
 ```

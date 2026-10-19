@@ -1,6 +1,8 @@
+using KalTerm.Data;
 using Microsoft.Data.SqlClient;
+using Xunit;
 
-namespace KalTerm.Data.Tests;
+namespace KalTerm.TestSupport;
 
 /// <summary>
 /// One provisioned and migrated LocalDB database per test class. Skips the tests when LocalDB is missing on a development
