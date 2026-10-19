@@ -113,7 +113,20 @@ public sealed record StreamsDto(StreamDto Ticker, StreamDto Trade);
 /// <param name="DataFileBytes">The data file's current size.</param>
 /// <param name="MaxBytes">The data file's hard maximum; <see langword="null"/> when unlimited.</param>
 /// <param name="DiskFreeBytes">Free space on the data file's disk; <see langword="null"/> when not known.</param>
-public sealed record StorageDto(long DataFileBytes, long? MaxBytes, long? DiskFreeBytes);
+/// <param name="UsedBytes">Space holding data inside the file. Dropping a day frees pages here but never shrinks the file, so this is the figure the budget uses.</param>
+/// <param name="UsedPercent">The share of <paramref name="MaxBytes"/> in use, whole percent; <see langword="null"/> when unlimited.</param>
+/// <param name="OldestDataDay">The UTC day of the oldest raw ticker or trade row (<c>yyyy-MM-dd</c>), or <c>none</c>; <see langword="null"/> when the governor has not reported.</param>
+/// <param name="GovernorLast">What the storage governor's last check did, for example <c>ok used=3% dropped=</c>; <see langword="null"/> when it has not run.</param>
+/// <param name="GovernorAgeSeconds">How long ago that check ran.</param>
+public sealed record StorageDto(
+    long DataFileBytes,
+    long? MaxBytes,
+    long? DiskFreeBytes,
+    long UsedBytes,
+    int? UsedPercent,
+    string? OldestDataDay,
+    string? GovernorLast,
+    long? GovernorAgeSeconds);
 
 /// <summary>Gaps in a recent window.</summary>
 /// <param name="WindowHours">How far back this looks.</param>

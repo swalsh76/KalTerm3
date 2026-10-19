@@ -34,7 +34,7 @@ internal static class Samples
             problems,
             new IngestStateDto("running", "2026-10-18T22:59:57.000000+00:00", 3),
             new StreamsDto(new StreamDto("2026-10-18T22:59:59.000000+00:00", 1), new StreamDto("2026-10-18T22:59:58.000000+00:00", 2)),
-            new StorageDto(276_824_064, 107_374_182_400, 988_000_000_000),
+            new StorageDto(276_824_064, 107_374_182_400, 988_000_000_000, 264_000_000, 0, "2026-10-17", "ok used=0% dropped=", 40),
             new Dictionary<string, long> { ["active"] = 120018, ["closed"] = 288, ["unlisted"] = 428 },
             new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "Ticker updates in a gap are lost."),
             new BooksStatusDto(2, 0, 0, 3));

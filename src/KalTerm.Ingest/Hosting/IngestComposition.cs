@@ -1,6 +1,7 @@
 using KalTerm.Data;
 using KalTerm.Data.Books;
 using KalTerm.Data.Gaps;
+using KalTerm.Data.Governor;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
@@ -85,6 +86,7 @@ public static class IngestComposition
                     new Kalshi.WebSocket.KalshiWebSocketOptions { Logger = loggerFactory.CreateLogger<Kalshi.WebSocket.KalshiWebSocket>() },
                     options.WatchList);
 
+            var state = new IngestStateStore(data);
             var writerLogger = loggerFactory.CreateLogger(typeof(BulkWriter<>).Namespace!);
             var runner = new IngestRunner(
                 store,
@@ -94,13 +96,14 @@ public static class IngestComposition
                 Writers.Ticker(data, null, time, writerLogger),
                 Writers.Trade(data, null, time, writerLogger),
                 new GapStore(data),
-                new IngestStateStore(data),
+                state,
                 new PartitionMaintenance(data),
                 overrides?.Runner ?? new IngestRunnerOptions { PartitionDaysAhead = options.PartitionDaysAhead },
                 null,
                 time,
                 loggerFactory.CreateLogger<IngestRunner>(),
-                keeper);
+                keeper,
+                new StorageGovernor(new GovernorStore(data), state, new GovernorOptions { RawRetentionDays = options.RetentionDays }, time, loggerFactory.CreateLogger<StorageGovernor>()));
             try
             {
                 await runner.RunAsync(cancellationToken).ConfigureAwait(false);

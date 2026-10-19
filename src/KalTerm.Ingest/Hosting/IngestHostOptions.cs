@@ -24,6 +24,9 @@ public sealed partial class IngestHostOptions
     /// <summary>How many days past today get a partition boundary.</summary>
     public int PartitionDaysAhead { get; set; } = 7;
 
+    /// <summary>How many days of raw ticker and trade data are kept (<c>Ingest:RetentionDays</c>); older days are dropped whole once a day. Default 30; at least 4.</summary>
+    public int RetentionDays { get; set; } = 30;
+
     /// <summary>
     /// The markets whose order books are built and published (<c>Ingest:WatchList:0</c>, <c>Ingest:WatchList:1</c>, ...). Empty means no order book subscription at
     /// all. Changing it needs a restart in M3.
@@ -48,6 +51,11 @@ public sealed partial class IngestHostOptions
         if (ProvisionMaxSizeGb is <= 0)
         {
             throw new InvalidOperationException("Ingest:ProvisionMaxSizeGb must be positive when set");
+        }
+
+        if (RetentionDays <= Data.Governor.StorageBudget.MinKeepDays)
+        {
+            throw new InvalidOperationException($"Ingest:RetentionDays must be more than {Data.Governor.StorageBudget.MinKeepDays}");
         }
 
         if (PartitionDaysAhead < 1)

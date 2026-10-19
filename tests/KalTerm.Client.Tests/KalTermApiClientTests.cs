@@ -19,7 +19,7 @@ public sealed class KalTermApiClientTests
     [Fact]
     public async Task StatusIsOneGetOfTheStatusRoute()
     {
-        var status = new StatusDto("2026-10-18T22:30:15.000000+00:00", [], new IngestStateDto("running", null, 3), new StreamsDto(new StreamDto(null, null), new StreamDto(null, null)), new StorageDto(1, null, null), new Dictionary<string, long>(), new GapSummaryDto(24, 0, new Dictionary<string, long>(), "note"), new BooksStatusDto(0, 0, 0, null));
+        var status = new StatusDto("2026-10-18T22:30:15.000000+00:00", [], new IngestStateDto("running", null, 3), new StreamsDto(new StreamDto(null, null), new StreamDto(null, null)), new StorageDto(1, null, null, 1, null, null, null, null), new Dictionary<string, long>(), new GapSummaryDto(24, 0, new Dictionary<string, long>(), "note"), new BooksStatusDto(0, 0, 0, null));
         var stub = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, Json(status));
         using var client = Client(stub);
 

@@ -440,6 +440,25 @@ public class StatusReaderTests(DatabaseFixture db) : IClassFixture<DatabaseFixtu
     }
 }
 
+public class StatusReaderGovernorTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+{
+    [Fact]
+    public async Task TheGovernorsLastRecordsAreReadBack()
+    {
+        db.Require();
+        var at = DateTime.UtcNow.AddMinutes(-3);
+        var state = new IngestStateStore(new DataSource(db.Options));
+        await state.SetAsync(Governor.GovernorStateKeys.Last, "ok used=3% dropped=2026-10-01", at, TestContext.Current.CancellationToken);
+        await state.SetAsync(Governor.GovernorStateKeys.OldestDay, "2026-10-02", at, TestContext.Current.CancellationToken);
+
+        var status = await new StatusReader(new DataSource(db.Options)).ReadAsync(DateTime.UtcNow, TimeSpan.FromHours(24), TestContext.Current.CancellationToken);
+
+        Assert.Equal("ok used=3% dropped=2026-10-01", status.GovernorLast!.Value);
+        Assert.Equal(DateTimeKind.Utc, status.GovernorLast.UpdatedAt.Kind);
+        Assert.Equal("2026-10-02", status.OldestDataDay);
+    }
+}
+
 public class StatusReaderEmptyTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
 {
     [Fact]
@@ -455,6 +474,9 @@ public class StatusReaderEmptyTests(DatabaseFixture db) : IClassFixture<Database
         Assert.Empty(status.MarketsByStatus);
         Assert.Empty(status.GapsByKind);
         Assert.True(status.DataFileBytes > 0);
+        Assert.InRange(status.DataUsedBytes!.Value, 1, status.DataFileBytes);
+        Assert.Null(status.OldestDataDay);
+        Assert.Null(status.GovernorLast);
     }
 }
 

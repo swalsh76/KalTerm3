@@ -36,6 +36,30 @@ public class IngestHostOptionsTests
     }
 
 
+    [Theory]
+    [InlineData(3, false)]
+    [InlineData(4, true)]
+    [InlineData(90, true)]
+    public void RetentionMustBeMoreThanTheDaysAlwaysKept(int days, bool valid)
+    {
+        var options = new IngestHostOptions { RetentionDays = days };
+
+        if (valid)
+        {
+            options.Validate();
+        }
+        else
+        {
+            Assert.Throws<InvalidOperationException>(options.Validate);
+        }
+    }
+
+    [Fact]
+    public void ADefaultOptionsKeepsThirtyDaysOfRawData()
+    {
+        Assert.Equal(30, new IngestHostOptions().RetentionDays);
+    }
+
     [Fact]
     public void ADefaultOptionsHasNoWatchListAndANormalOneIsAccepted()
     {

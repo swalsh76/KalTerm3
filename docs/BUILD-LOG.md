@@ -1170,3 +1170,23 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   (empty books of ended matches show as `-`), `book TICKER --depth 4` prints a ladder with derived asks and a 0.02 spread, `book NOPE-1` is `not found` (exit 1).
   Book-versus-REST equality was shown by the live test in 5.8 (3 of 3 equal after 33 deltas).
 - The soak continued on the same database throughout; ticker rows resumed at about 35,000 per minute.
+
+### 5.10 Slice 4.1: storage governor and retention (2026-10-19)
+
+- Owner decisions: raw retention 30 days for both ticker and trade (one window: the two tables share the partition function, so a day is dropped from both),
+  budget thresholds 80 % (status warns) and 90 % (the governor drops), the newest 3 days never dropped, and the data file cap on kaldb raised from 100 GB to
+  **500 GB** (`ALTER DATABASE ... MODIFY FILE (MAXSIZE = 512000MB)`, done 2026-10-19, no restart). Settled-market slimming and merging of old empty partition
+  boundaries are parked (PLAN section 9).
+- `KalTerm.Data.Governor`: `StorageGovernor` runs inside the ingest host every 15 minutes (`GovernorCheckInterval`). **Retention**: once a day from 00:30 UTC every
+  boundary day older than `Ingest:RetentionDays` (default 30, must exceed 3) is truncated, oldest first, and the day is recorded (`governor.retention_day`); a failed
+  day is retried at the next check. **Budget**: measured against **used** space (`FILEPROPERTY(..., 'SpaceUsed')`), because `TRUNCATE` frees pages inside the file
+  but never shrinks it; at 90 % of the cap the oldest raw day is dropped, one per check (freed pages return asynchronously), never in the same check as a retention
+  drop, and never inside the newest 3 days (then the report says nothing more can be dropped). Each check records `governor.last` (`ok` or `error`, percent used, days
+  dropped) and `governor.oldest_day`.
+- `/v1/status` storage section: `used_bytes`, `used_percent`, `oldest_data_day`, `governor_last`, `governor_age_seconds`. Problems: 80 % used; 90 % used (the governor is
+  dropping); a governor error; no governor check for an hour while ingest runs. The old file-size warning is gone (the file does not shrink after a drop).
+  `kterm status` shows used versus cap and a Retention line.
+- Measured on kaldb: the oldest-day query takes 176 ms on 22 M rows, so it runs in the governor and its result is stored, not computed per status call.
+- Tests: policy against a fake store and clock (retention window, once a day, time of day, floors, shedding order, failures, cancellation); the store on real
+  partitions on kaldb (oldest day, boundaries, truncation, refusal of a day without a boundary); runner and composition. Data, Ingest and Api suites pass on kaldb.
+- Not rolled out: kaldb still runs host-d475ac4. The rollout is one ingest restart and an API restart, at the owner's go-ahead.

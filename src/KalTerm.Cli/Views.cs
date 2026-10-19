@@ -27,8 +27,10 @@ internal static class Views
         rows.Add(new Markup($"[bold]Ingest[/]    {state}  last heartbeat {Age(status.Ingest.HeartbeatAgeSeconds)} ({Moment(status.Ingest.LastHeartbeat)} UTC)"));
         rows.Add(new Markup($"[bold]Streams[/]   ticker {Stream(status.Streams.Ticker)}  |  trade {Stream(status.Streams.Trade)}"));
         var storage = status.Storage;
-        var cap = storage.MaxBytes is { } max ? $"{Size(max)} ({Percent(storage.DataFileBytes, max)})" : "no cap";
-        rows.Add(new Markup($"[bold]Storage[/]   database file {Size(storage.DataFileBytes)} of {cap}  |  disk free {Size(storage.DiskFreeBytes)}"));
+        var cap = storage.MaxBytes is { } max ? $"{Size(max)} ({Percent(storage.UsedBytes, max)})" : "no cap";
+        rows.Add(new Markup($"[bold]Storage[/]   database used {Size(storage.UsedBytes)} of {cap}, file {Size(storage.DataFileBytes)}  |  disk free {Size(storage.DiskFreeBytes)}"));
+        var governor = storage.GovernorLast is null ? "has not run" : $"{(storage.GovernorLast.StartsWith("error", StringComparison.Ordinal) ? "[red]" + Escape(storage.GovernorLast) + "[/]" : Escape(storage.GovernorLast))} {Age(storage.GovernorAgeSeconds)}";
+        rows.Add(new Markup($"[bold]Retention[/] oldest raw data {Escape(storage.OldestDataDay ?? None)}  |  governor {governor}"));
         rows.Add(new Markup($"[bold]Markets[/]   {Escape(MarketCounts(status.Markets))}"));
         rows.Add(new Markup($"[bold]Books[/]     {Books(status.Books)}"));
         rows.Add(new Markup($"[bold]Gaps[/]      {status.Gaps.Count} in the last {status.Gaps.WindowHours} h{GapKinds(status.Gaps.ByKind)}"));

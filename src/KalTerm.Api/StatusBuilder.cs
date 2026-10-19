@@ -1,4 +1,5 @@
 using KalTerm.Contracts;
+using KalTerm.Data.Governor;
 using KalTerm.Data.Reading;
 using KalTerm.Data.State;
 
@@ -19,8 +20,8 @@ public static class StatusBuilder
     /// <summary>The ingest process rewrites every published book at least every 15 seconds, even a quiet one; a minute without is a problem.</summary>
     public static readonly TimeSpan BooksStale = TimeSpan.FromSeconds(60);
 
-    /// <summary>The data file is flagged at this share of its hard maximum.</summary>
-    public const double CapWarningShare = 0.9;
+    /// <summary>The storage governor checks every 15 minutes; an hour without a check while ingest runs is a problem.</summary>
+    public static readonly TimeSpan GovernorStale = TimeSpan.FromHours(1);
 
     /// <summary>The data disk is flagged below this much free space.</summary>
     public const long DiskFreeWarningBytes = 50L * 1024 * 1024 * 1024;
@@ -46,10 +47,19 @@ public static class StatusBuilder
 
         var books = Books(snapshot.Books, now, running, problems);
 
-        if (snapshot.MaxFileBytes is { } max && max > 0 && snapshot.DataFileBytes >= max * CapWarningShare)
+        var used = snapshot.DataUsedBytes ?? snapshot.DataFileBytes;
+        var usedPercent = StorageBudget.Percent(used, snapshot.MaxFileBytes);
+        switch (StorageBudget.Level(used, snapshot.MaxFileBytes))
         {
-            problems.Add($"the database file is at {snapshot.DataFileBytes * 100 / max}% of its size cap");
+            case BudgetLevel.Shed:
+                problems.Add($"the database is using {usedPercent}% of its size cap: the storage governor is dropping the oldest raw days");
+                break;
+            case BudgetLevel.Warn:
+                problems.Add($"the database is using {usedPercent}% of its size cap");
+                break;
         }
+
+        CheckGovernor(snapshot.GovernorLast, now, running, problems);
 
         if (snapshot.DiskFreeBytes is { } free && free < DiskFreeWarningBytes)
         {
@@ -61,10 +71,27 @@ public static class StatusBuilder
             problems,
             ingest,
             new StreamsDto(ticker, trade),
-            new StorageDto(snapshot.DataFileBytes, snapshot.MaxFileBytes, snapshot.DiskFreeBytes),
+            new StorageDto(snapshot.DataFileBytes, snapshot.MaxFileBytes, snapshot.DiskFreeBytes, used, usedPercent, snapshot.OldestDataDay, snapshot.GovernorLast?.Value, snapshot.GovernorLast is { } last ? AgeSeconds(last.UpdatedAt, now) : null),
             new Dictionary<string, long>(snapshot.MarketsByStatus, StringComparer.Ordinal),
             new GapSummaryDto((int)GapWindow.TotalHours, snapshot.GapsByKind.Values.Sum(), new Dictionary<string, long>(snapshot.GapsByKind, StringComparer.Ordinal), GapNote),
             books);
+    }
+
+    private static void CheckGovernor(IngestStateEntry? last, DateTime now, bool ingestRunning, List<string> problems)
+    {
+        if (last is null)
+        {
+            return;   // an ingest build from before the governor, or its first check is still to come
+        }
+
+        if (last.Value.StartsWith("error", StringComparison.Ordinal))
+        {
+            problems.Add($"the storage governor reports: {last.Value}");
+        }
+        else if (ingestRunning && AgeSeconds(last.UpdatedAt, now) > GovernorStale.TotalSeconds)
+        {
+            problems.Add($"the storage governor has not checked for {AgeSeconds(last.UpdatedAt, now) / 60} min although ingest says it is running");
+        }
     }
 
     private static BooksStatusDto Books(BookStatus? books, DateTime now, bool ingestRunning, List<string> problems)
