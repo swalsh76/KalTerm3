@@ -871,3 +871,54 @@ only the four system databases.
 - `COUNT_BIG` returns `bigint`: a test that read it as `int` failed on the real server.
 - A `-r win-x64` publish rewrites the shared `project.assets.json`; a later `--no-restore` build then ran without coverlet (handshake failure). Re-run `dotnet restore` after a publish.
 - xUnit analyzer xUnit1051 requires passing `TestContext.Current.CancellationToken`; CA1816 requires sealing a disposable test class.
+
+### 5.2 Slice 3.2: the write path (2026-10-18)
+
+**Built** (`src/KalTerm.Data/Writing`, tests in `tests/KalTerm.Data.Tests/Writing`).
+- `BulkWriter<T>`: producers call `TryWrite` (never blocks); one background loop writes a batch when it holds 5,000 rows or 1 s after its first row, whichever is first.
+  Each batch is one `SqlBulkCopy` with an internal transaction and `BatchSize = 0`, so a failure leaves nothing behind and a retry cannot duplicate rows
+  (tested: a batch with one over-long `trade_id` leaves zero rows).
+- Retry (`SqlRetryPolicy`): 1205, 4891, timeouts, anything SqlClient calls transient, connection-level errors (severity 20+, -1, 2, 53) and the errors of a
+  restarting or recovering server (4060, 922, 945, 18456). Capped exponential backoff (1 s to 30 s, up to 20% jitter) on `TimeProvider`; retries never stop while the
+  buffer absorbs the stall. Unhealthy after 5 consecutive failed attempts, healthy again after a success. Anything else (a refused value, a missing table) is a
+  "poison" batch: dropped, counted, logged, and the loop carries on. A wrong database name therefore retries forever, visibly, instead of dropping data silently.
+- Overflow: at 500,000 buffered rows new rows are dropped and counted, and the earliest and latest dropped timestamps are kept; `TakeDroppedRange()` returns and resets
+  them so slice 3.4 can write an `ingest_gap` row. A poison batch or rows abandoned at shutdown are recorded the same way.
+- Shutdown: `DisposeAsync` stops intake, writes what is buffered for at most 10 s, abandons a stuck write, and counts what was left as dropped.
+- `Writers.Ticker` / `Writers.Trade` with `TickerRow` / `TradeRow` (all `long` fixed-point; `null` where a message omitted a field); `TakerSide` is the stored tinyint.
+
+**Deviation from the plan.** The sink fills a reused `DataTable` per batch rather than streaming through a custom `DbDataReader`. Simpler and robust; the measurement
+below shows the writer far ahead of the load, so it stays.
+
+**Verified on `kaldb`** (self-contained publish as in 5.1): 89 of 89 tests pass over shared memory, and no test database is left behind.
+
+**Throughput (opt-in test `WriterThroughputTests`, `KALTERM_THROUGHPUT=1`, real SQL Server 2025 on `kaldb`, 5,000 distinct markets, default options).**
+
+| Load | Result |
+|---|---|
+| Paced 20,000 rows/s for 30 s (600,000 rows) | all written, 0 dropped, buffer high-water 3,001 to 5,001 rows, last batch 34 ms, slowest batch 194 to 262 ms (three runs) |
+| Burst: 1,000,000 rows offered in 0.1 s | 510,000 written, 490,000 dropped (buffer 500,000 plus the batch in flight), drained in about 3.3 s: at least 150,000 rows/s |
+
+Reading: the sink can write about 150,000 ticker rows/s, 7x the paced load, so the 500,000-row buffer is about 3 s of full-speed writing and about 25 s of arrivals at
+20,000 rows/s (31 s at 16,000). After a 30 s stall the backlog drains in a few seconds. The default stays at 500,000; revisit in 3.8 against the real feed rate.
+Limits: 30 s runs on an empty table with one writer; compression, log growth and `CHECKPOINT` effects over hours and with the trade writer running alongside are for 3.8.
+
+**Problems and fixes.**
+- Error 4060 (cannot open database) was first classified as poison. The host must survive a server restart or a database still recovering, so the restart errors retry.
+- `Microsoft.Data.SqlClient` retries a failed connect once after 10 s by default, which hid the writer's own backoff and made each failed attempt take 10 s;
+  `ConnectRetryCount = 0` is now in the connection string (tested).
+- **CI (LocalDB) found two things `kaldb` did not.** (1) Right after `CREATE DATABASE` the provisioner's settings query once returned a NULL column
+  (`SqlNullValueException`), apparently while the new database was not yet fully online; it now waits, bounded at 60 s, until the database is `ONLINE` and every
+  setting is readable. (2) SQL Server refuses `SPLIT RANGE` on a populated partition of a columnstore table, and the last partition holds every day after the newest
+  boundary, so once rows exist with no boundary above them it can never be split. **Rule for the host (slice 3.4): add boundaries (today and some days ahead) at
+  start-up before the writers start, and keep adding ahead of the clock.** `PartitionManager` says so; the writer database tests add their boundaries first.
+- **The "null column" race was `AUTO_CLOSE`.** On LocalDB (and Express) databases are created with `AUTO_CLOSE ON`; an idle database closes and its settings read back as NULL
+  until something opens it, so waiting never helped (one CI test timed out after the full 60 s). The provisioner now pins `AUTO_CLOSE OFF` (the right production setting anyway)
+  before it reads anything; the `ALTER` also wakes a closed database. The 60 s wait stays as a bound for a database that is genuinely recovering.
+- The harness blocks `Remove-Item` even inside a script that runs on the server; use `[System.IO.File]::Delete` there.
+- Fake clock tests: `AutoAdvanceTimeProvider` in manual mode leaves cancelled timers in its queue, so tests pump until their condition holds instead of firing a counted number of timers; 25 consecutive runs of the unit suite passed.
+
+**Coverage gate raised (2026-10-18, owner's decision).** 95% line coverage for `KalTerm.Core` and `KalTerm.Data`, 90% for the rest (PLAN.md decision 9;
+`check-coverage.ps1 -AssemblyMinimum`). `KalTerm.Data` was at 94.1% on CI, so the DbUp log adapter moved to its own internal class (`LoggerUpgradeLog`) and is tested at every
+level, which also covers the generated logger methods. What remains uncovered is deliberate: the provisioner's wait for a database that is not yet online (it needs a database stuck offline
+for up to 60 s), one loop-exit line in the writer, and the null-return branch of the settings read.

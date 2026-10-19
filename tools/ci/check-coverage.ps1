@@ -1,5 +1,6 @@
 <#
-  Fails (exit 1) if any production assembly's line coverage is below -MinLinePercent.
+  Fails (exit 1) if any production assembly's line coverage is below its minimum: -MinLinePercent, or the stricter value
+  in -AssemblyMinimum for the assemblies where a defect costs most (KalTerm.Core: money and fees; KalTerm.Data: durability and retry).
 
   Every test project's Cobertura report also lists the assemblies it merely references, so a single report says
   little about them (KalTerm.Core is 19% in the Kalshi tests' report and 98% in its own). This script therefore
@@ -15,7 +16,8 @@ param(
     [Parameter(Mandatory)][string]$Path,
     [ValidateRange(0, 100)][double]$MinLinePercent = 90,
     [string[]]$Exclude = @('KalTerm.TestSupport'),
-    [string]$Include = 'KalTerm.*'
+    [string]$Include = 'KalTerm.*',
+    [hashtable]$AssemblyMinimum = @{ 'KalTerm.Core' = 95; 'KalTerm.Data' = 95 }
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,13 +57,14 @@ foreach ($name in ($assemblies.Keys | Sort-Object)) {
     $total = $lines.Count
     $covered = @($lines.Values | Where-Object { $_ -gt 0 }).Count
     $percent = if ($total -eq 0) { 0.0 } else { 100.0 * $covered / $total }
-    $status = if ($percent -ge $MinLinePercent) { 'ok  ' } else { 'FAIL' }
-    '{0} {1,-22} {2,6:N1}% lines ({3} of {4}), minimum {5:N1}%' -f $status, $name, $percent, $covered, $total, $MinLinePercent
-    if ($percent -lt $MinLinePercent) { $failed = $true }
+    $minimum = if ($AssemblyMinimum.ContainsKey($name)) { [double]$AssemblyMinimum[$name] } else { $MinLinePercent }
+    $status = if ($percent -ge $minimum) { 'ok  ' } else { 'FAIL' }
+    '{0} {1,-22} {2,6:N1}% lines ({3} of {4}), minimum {5:N1}%' -f $status, $name, $percent, $covered, $total, $minimum
+    if ($percent -lt $minimum) { $failed = $true }
 }
 "merged $($reports.Count) report(s); judged: $Include; not judged: $($Exclude -join ', ')"
 
 if ($failed) {
-    Write-Error "Line coverage is below the $MinLinePercent% gate."
+    Write-Error "Line coverage is below the gate for at least one assembly."
     exit 1
 }

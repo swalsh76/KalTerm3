@@ -20,6 +20,7 @@ Windows-only stack. KalshiTerm2 (Python, Postgres) is the reference implementati
 | 6 | MIT license, public repository. |
 | 7 | SQL Server 2025 **Enterprise** on the server; licensing is the owner's responsibility and is settled (2026-10-16). Spikes may run on any edition, but a result that depends on an Enterprise-only feature must say so. |
 | 8 | The server host runs **Windows Server 2025** (topology B and the S-1d target). The workstation runs Windows 11 Pro. |
+| 9 | Coverage gate (CI, line coverage per production assembly): **90%**, and **95% for `KalTerm.Core` and `KalTerm.Data`** (owner, 2026-10-18), where a defect costs most (money and fees; durability and retry). Set in `tools/ci/check-coverage.ps1`. |
 
 ## 3. Topologies
 
@@ -180,7 +181,7 @@ analytics (M5 onward), combo markets.
 |---|---|---|
 | 3.0 | Prerequisites: CI probe of the runner's SQL Server (D4), this plan | done |
 | 3.1 | `KalTerm.Data`: schema v1, DbUp migrations, provisioning, integration tests on LocalDB | done (BUILD-LOG 5.1) |
-| 3.2 | Write path: bulk writers, retry policy, buffer and stall behavior | |
+| 3.2 | Write path: bulk writers, retry policy, buffer and stall behavior | done (BUILD-LOG 5.2) |
 | 3.3 | Market discovery (REST, open non-combo markets, `market` upserts) | |
 | 3.4 | Stream ingest (WebSocket to writers, gap log) and the host | |
 | 3.5 | `KalTerm.Api` and `KalTerm.Contracts` (loopback, read endpoints) | |

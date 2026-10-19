@@ -125,7 +125,7 @@ Database tests (`KalTerm.Data.Tests`) run on LocalDB (`(localdb)\MSSQLLocalDB`).
 
 (Run the test assembly directly: `dotnet test --filter-class` would also hit the other test projects, which have no such class.)
 
-CI fails if any production assembly is under 90% line coverage, judged on the union of all test
+CI fails if any production assembly is under 90% line coverage (95% for `KalTerm.Core` and `KalTerm.Data`), judged on the union of all test
 projects' reports (coverlet.MTP's own threshold option is unsupported; `KalTerm.TestSupport` is test
 infrastructure and not judged). To check locally after the test command above:
 

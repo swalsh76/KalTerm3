@@ -6,6 +6,9 @@ namespace KalTerm.Data;
 /// <summary>
 /// Maintains the daily (UTC) partitions shared by the <c>ticker</c> and <c>trade</c> tables: adds day boundaries ahead of need
 /// and drops a whole day with <c>TRUNCATE ... WITH (PARTITIONS (n))</c>, never <c>DELETE</c> (BUILD-LOG 2.4).
+/// SQL Server splits a partition of a columnstore table only while it is empty, and the last partition is the one that holds every day after
+/// the newest boundary. So boundaries must exist <b>before</b> rows land past them: the host adds them at start-up and then ahead of the clock,
+/// before the first row of a day arrives (BUILD-LOG 5.2).
 /// </summary>
 public static class PartitionManager
 {

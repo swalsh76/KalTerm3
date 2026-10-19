@@ -172,25 +172,4 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
 
         Assert.Contains(logger.Levels, l => l == LogLevel.Error);
     }
-
-    private sealed class ListLogger : ILogger
-    {
-        public List<string> Messages { get; } = [];
-
-        public List<LogLevel> Levels { get; } = [];
-
-        public IDisposable? BeginScope<TState>(TState state)
-            where TState : notnull => null;
-
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-        {
-            lock (Messages)
-            {
-                Messages.Add(formatter(state, exception));
-                Levels.Add(logLevel);
-            }
-        }
-    }
 }

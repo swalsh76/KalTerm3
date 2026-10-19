@@ -47,6 +47,7 @@ public sealed record DatabaseConnectionOptions
             Encrypt = SqlConnectionEncryptOption.Optional,
             Pooling = true,
             ConnectTimeout = 15,
+            ConnectRetryCount = 0, // retries belong to the caller (BulkWriter); SqlClient's own would add 10 s to every failed attempt
         }.ConnectionString;
     }
 }
