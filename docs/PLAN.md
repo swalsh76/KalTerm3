@@ -68,7 +68,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M0 Scaffold** | Solution, CI, analyzers, central package management | CI green on an empty solution |
 | **M1 Spikes** (throwaway, measured) | **S-1 durability:** `diskspd` write-through benchmark on the target volume, then SQL Server commit latency, then 3 hard power cuts under load with `DBCC CHECKDB` after each. **S-2 time-series layout:** daily partitioned columnstore vs hot rowstore plus cold columnstore; insert rate, storage per million rows, query latency. **S-3 Ed25519:** signing library choice, verified against the Python signing vectors. **S-4 install:** unattended instance install on a clean VM | go/no-go; S-1 failing ends the SQL Server path. S-1 runs in stages (§6.1) |
 | **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green; may start once S-1a and S-1b have passed (M2 never touches SQL). **Met 2026-10-17** (BUILD-LOG §4) |
-| **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** (**met 2026-10-18**, BUILD-LOG 2.7) |
+| **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** (**met 2026-10-18**, BUILD-LOG 2.7). **Done 2026-10-19** (BUILD-LOG 5.9: production feed ingesting on `kaldb`, CLI reading ticks, trades, gaps and order books) |
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire |
 | **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead |
@@ -191,6 +191,32 @@ analytics (M5 onward), combo markets.
 | 3.8 | End to end on `kaldb`: the M3 gate (feed ingests and the CLI reads it) | done (BUILD-LOG 5.9) |
 
 **Dev tooling trial: local model for bulk digestion (owner, 2026-10-18): ended the same day.** A local model (Ollama, `qwen2.5-coder:14b`) was tried for digesting large test and log output during slice 3.4a and discontinued by the owner; it, the helper script and the model files were removed from the workstation. On structured output (tests, builds, coverage) `grep`, `tail` and `check-coverage.ps1` are exact, instant and as cheap, and the trial rules still required reading failures from the raw output, so it saved nothing (BUILD-LOG 5.4). Not to be revisited unless the owner raises it.
+
+### 6.5 M4 Server: decisions and slices
+
+Order (owner, 2026-10-19): 4.1 storage governor and retention, 4.2 trade backfill, 4.3 backup and restore, 4.4 candles, 4.5 auth, TLS and pinning.
+Each slice gets its own plan for approval before code.
+
+**Candles (slice 4.4), approved 2026-10-19.** Measured on `kaldb` (last hour): 2.27 M ticker rows over 45 k markets collapse to about 465 k market-minutes
+with ticks and 30 k with trades, and the raw ticker table grows about 2.2 GB a day, so 1-minute candles for every market are not stored.
+
+- A candle: yes-price open, high, low, close from trades; volume (sum of counts) and trade count; yes bid, yes ask and open interest at the close from the last
+  tick of the bucket. A bucket with ticks but no trades has a null price and is not filled forward. Buckets are UTC, aligned to the epoch; money is fixed-point.
+- **Stored intervals are configuration** (`Candles:Stored`, each an interval and a scope). Defaults: 1 d and 1 h for all markets, 1 min for the watch list.
+  Adding one backfills it from the raw data still retained; removing one stops new rows and leaves the old ones to retention.
+- **Requested intervals are a request parameter**: any whole number of minutes from 1 to 1440, and 1 week. It is rolled up exactly (open first, close last, high max, low min,
+  volume sum) from the coarsest stored interval that divides it; if none does, it is computed from raw ticks for retained days only, with a row cap. Anything else is a 422.
+- Candles are the long-term record: the storage governor drops raw ticker days under the budget and keeps the candles.
+- **Gaps (option C):** a candle that overlaps a gap carries `partial: true`, `gap_kind` and the seconds covered. Trade-derived fields lose the flag when trade backfill (4.2)
+  closes the gap; ticker-derived fields (bid, ask, open interest) stay partial for good. The CLI shows partial candles in yellow; alerts (M5) can ignore them on purpose.
+- Surfaces: `GET /v1/markets/{ticker}/candles?interval=&start=&end=&limit=` (paged like ticks) and `kterm candles TICKER --interval 15m --since 1d`.
+  The candle job runs in the ingest host about once a minute for closed buckets.
+
+**Time zones (standing requirement for every client).** The database and the API are UTC. Client terminals show times in a **user-selectable time zone**: the default is the
+system's local zone, but the user can always choose any other zone (or UTC) and the choice is stored per user (with layouts, once M4 auth exists; until then a CLI option and
+an environment variable). The system zone is only a default, never a fixed pass-through. The CLI today prints UTC with a "UTC" suffix; the zone option (`--tz`, an IANA or
+Windows zone id, and `--utc`) arrives in the first slice that touches CLI output, and every view that prints a time must use it.
+Rules (checked against System.CommandLine and PowerShell 2026-10-19: no clashes): `--utc` with `--tz` is a usage error; an unknown zone id is an error; `--json` stays UTC; precedence is `--utc`, then `--tz`, then `KALTERM_TZ`, then the stored per-user setting, then the system zone; no short aliases.
 
 ## 7. Risks
 
