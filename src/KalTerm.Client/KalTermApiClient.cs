@@ -85,6 +85,14 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
     }
 
     /// <inheritdoc/>
+    public Task<OrderBookPage> GetOrderBooksAsync(int? depth = null, CancellationToken cancellationToken = default) =>
+        GetAsync("v1/orderbooks", [("depth", Number(depth))], ApiJson.Wire.OrderBookPage, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<OrderBookDto> GetOrderBookAsync(string ticker, int? depth = null, CancellationToken cancellationToken = default) =>
+        GetAsync($"v1/markets/{Segment(ticker)}/orderbook", [("depth", Number(depth))], ApiJson.Wire.OrderBookDto, cancellationToken);
+
+    /// <inheritdoc/>
     public Task<GapPage> GetGapsAsync(WindowQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);

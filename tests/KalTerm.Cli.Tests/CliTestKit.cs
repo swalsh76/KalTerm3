@@ -17,6 +17,17 @@ internal static class Samples
     public static TradeDto Trade(string id = "t-1", string? side = "yes", bool block = false) =>
         new("2026-10-18T22:59:58.500000+00:00", id, "0.400000", "0.600000", "3.00", side, block);
 
+    public static OrderBookDto Book(string ticker, bool stale = false, bool approximate = false) =>
+        new(
+            ticker,
+            "2026-10-18T22:59:50.250000+00:00",
+            "2026-10-18T22:59:58.000000+00:00",
+            2,
+            stale,
+            approximate,
+            [new BookLevelDto("0.410000", "1.50"), new BookLevelDto("0.400000", "1500.00")],
+            [new BookLevelDto("0.550000", "2.00"), new BookLevelDto("0.540000", "7.00")]);
+
     public static StatusDto Status(params string[] problems) =>
         new(
             "2026-10-18T23:00:00.000000+00:00",
@@ -25,7 +36,8 @@ internal static class Samples
             new StreamsDto(new StreamDto("2026-10-18T22:59:59.000000+00:00", 1), new StreamDto("2026-10-18T22:59:58.000000+00:00", 2)),
             new StorageDto(276_824_064, 107_374_182_400, 988_000_000_000),
             new Dictionary<string, long> { ["active"] = 120018, ["closed"] = 288, ["unlisted"] = 428 },
-            new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "Ticker updates in a gap are lost."));
+            new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "Ticker updates in a gap are lost."),
+            new BooksStatusDto(2, 0, 0, 3));
 }
 
 /// <summary>An API that answers with what a test gave it, remembers what it was asked, and can fail.</summary>
@@ -42,6 +54,14 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
     public TradePage Trades { get; set; } = new([Samples.Trade()], null);
 
     public GapPage Gaps { get; set; } = new([]);
+
+    public OrderBookPage Books { get; set; } = new([Samples.Book("A-1")]);
+
+    public OrderBookDto? Book { get; set; } = Samples.Book("A-1");
+
+    public List<int?> BooksDepths { get; } = [];
+
+    public List<(string Ticker, int? Depth)> BookQueries { get; } = [];
 
     public Exception? Throw { get; set; }
 
@@ -82,6 +102,18 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
     {
         GapQuery = query;
         return Answer(Gaps);
+    }
+
+    public Task<OrderBookPage> GetOrderBooksAsync(int? depth = null, CancellationToken cancellationToken = default)
+    {
+        BooksDepths.Add(depth);
+        return Answer(Books);
+    }
+
+    public Task<OrderBookDto> GetOrderBookAsync(string ticker, int? depth = null, CancellationToken cancellationToken = default)
+    {
+        BookQueries.Add((ticker, depth));
+        return Book is null ? Task.FromException<OrderBookDto>(new ApiException(System.Net.HttpStatusCode.NotFound, "not_found")) : Answer(Book);
     }
 
     public void Dispose() => Disposed = true;

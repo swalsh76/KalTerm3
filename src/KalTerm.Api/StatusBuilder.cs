@@ -16,6 +16,9 @@ public static class StatusBuilder
     /// <summary>Ticker updates and trades arrive many times a second across all markets; two quiet minutes while ingest runs is a problem.</summary>
     public static readonly TimeSpan StreamStale = TimeSpan.FromMinutes(2);
 
+    /// <summary>The ingest process rewrites every published book at least every 15 seconds, even a quiet one; a minute without is a problem.</summary>
+    public static readonly TimeSpan BooksStale = TimeSpan.FromSeconds(60);
+
     /// <summary>The data file is flagged at this share of its hard maximum.</summary>
     public const double CapWarningShare = 0.9;
 
@@ -41,6 +44,8 @@ public static class StatusBuilder
         CheckStream("ticker", snapshot.LastTickerAt, ticker, running, problems);
         CheckStream("trade", snapshot.LastTradeAt, trade, running, problems);
 
+        var books = Books(snapshot.Books, now, running, problems);
+
         if (snapshot.MaxFileBytes is { } max && max > 0 && snapshot.DataFileBytes >= max * CapWarningShare)
         {
             problems.Add($"the database file is at {snapshot.DataFileBytes * 100 / max}% of its size cap");
@@ -58,7 +63,29 @@ public static class StatusBuilder
             new StreamsDto(ticker, trade),
             new StorageDto(snapshot.DataFileBytes, snapshot.MaxFileBytes, snapshot.DiskFreeBytes),
             new Dictionary<string, long>(snapshot.MarketsByStatus, StringComparer.Ordinal),
-            new GapSummaryDto((int)GapWindow.TotalHours, snapshot.GapsByKind.Values.Sum(), new Dictionary<string, long>(snapshot.GapsByKind, StringComparer.Ordinal), GapNote));
+            new GapSummaryDto((int)GapWindow.TotalHours, snapshot.GapsByKind.Values.Sum(), new Dictionary<string, long>(snapshot.GapsByKind, StringComparer.Ordinal), GapNote),
+            books);
+    }
+
+    private static BooksStatusDto Books(BookStatus? books, DateTime now, bool ingestRunning, List<string> problems)
+    {
+        if (books is null || books.Watched == 0)
+        {
+            return new BooksStatusDto(0, 0, 0, null);
+        }
+
+        long? age = books.NewestPublishedAt is { } newest ? AgeSeconds(newest, now) : null;
+        if (books.Stale > 0)
+        {
+            problems.Add($"{books.Stale} of {books.Watched} watched order books are stale (messages were missed and recovery has not finished)");
+        }
+
+        if (ingestRunning && age > BooksStale.TotalSeconds)
+        {
+            problems.Add($"the order books were last published {age} s ago although ingest says it is running");
+        }
+
+        return new BooksStatusDto(books.Watched, books.Stale, books.Approximate, age);
     }
 
     private static IngestStateDto IngestState(IngestStateEntry? run, DateTime now, List<string> problems)

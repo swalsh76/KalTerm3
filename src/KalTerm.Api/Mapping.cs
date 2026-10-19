@@ -1,4 +1,5 @@
 using KalTerm.Contracts;
+using KalTerm.Data.Books;
 using KalTerm.Data.Reading;
 
 namespace KalTerm.Api;
@@ -62,6 +63,27 @@ public static class Mapping
             trade.TakerSide switch { 1 => "yes", 2 => "no", _ => null },
             trade.IsBlock);
     }
+
+    /// <summary>A published order book, cut to <paramref name="depth"/> levels a side.</summary>
+    /// <param name="book">The stored book.</param>
+    /// <param name="now">The current UTC time.</param>
+    /// <param name="depth">The most levels per side.</param>
+    /// <returns>The model.</returns>
+    public static OrderBookDto ToDto(StoredBook book, DateTime now, int depth)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+        return new OrderBookDto(
+            book.Ticker,
+            ApiFormat.Moment(book.UpdatedAt),
+            ApiFormat.Moment(book.PublishedAt),
+            Math.Max(0, (long)(now - book.PublishedAt).TotalSeconds),
+            book.Stale,
+            book.Approximate,
+            [.. book.YesLevels.Take(depth).Select(Level)],
+            [.. book.NoLevels.Take(depth).Select(Level)]);
+    }
+
+    private static BookLevelDto Level(BookLevel level) => new(ApiFormat.Dollars(level.PriceE6)!, ApiFormat.Count(level.QuantityE2)!);
 
     /// <summary>A gap.</summary>
     /// <param name="gap">The stored gap.</param>

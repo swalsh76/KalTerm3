@@ -1,3 +1,4 @@
+using KalTerm.Data.Books;
 using KalTerm.Data.State;
 
 namespace KalTerm.Data.Reading;
@@ -76,6 +77,7 @@ public sealed record MarketFilter(string? Status = null, string? EventTicker = n
 /// <param name="DiskFreeBytes">Free space on the data file's disk; <see langword="null"/> when the server would not say.</param>
 /// <param name="MarketsByStatus">Market counts by status.</param>
 /// <param name="GapsByKind">Gaps started within the window, by kind.</param>
+/// <param name="Books">The published order books, in total; <see langword="null"/> when the database has no book table yet.</param>
 public sealed record StatusSnapshot(
     IngestStateEntry? Run,
     DateTime? LastTickerAt,
@@ -84,7 +86,25 @@ public sealed record StatusSnapshot(
     long? MaxFileBytes,
     long? DiskFreeBytes,
     IReadOnlyDictionary<string, long> MarketsByStatus,
-    IReadOnlyDictionary<string, long> GapsByKind);
+    IReadOnlyDictionary<string, long> GapsByKind,
+    BookStatus? Books = null);
+
+/// <summary>One market's published order book (a row of <c>dbo.orderbook_state</c>), levels best first.</summary>
+/// <param name="Ticker">The market.</param>
+/// <param name="UpdatedAt">When the book last changed (UTC).</param>
+/// <param name="PublishedAt">When the ingest process last wrote the row (UTC).</param>
+/// <param name="Stale">Messages were missed (or there is no book yet) and recovery has not finished.</param>
+/// <param name="Approximate">Rebuilt from a REST snapshot.</param>
+/// <param name="YesLevels">Yes bids.</param>
+/// <param name="NoLevels">No bids.</param>
+public sealed record StoredBook(string Ticker, DateTime UpdatedAt, DateTime PublishedAt, bool Stale, bool Approximate, IReadOnlyList<BookLevel> YesLevels, IReadOnlyList<BookLevel> NoLevels);
+
+/// <summary>The published order books in total.</summary>
+/// <param name="Watched">How many books are published.</param>
+/// <param name="Stale">How many of them are stale.</param>
+/// <param name="Approximate">How many were rebuilt from REST.</param>
+/// <param name="NewestPublishedAt">The latest write of any row (UTC), or <see langword="null"/> when there are none.</param>
+public sealed record BookStatus(int Watched, int Stale, int Approximate, DateTime? NewestPublishedAt);
 
 /// <summary>Lists markets.</summary>
 public interface IMarketReader
@@ -133,6 +153,21 @@ public interface ITradeReader
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The page, or <see langword="null"/> when the market does not exist.</returns>
     Task<Page<StoredTrade, TradePosition>?> ReadAsync(string ticker, DateTime? start, DateTime until, TradePosition? after, int limit, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Reads the published order books.</summary>
+public interface IBookReader
+{
+    /// <summary>Every published book, in ticker order.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The books; empty when none are published.</returns>
+    Task<IReadOnlyList<StoredBook>> ListAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>One market's book.</summary>
+    /// <param name="ticker">The ticker.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The book, or <see langword="null"/> when the market is not published.</returns>
+    Task<StoredBook?> GetAsync(string ticker, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Reads the gap log.</summary>

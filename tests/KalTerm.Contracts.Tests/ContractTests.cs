@@ -73,11 +73,31 @@ public class ContractTests
             new StreamsDto(new StreamDto("2026-10-18T22:53:12.500000+00:00", 1), new StreamDto(null, null)),
             new StorageDto(142_606_336, 107_374_182_400, 988_000_000_000),
             new Dictionary<string, long> { ["active"] = 120146, ["unlisted"] = 342 },
-            new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "ticker data in a gap is not recoverable; trades are backfilled"));
+            new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "ticker data in a gap is not recoverable; trades are backfilled"),
+            new BooksStatusDto(3, 1, 0, 4));
 
         Pin(
             status,
-            """{"time":"2026-10-18T22:53:13.000000+00:00","problems":["ingest heartbeat is 95 s old"],"ingest":{"state":"running","last_heartbeat":"2026-10-18T22:51:38.000000+00:00","heartbeat_age_seconds":95},"streams":{"ticker":{"last_time":"2026-10-18T22:53:12.500000+00:00","age_seconds":1},"trade":{"last_time":null,"age_seconds":null}},"storage":{"data_file_bytes":142606336,"max_bytes":107374182400,"disk_free_bytes":988000000000},"markets":{"active":120146,"unlisted":342},"gaps":{"window_hours":24,"count":2,"by_kind":{"ingest_down":2},"note":"ticker data in a gap is not recoverable; trades are backfilled"}}""");
+            """{"time":"2026-10-18T22:53:13.000000+00:00","problems":["ingest heartbeat is 95 s old"],"ingest":{"state":"running","last_heartbeat":"2026-10-18T22:51:38.000000+00:00","heartbeat_age_seconds":95},"streams":{"ticker":{"last_time":"2026-10-18T22:53:12.500000+00:00","age_seconds":1},"trade":{"last_time":null,"age_seconds":null}},"storage":{"data_file_bytes":142606336,"max_bytes":107374182400,"disk_free_bytes":988000000000},"markets":{"active":120146,"unlisted":342},"gaps":{"window_hours":24,"count":2,"by_kind":{"ingest_down":2},"note":"ticker data in a gap is not recoverable; trades are backfilled"},"books":{"watched":3,"stale":1,"approximate":0,"published_age_seconds":4}}""");
+    }
+
+    [Fact]
+    public void AnOrderBookAndItsPage()
+    {
+        var book = new OrderBookDto(
+            "KXA-1",
+            "2026-10-19T12:00:00.250000+00:00",
+            "2026-10-19T12:00:03.000000+00:00",
+            2,
+            false,
+            true,
+            [new BookLevelDto("0.410000", "1.50"), new BookLevelDto("0.400000", "5.00")],
+            [new BookLevelDto("0.550000", "2.00")]);
+        const string Json = """{"ticker":"KXA-1","updated_at":"2026-10-19T12:00:00.250000+00:00","published_at":"2026-10-19T12:00:03.000000+00:00","age_seconds":2,"stale":false,"approximate":true,"yes_bids":[{"price":"0.410000","quantity":"1.50"},{"price":"0.400000","quantity":"5.00"}],"no_bids":[{"price":"0.550000","quantity":"2.00"}]}""";
+
+        Pin(book, Json);
+        Pin(new OrderBookPage([book]), "{\"books\":[" + Json + "]}");
+        Pin(new OrderBookPage([]), """{"books":[]}""");
     }
 
     [Fact]

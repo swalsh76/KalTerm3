@@ -30,10 +30,97 @@ internal static class Views
         var cap = storage.MaxBytes is { } max ? $"{Size(max)} ({Percent(storage.DataFileBytes, max)})" : "no cap";
         rows.Add(new Markup($"[bold]Storage[/]   database file {Size(storage.DataFileBytes)} of {cap}  |  disk free {Size(storage.DiskFreeBytes)}"));
         rows.Add(new Markup($"[bold]Markets[/]   {Escape(MarketCounts(status.Markets))}"));
+        rows.Add(new Markup($"[bold]Books[/]     {Books(status.Books)}"));
         rows.Add(new Markup($"[bold]Gaps[/]      {status.Gaps.Count} in the last {status.Gaps.WindowHours} h{GapKinds(status.Gaps.ByKind)}"));
         rows.Add(new Markup($"[grey]{Escape(status.Gaps.Note)}[/]"));
         return new Rows(rows);
     }
+
+    private static string Books(BooksStatusDto books) =>
+        books.Watched == 0
+            ? "none watched"
+            : $"{books.Watched} watched, {(books.Stale == 0 ? "none stale" : $"[red]{books.Stale} stale[/]")}{(books.Approximate == 0 ? string.Empty : $", {books.Approximate} approximate")}, published {Age(books.PublishedAgeSeconds)}";
+
+    /// <summary>A line per watched market: its best prices (the yes ask is derived from the best no bid) and whether the book can be trusted.</summary>
+    public static IRenderable Books(OrderBookPage page, int width)
+    {
+        if (page.Books.Count == 0)
+        {
+            return new Markup("[grey]No markets are watched. Set Ingest:WatchList on the server.[/]");
+        }
+
+        var table = new TextTable().Column("Ticker").Column("Yes bid", right: true).Column("Yes ask", right: true).Column("Spread", right: true).Column("Book").Column("Published");
+        foreach (var book in page.Books)
+        {
+            var bid = book.YesBids.Count > 0 ? Micros(book.YesBids[0].Price) : null;
+            var ask = book.NoBids.Count > 0 && Micros(book.NoBids[0].Price) is { } noBid ? Dollar - noBid : (long?)null;
+            table.Row(
+                book.Ticker,
+                bid is null ? None : Dollars(Format(bid.Value)),
+                ask is null ? None : Dollars(Format(ask.Value)),
+                bid is { } b && ask is { } a ? Dollars(Format(a - b)) : None,
+                Condition(book),
+                Age(book.AgeSeconds));
+        }
+
+        return new Rows(table.Render(width), new Markup($"[grey]{page.Books.Count} watched. Use: kterm book TICKER for the ladder.[/]"));
+    }
+
+    /// <summary>
+    /// One book as a ladder: the asks above (highest first), the spread, then the bids. Kalshi sends bids only; a yes ask is derived from a no bid
+    /// (1 minus its price), so what is shown as an ask is a no bid turned around.
+    /// </summary>
+    public static IRenderable Book(OrderBookDto book, int width)
+    {
+        var rows = new List<IRenderable>
+        {
+            new Markup($"[bold]{Escape(book.Ticker)}[/]  {ConditionMarkup(book)}"),
+            new Markup($"[grey]published {Age(book.AgeSeconds)}; last change {Moment(book.UpdatedAt, true)} UTC[/]"),
+            new Text(string.Empty),
+        };
+        if (book.Stale)
+        {
+            rows.Add(new Markup("[red]Messages were missed and the book is being rebuilt: do not trust these levels.[/]"));
+        }
+        else if (book.Approximate)
+        {
+            rows.Add(new Markup("[yellow]Rebuilt from a snapshot that cannot be aligned with the live stream: levels may be slightly off.[/]"));
+        }
+
+        var table = new TextTable().Column("Side").Column("Price", right: true).Column("Size", right: true);
+        var asks = book.NoBids.Select(l => (Price: Micros(l.Price), l.Quantity)).Where(l => l.Price is not null).Select(l => (Price: Dollar - l.Price!.Value, l.Quantity)).Reverse();
+        foreach (var (price, quantity) in asks)
+        {
+            table.Row(new Cell("ask", "red"), Dollars(Format(price)), Count(quantity));
+        }
+
+        var bid = book.YesBids.Count > 0 ? Micros(book.YesBids[0].Price) : null;
+        var bestAsk = book.NoBids.Count > 0 && Micros(book.NoBids[0].Price) is { } noBid ? Dollar - noBid : (long?)null;
+        table.Row(new Cell(bid is { } b && bestAsk is { } a ? "spread " + Dollars(Format(a - b)) : "spread " + None, "grey"), string.Empty, string.Empty);
+        foreach (var level in book.YesBids)
+        {
+            table.Row(new Cell("bid", "green"), Dollars(level.Price), Count(level.Quantity));
+        }
+
+        rows.Add(table.Render(width));
+        rows.Add(new Markup("[grey]Asks are derived from the no bids. --depth sets how many levels each side shows.[/]"));
+        return new Rows(rows);
+    }
+
+    private const long Dollar = 1_000_000;
+
+    /// <summary>The API's price text (always six decimals) as whole micro-dollars, so a complement is exact; <see langword="null"/> if it is not that.</summary>
+    private static long? Micros(string price) =>
+        price.Length >= 8 && price[^7] == '.' && long.TryParse(string.Concat(price.AsSpan(0, price.Length - 7), price.AsSpan(price.Length - 6)), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var micros) ? micros : null;
+
+    /// <summary>Micro-dollars back to the API's text.</summary>
+    private static string Format(long micros) => string.Create(CultureInfo.InvariantCulture, $"{(micros < 0 ? "-" : string.Empty)}{Math.Abs(micros) / Dollar}.{Math.Abs(micros) % Dollar:D6}");
+
+    private static Cell Condition(OrderBookDto book) =>
+        book.Stale ? new Cell("STALE", "red") : book.Approximate ? new Cell("APPROX", "yellow") : new Cell("ok", "green");
+
+    private static string ConditionMarkup(OrderBookDto book) =>
+        book.Stale ? "[bold red]STALE[/]" : book.Approximate ? "[bold yellow]APPROXIMATE[/]" : "[green]live[/]";
 
     public static IRenderable Markets(MarketPage page, int width)
     {

@@ -343,4 +343,57 @@ public sealed class EndpointTests : IAsyncLifetime
         Assert.Equal("internal_error", ApiJson.Deserialize<ErrorDto>(bugBody)!.Error);
         Assert.DoesNotContain("SECRET", timeoutBody + bugBody, StringComparison.Ordinal);
     }
+
+    // ---- order books ----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task OrderBooksAreListedWithTheirFlagsAgeAndTheDefaultDepth()
+    {
+        Fakes.Books.Books.Add(Samples.Book("A-1", levels: 15));
+        Fakes.Books.Books.Add(Samples.Book("B-2", stale: true, approximate: true, levels: 1));
+
+        var page = await _api.GetAsync<OrderBookPage>("/v1/orderbooks");
+
+        Assert.Equal(["A-1", "B-2"], page.Books.Select(b => b.Ticker));
+        var first = page.Books[0];
+        Assert.Equal((10, 10), (first.YesBids.Count, first.NoBids.Count));
+        Assert.Equal(("0.410000", "1.50"), (first.YesBids[0].Price, first.YesBids[0].Quantity));
+        Assert.Equal(("0.550000", "2.00"), (first.NoBids[0].Price, first.NoBids[0].Quantity));
+        Assert.Equal((2L, false, false), (first.AgeSeconds, first.Stale, first.Approximate));
+        Assert.Equal((true, true), (page.Books[1].Stale, page.Books[1].Approximate));
+    }
+
+    [Fact]
+    public async Task OneOrderBookIsCutToTheDepthAskedFor()
+    {
+        Fakes.Books.Books.Add(Samples.Book("A-1", levels: 15));
+
+        var book = await _api.GetAsync<OrderBookDto>("/v1/markets/A-1/orderbook?depth=3");
+        var deepest = await _api.GetAsync<OrderBookDto>("/v1/markets/A-1/orderbook?depth=100");
+
+        Assert.Equal((3, 3), (book.YesBids.Count, book.NoBids.Count));
+        Assert.Equal((15, 15), (deepest.YesBids.Count, deepest.NoBids.Count));
+        Assert.Equal("2026-10-19T12:00:00.000000+00:00".Length, book.UpdatedAt.Length);
+    }
+
+    [Fact]
+    public async Task AnUnwatchedMarketHasNoOrderBook()
+    {
+        var (response, body) = await _api.GetAsync("/v1/markets/NOPE-1/orderbook");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("not_found", ApiJson.Deserialize<ErrorDto>(body)!.Error);
+    }
+
+    [Theory]
+    [InlineData("/v1/orderbooks?depth=0", "depth")]
+    [InlineData("/v1/orderbooks?depth=101", "depth")]
+    [InlineData("/v1/orderbooks?depth=abc", "depth")]
+    [InlineData("/v1/orderbooks?depth=2&depth=3", "depth")]
+    [InlineData("/v1/markets/A-1/orderbook?depth=-1", "depth")]
+    [InlineData("/v1/markets/bad%20ticker/orderbook", "ticker")]
+    public async Task BadOrderBookParametersAreNamedNotEchoed(string url, string field)
+    {
+        await AssertInvalidAsync(url, field);
+    }
 }

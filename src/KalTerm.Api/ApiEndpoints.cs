@@ -52,6 +52,8 @@ public static class ApiEndpoints
 {
     private const int MarketsMax = 500;
     private const int RowsMax = 1_000;
+    private const int DepthDefault = 10;
+    private const int DepthMax = 100;
 
     /// <summary>Registers the real readers over a database.</summary>
     /// <param name="services">The service collection.</param>
@@ -66,6 +68,7 @@ public static class ApiEndpoints
         services.AddSingleton<ITickReader>(new TickReader(source, options));
         services.AddSingleton<ITradeReader>(new TradeReader(source, options));
         services.AddSingleton<IGapReader>(new GapReader(source, options));
+        services.AddSingleton<IBookReader>(new BookReader(source, options));
         services.AddSingleton<IStatusReader>(new StatusReader(source, options));
         services.AddSingleton<IReadinessProbe>(new DatabaseReadinessProbe(source));
         services.AddSingleton(TimeProvider.System);
@@ -167,6 +170,39 @@ public static class ApiEndpoints
             return page is null
                 ? NotFound()
                 : Json(new TradePage([.. page.Rows.Select(Mapping.ToDto)], page.Next is null ? null : ApiFormat.EncodeCursor($"{ApiFormat.Moment(page.Next.Ts)}|{page.Next.TradeId}")), ApiJson.Wire.TradePage);
+        });
+
+        app.MapGet("/v1/orderbooks", async (HttpRequest request, IBookReader reader, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var query = new RequestParameters(request.Query);
+            var depth = query.Depth(DepthDefault, DepthMax);
+            if (!query.IsValid)
+            {
+                return Invalid(query);
+            }
+
+            var now = time.GetUtcNow().UtcDateTime;
+            var books = await reader.ListAsync(cancellationToken).ConfigureAwait(false);
+            return Json(new OrderBookPage([.. books.Select(b => Mapping.ToDto(b, now, depth))]), ApiJson.Wire.OrderBookPage);
+        });
+
+        app.MapGet("/v1/markets/{ticker}/orderbook", async (string ticker, HttpRequest request, IBookReader reader, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var query = new RequestParameters(request.Query);
+            var depth = query.Depth(DepthDefault, DepthMax);
+            if (!RequestParameters.IsTicker(ticker))
+            {
+                query.Reject("ticker");
+            }
+
+            if (!query.IsValid)
+            {
+                return Invalid(query);
+            }
+
+            return await reader.GetAsync(ticker, cancellationToken).ConfigureAwait(false) is { } book
+                ? Json(Mapping.ToDto(book, time.GetUtcNow().UtcDateTime, depth), ApiJson.Wire.OrderBookDto)
+                : NotFound();
         });
 
         app.MapGet("/v1/gaps", async (HttpRequest request, IGapReader reader, TimeProvider time, CancellationToken cancellationToken) =>

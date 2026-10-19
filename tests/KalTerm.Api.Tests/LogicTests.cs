@@ -58,6 +58,7 @@ public class MappingTests
         Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredTick)null!));
         Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredTrade)null!));
         Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredGap)null!));
+        Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredBook)null!, NowUtc, 10));
     }
 }
 
@@ -72,6 +73,43 @@ public class StatusBuilderTests
         800L * 1024 * 1024 * 1024,
         new Dictionary<string, long> { ["active"] = 100 },
         new Dictionary<string, long> { ["ingest_down"] = 1, ["ws_reconnected"] = 3 });
+
+    [Fact]
+    public void NoPublishedBooksIsNotAProblemAndReportsZero()
+    {
+        var none = StatusBuilder.Build(Healthy(), NowUtc);
+        var noTable = StatusBuilder.Build(Healthy() with { Books = new BookStatus(0, 0, 0, null) }, NowUtc);
+
+        Assert.Empty(none.Problems);
+        Assert.Equal(new BooksStatusDto(0, 0, 0, null), none.Books);
+        Assert.Equal(none.Books, noTable.Books);
+    }
+
+    [Fact]
+    public void FreshBooksAreReportedAndStaleOnesAreAProblem()
+    {
+        var fresh = StatusBuilder.Build(Healthy() with { Books = new BookStatus(3, 0, 1, NowUtc.AddSeconds(-4)) }, NowUtc);
+        var stale = StatusBuilder.Build(Healthy() with { Books = new BookStatus(3, 2, 0, NowUtc.AddSeconds(-4)) }, NowUtc);
+
+        Assert.Empty(fresh.Problems);
+        Assert.Equal(new BooksStatusDto(3, 0, 1, 4), fresh.Books);
+        Assert.Contains("2 of 3 watched order books are stale", Assert.Single(stale.Problems), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BooksNotPublishedForAMinuteWhileIngestRunsAreAProblemButNotWhenIngestIsStopped()
+    {
+        var old = new BookStatus(3, 0, 0, NowUtc.AddSeconds(-95));
+        var edge = new BookStatus(3, 0, 0, NowUtc.AddSeconds(-60));
+
+        var running = StatusBuilder.Build(Healthy() with { Books = old }, NowUtc);
+        var atEdge = StatusBuilder.Build(Healthy() with { Books = edge }, NowUtc);
+        var stopped = StatusBuilder.Build(Healthy() with { Run = new IngestStateEntry(IngestStateKeys.Stopped, NowUtc.AddMinutes(-10)), Books = old }, NowUtc);
+
+        Assert.Contains("order books were last published 95 s ago", Assert.Single(running.Problems), StringComparison.Ordinal);
+        Assert.Empty(atEdge.Problems);
+        Assert.DoesNotContain(stopped.Problems, p => p.Contains("order books", StringComparison.Ordinal));
+    }
 
     [Fact]
     public void AHealthyServerHasNoProblemsAndReportsEverything()
