@@ -1026,6 +1026,7 @@ Smoke run of the executable with no database: it logged "database 'KalTerm' does
 - The host's content root was the current directory, so `appsettings.json` would be missed under a service or scheduled task; it is now the executable's folder.
 - `IWsConnector` / `IWsConnection` are internal to `KalTerm.Kalshi`; `KalTerm.Ingest.Tests` was added to its `InternalsVisibleTo` to reuse the scripted connection.
 - `tools/kaldb/run-db-tests.ps1` mangled the suite list when run with both suites (a nested `-ArgumentList`); fixed.
+- CI hit a race in a slice 3.2 test, `BulkWriterTests.ReportsUnhealthyAfterConsecutiveFailuresAndRecoversOnSuccess`: it waited for the sink to record the batch and then asserted the writer was healthy, but the writer notes the success after the sink returns. It now waits for the state it asserts on (8 clean runs; the failure itself was not reproducible locally).
 - This workstation has a SQL Server default instance reachable at `lpc:.` after all (the host's smoke run reached it), though no LocalDB; the project still runs database tests on `kaldb`.
 
 **Not done (per the plan): a live run.** Nothing in 3.4 has talked to Kalshi's WebSocket feed yet beyond the earlier live message tests. The optional short production read-only run, and then the soak in 3.8, each need the owner's go-ahead.

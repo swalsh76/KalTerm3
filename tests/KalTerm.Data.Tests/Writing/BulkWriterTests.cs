@@ -117,7 +117,8 @@ public class BulkWriterTests
         Assert.Equal("down", writer.Stats.LastError);
 
         sink.AlwaysFail = null;
-        await PumpUntilAsync(time, () => sink.Batches.Count == 1);
+        // The sink records the batch before the writer notes the success, so wait for the state asserted on, not just the batch.
+        await PumpUntilAsync(time, () => sink.Batches.Count == 1 && writer.Stats.Healthy);
         Assert.True(writer.Stats.Healthy);
         Assert.Equal(0, writer.Stats.ConsecutiveFailures);
         Assert.NotNull(writer.Stats.LastSuccess);
