@@ -912,6 +912,9 @@ Limits: 30 s runs on an empty table with one writer; compression, log growth and
   setting is readable. (2) SQL Server refuses `SPLIT RANGE` on a populated partition of a columnstore table, and the last partition holds every day after the newest
   boundary, so once rows exist with no boundary above them it can never be split. **Rule for the host (slice 3.4): add boundaries (today and some days ahead) at
   start-up before the writers start, and keep adding ahead of the clock.** `PartitionManager` says so; the writer database tests add their boundaries first.
+- **The "null column" race was `AUTO_CLOSE`.** On LocalDB (and Express) databases are created with `AUTO_CLOSE ON`; an idle database closes and its settings read back as NULL
+  until something opens it, so waiting never helped (one CI test timed out after the full 60 s). The provisioner now pins `AUTO_CLOSE OFF` (the right production setting anyway)
+  before it reads anything; the `ALTER` also wakes a closed database. The 60 s wait stays as a bound for a database that is genuinely recovering.
 - The harness blocks `Remove-Item` even inside a script that runs on the server; use `[System.IO.File]::Delete` there.
 - Fake clock tests: `AutoAdvanceTimeProvider` in manual mode leaves cancelled timers in its queue, so tests pump until their condition holds instead of firing a counted number of timers; 25 consecutive runs of the unit suite passed.
 

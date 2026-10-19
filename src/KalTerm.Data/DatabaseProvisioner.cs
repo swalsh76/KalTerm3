@@ -16,7 +16,7 @@ public sealed record ProvisionResult(bool Created, IReadOnlyList<string> Changes
 /// <param name="MaxSizeBytes">The data file's hard maximum in bytes, or -1 for unlimited.</param>
 public sealed record DatabaseSettings(string DelayedDurability, string PageVerify, string Recovery, string DataFileName, long MaxSizeBytes);
 
-/// <summary>Creates the KalTerm database and pins the settings the durability and storage rules depend on.</summary>
+/// <summary>Creates the KalTerm database and pins the settings the durability and storage rules depend on (also <c>AUTO_CLOSE OFF</c>).</summary>
 public static class DatabaseProvisioner
 {
     private const long Megabyte = 1024 * 1024;
@@ -41,6 +41,14 @@ public static class DatabaseProvisioner
         if (created)
         {
             await ExecAsync(connection, "CREATE DATABASE " + db, cancellationToken).ConfigureAwait(false);
+        }
+
+        // AUTO_CLOSE (the default on LocalDB and Express) closes an idle database, and a closed database's settings read back as NULL; it is also
+        // wrong for a service that must keep its files open. The ALTER wakes a closed database, so do it before reading anything else.
+        if (await AutoCloseIsOnAsync(connection, options.Database, cancellationToken).ConfigureAwait(false))
+        {
+            await ExecAsync(connection, $"ALTER DATABASE {db} SET AUTO_CLOSE OFF", cancellationToken).ConfigureAwait(false);
+            changes.Add("AUTO_CLOSE was ON");
         }
 
         var state = await WaitUntilReadableAsync(connection, options.Database, cancellationToken).ConfigureAwait(false);
@@ -110,6 +118,13 @@ public static class DatabaseProvisioner
 
             await Task.Delay(250, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private static async Task<bool> AutoCloseIsOnAsync(SqlConnection connection, string database, CancellationToken cancellationToken)
+    {
+        await using var command = new SqlCommand("SELECT is_auto_close_on FROM sys.databases WHERE name = @n", connection);
+        command.Parameters.AddWithValue("@n", database);
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is true;
     }
 
     private static async Task<bool> ExistsAsync(SqlConnection connection, string database, CancellationToken cancellationToken)

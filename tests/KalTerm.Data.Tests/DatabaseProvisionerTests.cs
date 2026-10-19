@@ -38,6 +38,20 @@ public sealed class DatabaseProvisionerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task LeavesAutoCloseOff()
+    {
+        await Requirement.RequireLocalDbAsync();
+
+        await DatabaseProvisioner.EnsureAsync(_options, 256 * Megabyte, TestContext.Current.CancellationToken);
+
+        await using var connection = new Microsoft.Data.SqlClient.SqlConnection(_options.MasterConnectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        await using var command = new Microsoft.Data.SqlClient.SqlCommand("SELECT is_auto_close_on FROM sys.databases WHERE name = @n", connection);
+        command.Parameters.AddWithValue("@n", _options.Database);
+        Assert.Equal(false, await command.ExecuteScalarAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task RunningAgainChangesNothing()
     {
         await Requirement.RequireLocalDbAsync();
@@ -63,6 +77,7 @@ public sealed class DatabaseProvisionerTests : IAsyncLifetime
                 ALTER DATABASE [{name}] SET DELAYED_DURABILITY = FORCED;
                 ALTER DATABASE [{name}] SET PAGE_VERIFY NONE;
                 ALTER DATABASE [{name}] SET RECOVERY FULL;
+                ALTER DATABASE [{name}] SET AUTO_CLOSE ON;
                 ALTER DATABASE [{name}] MODIFY FILE (NAME = [{settings!.DataFileName}], MAXSIZE = UNLIMITED);
                 """;
             await using var command = new Microsoft.Data.SqlClient.SqlCommand(drift, connection);
@@ -72,7 +87,8 @@ public sealed class DatabaseProvisionerTests : IAsyncLifetime
         var fixedUp = await DatabaseProvisioner.EnsureAsync(_options, 256 * Megabyte, TestContext.Current.CancellationToken);
         var after = await DatabaseProvisioner.ReadSettingsAsync(_options, TestContext.Current.CancellationToken);
 
-        Assert.Equal(4, fixedUp.Changes.Count);
+        Assert.Equal(5, fixedUp.Changes.Count);
+        Assert.Contains(fixedUp.Changes, c => c.Contains("AUTO_CLOSE", StringComparison.Ordinal));
         Assert.Contains(fixedUp.Changes, c => c.Contains("unlimited", StringComparison.Ordinal));
         Assert.Equal(new DatabaseSettings("DISABLED", "CHECKSUM", "SIMPLE", after!.DataFileName, 256 * Megabyte), after);
     }
