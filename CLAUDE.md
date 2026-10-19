@@ -120,6 +120,9 @@ $env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'   # plus KALSHI_KEY_ID
 .\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-method "*TheServerAcceptsOurSignatureOnAnAuthenticatedRead"
 ```
 
+Database tests (`KalTerm.Data.Tests`) run on LocalDB (`(localdb)\MSSQLLocalDB`). If it is missing they skip on a development machine and fail on CI.
+`KALTERM_TEST_SQL_SERVER` selects another server; to run them on the target server see BUILD-LOG 5.1 (self-contained publish with `-p:NoCoverage=true`, then re-run `dotnet restore`).
+
 (Run the test assembly directly: `dotnet test --filter-class` would also hit the other test projects, which have no such class.)
 
 CI fails if any production assembly is under 90% line coverage, judged on the union of all test
