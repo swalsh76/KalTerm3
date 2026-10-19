@@ -179,7 +179,7 @@ analytics (M5 onward), combo markets.
 | Slice | Content | Status |
 |---|---|---|
 | 3.0 | Prerequisites: CI probe of the runner's SQL Server (D4), this plan | done |
-| 3.1 | `KalTerm.Data`: schema v1, DbUp migrations, provisioning, integration tests on LocalDB | |
+| 3.1 | `KalTerm.Data`: schema v1, DbUp migrations, provisioning, integration tests on LocalDB | done (BUILD-LOG 5.1) |
 | 3.2 | Write path: bulk writers, retry policy, buffer and stall behavior | |
 | 3.3 | Market discovery (REST, open non-combo markets, `market` upserts) | |
 | 3.4 | Stream ingest (WebSocket to writers, gap log) and the host | |

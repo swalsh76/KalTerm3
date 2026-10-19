@@ -3,4 +3,8 @@
     <IsPackable>false</IsPackable>
     <RootNamespace>KalTerm.TestSupport</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
 </Project>

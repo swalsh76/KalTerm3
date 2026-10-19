@@ -833,3 +833,41 @@ coverage `KalTerm.Core` 98.3% (351 of 357 lines), `KalTerm.Kalshi` 96.7% (1,041 
 
 **Outstanding before M3:** S-1d (power cuts on the OptiPlex 7080, on order), and the unstarted spikes S-2 (time-series layout) and S-4
 (unattended install, clean VM). The order book builder and its gap detection (M3) and the private channels (M6) are deliberately not in M2.
+
+## 5. M3 Vertical slice
+
+### 5.1 Slice 3.1: `KalTerm.Data` (2026-10-18)
+
+**Built.** `src/KalTerm.Data` (DbUp migrations embedded as resources, `Microsoft.Data.SqlClient`) and `tests/KalTerm.Data.Tests`.
+- `DatabaseConnectionOptions`: server (default `lpc:.`, shared memory), database, Windows authentication only, never a password. `DataSource` opens connections.
+- `Migrations/0001_schema_v1.sql`: tables `market`, `ticker`, `trade`, `ingest_gap`, `ingest_state`. Money is `bigint` (`_e6` dollars, `_e2` contracts).
+  `ticker` and `trade` are on the daily partition scheme `ps_day` with an ordered clustered columnstore on `(market_id, ts)` and `LOCK_ESCALATION = AUTO`,
+  no foreign keys, no unique constraints (de-duplication is the writer's job, slice 3.2). `trade.taker_side` is 0 unknown, 1 yes, 2 no.
+- `SchemaMigrator`: DbUp, one transaction per script, forward only; failures raise `SchemaMigrationException`; log goes to an `ILogger` through source-generated messages.
+- `DatabaseProvisioner` (static): creates the database, then sets `DELAYED_DURABILITY = DISABLED`, `PAGE_VERIFY = CHECKSUM`, `RECOVERY SIMPLE`
+  and the data file's hard `MAXSIZE` (required, rounded up to a whole MB, no default). Running again changes nothing; drift is corrected and reported.
+- `PartitionManager` (static): adds day boundaries ahead of need (`SPLIT RANGE` of the empty last partition, so no data moves) and drops a day with
+  `TRUNCATE ... WITH (PARTITIONS (n))` on both tables; it refuses a day that has no boundary of its own.
+
+**Decisions made while building (flag if you disagree).**
+- `RECOVERY SIMPLE`, as in the spikes. With the default FULL model and no log backups the log would grow without bound against a 500 GB budget. M8 designs backups and may revisit.
+- Provisioner and partition manager are static classes (analyzer CA1822: they hold no state). Tests use LocalDB; nothing needs a seam yet.
+- No strike/rules/title text columns on `market` yet; added by a later migration when something reads them.
+
+**Test environment.** `KalTerm.TestSupport.LocalDbServer` gives each test class its own uniquely named database on `(localdb)\MSSQLLocalDB`, dropped afterwards.
+`KALTERM_TEST_SQL_SERVER` points the tests at another server (for example `lpc:.\KALTERM` on the target server). When SQL Server is unreachable the tests **skip** on a
+development machine and **fail** on CI (`GITHUB_ACTIONS` or `CI` set), so CI cannot pass by skipping. This workstation has no LocalDB runtime, so locally the 35
+database tests skip and `KalTerm.Data` shows low coverage in the local gate; CI is where it is judged.
+
+**Verified on `kaldb`.** The test assembly was published self-contained with `-p:NoCoverage=true` (coverlet.MTP is a private asset and is not in the publish's
+`deps.json`, so the host cannot load it), copied to `C:\KalTermSpikes\m3\data-tests-nocov`, and run as SYSTEM (non-interactively) against the real SQL Server 2025 instance
+over shared memory: **35 of 35 passed**, including the drift test, the ordered-columnstore and partition checks, and the truncate test. Afterwards `kaldb` held
+only the four system databases.
+
+**Problems and fixes.**
+- `Microsoft.Data.SqlClient` 7.1.1 pulls in `System.Security.Cryptography.Pkcs` 9.0.18, which has high-severity advisories; warnings are errors, so the build failed. Fixed with
+  central transitive pinning (`CentralPackageTransitivePinningEnabled`) and a pinned 10.0.13.
+- The coverage gate judged DbUp's assemblies (they ship symbols, so coverlet instruments them) at 0%. The gate now judges only assemblies matching `-Include` (default `KalTerm.*`).
+- `COUNT_BIG` returns `bigint`: a test that read it as `int` failed on the real server.
+- A `-r win-x64` publish rewrites the shared `project.assets.json`; a later `--no-restore` build then ran without coverlet (handshake failure). Re-run `dotnet restore` after a publish.
+- xUnit analyzer xUnit1051 requires passing `TestContext.Current.CancellationToken`; CA1816 requires sealing a disposable test class.
