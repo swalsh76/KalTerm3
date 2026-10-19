@@ -100,12 +100,19 @@ python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTe
 python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
 python tools/vectors/generate_ws_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
+python tools/vectors/generate_api_format.py --reference C:/Users/stebe/dev/KalshiTerm2
 ```
 
 Run the ingest process (demo by default; `KALSHI_ENV=production` plus the key variables for production, and `KALTERM_Ingest__ProvisionMaxSizeGb=<n>` to let it create the database):
 
 ```powershell
 dotnet run --project src/KalTerm.Ingest.Host -c Release
+```
+
+Run the read-only API (loopback only until TLS and tokens exist; default `http://127.0.0.1:5280`, database `KalTerm` on `lpc:.`; `KALTERM_Api__Url`, `KALTERM_Api__Server`, `KALTERM_Api__Database` override):
+
+```powershell
+dotnet run --project src/KalTerm.Api.Host -c Release
 ```
 
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in

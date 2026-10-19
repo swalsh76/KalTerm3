@@ -13,6 +13,7 @@ python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTer
 python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2    # needs: pip install pydantic
+python tools/vectors/generate_api_format.py --reference C:\Users\stebe\dev\KalshiTerm2
 ```
 
 `generate_models.py` runs the reference's pydantic models over an adversarial corpus (JSON numbers where strings are
@@ -28,6 +29,8 @@ where float noise could legitimately flip a status or tip a two-decimal rounding
 cryptography`), because the reference signs with it. Use a throwaway venv outside the repo. It runs the
 reference's real `load_private_key` and `KalshiSigner.headers()` as the oracle, and reproduces the 21 signing
 vectors of spike S-3 exactly.
+
+`generate_api_format.py` loads the reference server's `api/format.py` by path (standard library plus `kalshi_core.fixedpoint`): the decimal strings for prices and counts, the ISO-8601 time text and the opaque cursors the API sends. Its vectors go to `tests/KalTerm.Contracts.Tests/Vectors/`. The reference's cursor decoder also accepts the standard base64 alphabet (`+`, `/`); KalTerm's does not, and the generator leaves those inputs out.
 
 `generate_config.py` reads the reference `config.py` statically with `ast` (it cannot be imported without
 pydantic): the URL maps, field defaults, constraints and variable prefix come from the source itself.

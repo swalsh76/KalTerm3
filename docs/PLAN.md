@@ -185,7 +185,7 @@ analytics (M5 onward), combo markets.
 | 3.2 | Write path: bulk writers, retry policy, buffer and stall behavior | done (BUILD-LOG 5.2) |
 | 3.3 | Market discovery (REST, open non-combo markets, `market` upserts) and the refresh schedule | done (BUILD-LOG 5.3) |
 | 3.4 | Stream ingest (WebSocket to writers, gap log) and the host | done (BUILD-LOG 5.4 pipeline, 5.5 host) |
-| 3.5 | `KalTerm.Api` and `KalTerm.Contracts` (loopback, read endpoints) | |
+| 3.5 | `KalTerm.Api` and `KalTerm.Contracts` (loopback, read endpoints) | done (BUILD-LOG 5.6) |
 | 3.6 | `KalTerm.Cli` (market view, status including downtime and gaps) | |
 | 3.7 | In-memory order book builder, sequence-gap detection, `book` view | |
 | 3.8 | End to end on `kaldb`: the M3 gate (demo feed ingests and the CLI reads it) | |

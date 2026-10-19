@@ -1064,3 +1064,31 @@ The host had been down since its failed start, so reboot 2 itself cost no furthe
 **A failed first attempt.** The first reboot command (`Start-Process shutdown.exe` inside a remote session) did nothing: the session was removed straight away and took the process with it. Running `shutdown.exe` directly worked. The watcher script also now refuses to report success unless the boot time changed.
 
 **Requirements this adds for M8.** The real Windows service must declare a dependency on the SQL Server service and set its own recovery actions, because a scheduled task's restart-on-failure cannot be relied on to retry a process that exits with an error. Until then the wrapper's own supervision does the job. The host itself still exits when the database is unreachable at start-up (by design: a failure to start is thrown), which is why the supervision matters.
+
+### 5.6 Slice 3.5: the API and its contracts (2026-10-19)
+
+Built in three commits: 3.5a contracts, 3.5b readers, 3.5c the API.
+
+**Built.**
+- `KalTerm.Contracts` (no dependencies): the models that cross the API (market, tick, trade, gap, status, health, error, and their pages). Prices and counts are decimal **strings** built from the stored integers (`560000` is `"0.560000"`, `1850` is `"18.50"`), times are ISO-8601 UTC with microseconds, names are snake_case, nulls are written, cursors are opaque URL-safe text.
+  `ApiFormat` does the formatting; its golden vectors come from the reference server's own `api/format.py` (`tools/vectors/generate_api_format.py`). `ApiJson` is a source-generated context; one test pins the exact JSON of every model and another checks every model is registered.
+- `KalTerm.Data.Reading` (Dapper): `MarketReader`, `TickReader`, `TradeReader`, `GapReader`, `StatusReader`, each behind an interface. Every read is parameterized and bounded (market, time window, at most 1,000 rows, 15 s timeout). `varchar` parameters are sent as `varchar` (Dapper's default `nvarchar` would turn a seek into a scan).
+  Markets page by ticker. Ticks and trades go forward by time from a start (a cursor resumes exactly: ticks may share a millisecond and have no key, so a cursor is the time plus how many rows at that time were already sent; trades order by time then id), or, with no start, return the latest rows within a 7-day lookback, oldest first. The status read uses small catalog queries and looks for the newest row in 5-minute, then 1-hour, then 24-hour windows.
+- `KalTerm.Api` (ASP.NET Core minimal API, library) and `KalTerm.Api.Host` (the executable): `GET /healthz`, `/readyz`, `/v1/status`, `/v1/markets` (filters `status`, `event`, `q`; `limit` up to 500; cursor), `/v1/markets/{ticker}`, `/v1/markets/{ticker}/ticks` and `/trades` (`start`, `end`, `limit` up to 1,000, cursor), `/v1/gaps`. Nothing writes; every other method is a 405.
+  Times must carry an offset (`Z` or `+hh:mm`) and are converted to UTC; a start at or after the end is refused. Every error has the reference's shape, `{"error": code, "fields": [...]}`: 422 `invalid_parameter` (names the parameters, never their values; a parameter given twice is invalid), 404 `not_found`, 405 `method_not_allowed`, 503 `unavailable` (database unreachable or timed out), 500 `internal_error`. No failure detail leaves the process. Every response carries `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
+  The status report (`StatusBuilder`) puts problems first: ingest never recorded or stopped, a heartbeat older than 60 s, no ticker or trade row for 2 minutes while ingest says running, none at all in 24 hours, the data file at 90% of its cap, less than 50 GB free. It also reports the gap counts of the last 24 hours with a note that ticker data in a gap is lost.
+- **Loopback only (D5).** The process refuses a URL that is not an `http` loopback IP with a port, listens on exactly that endpoint, and checks every bound address after start-up; a configuration mistake prints one line and exits with code 1.
+  Settings: `appsettings.json` next to the exe, `KALTERM_Api__*` variables (`Url`, `Server`, `Database`). Run: `dotnet run --project src/KalTerm.Api.Host -c Release` (default `http://127.0.0.1:5280`).
+
+**Verified.** Local: format clean, no warnings, 4,549 tests, 0 failed (96 skipped: the database tests, no LocalDB on this workstation). On `kaldb`: Data 146, Ingest 142 and Api 117, all run passed, including three end-to-end API tests over a real database and the real readers.
+Probe of the reader queries on the live soak database (over a million rows, ingest writing): 1 to 158 ms each (freshness checks about 150 ms, everything else under 120 ms).
+Smoke run of the executable on this workstation: `/healthz` 200, `/readyz` and the database endpoints 503 without a database, 404 and 422 for unknown routes and bad input, listening on 127.0.0.1 only, and a wildcard address refused at start-up.
+
+**Problems and fixes.**
+- System.Text.Json escapes `+` as `+` by default, which would change every time string; the wire context uses the relaxed encoder (the API never embeds JSON in HTML).
+- A parameter named `end` trips CA1716 (a Visual Basic keyword); the readers call it `until`.
+- Dapper maps records by constructor-parameter name, so columns are aliased to PascalCase; a record named `TradeRow` already existed on the write path, so the read models are `Stored...`.
+- The `kaldb` script now writes each suite's runner on the server itself and knows the `api` suite.
+- Database API tests must use the real clock: with the fake clock the seeded gap fell outside the "last 7 days" window.
+
+**Left out (as planned).** Series filter (no series ticker is stored), order book (3.7), candles, retention, auth, TLS (M4), watchlists, alerts, layouts, analytics, and a least-privilege database login for the API (M8). The API is not deployed to `kaldb` yet.

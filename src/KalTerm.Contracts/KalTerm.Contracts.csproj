@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>KalTerm.Contracts</RootNamespace>
+  </PropertyGroup>
+</Project>
