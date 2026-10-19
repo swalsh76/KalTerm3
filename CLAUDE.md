@@ -78,6 +78,7 @@ KalshiTerm 1 died of feature creep and directional changes. Guard against it:
   management, nullable enabled, warnings as errors, `.editorconfig` enforced.
 - Tests: xUnit v3 on Microsoft Testing Platform. Test methods use plain PascalCase, no underscores
   (CA1707 is an error), e.g. `VersionIsNotEmpty`.
+- Live tests (against the real Kalshi API) are always opt-in: ask the owner before every run. Also propose them where a fake cannot show real behavior (boundaries, units, precision, ordering, pagination, rate limits, timestamps): the slice 4.2 live check found that `max_ts` is exclusive, a bug no synthetic test could surface. Design each slice with the question "what would the real service do that my fake cannot?"
 
 ## Dev commands
 
