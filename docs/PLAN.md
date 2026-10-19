@@ -216,6 +216,7 @@ with ticks and 30 k with trades, and the raw ticker table grows about 2.2 GB a d
 system's local zone, but the user can always choose any other zone (or UTC) and the choice is stored per user (with layouts, once M4 auth exists; until then a CLI option and
 an environment variable). The system zone is only a default, never a fixed pass-through. The CLI today prints UTC with a "UTC" suffix; the zone option (`--tz`, an IANA or
 Windows zone id, and `--utc`) arrives in the first slice that touches CLI output, and every view that prints a time must use it.
+Rules (checked against System.CommandLine and PowerShell 2026-10-19: no clashes): `--utc` with `--tz` is a usage error; an unknown zone id is an error; `--json` stays UTC; precedence is `--utc`, then `--tz`, then `KALTERM_TZ`, then the stored per-user setting, then the system zone; no short aliases.
 
 ## 7. Risks
 
