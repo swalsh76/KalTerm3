@@ -134,21 +134,59 @@ Slice 2.8 decisions (2026-10-16): split into 2.8a-d, each its own PR; models cov
 `user_order`, `market_position` wait for M6; the order book builder and gap recovery stay in M3); channel names pass through
 unchecked, as in the reference.
 
-### 6.3 Inputs from the spikes S-2 and S-4 (proposed; awaiting the owner's approval)
+### 6.3 Inputs from the spikes S-2 and S-4 (approved by the owner 2026-10-18)
 
-Measurements and reasoning are in BUILD-LOG 2.4 and 2.5. Nothing here is decided until the owner approves it.
+Measurements and reasoning are in BUILD-LOG 2.4 and 2.5. Approved as M3 and M8 inputs on 2026-10-18; see section 6.4.
 
-**M3 ticker storage (S-2).** Proposed layout: one table, daily-partitioned, clustered columnstore ordered by `(market_id, ts)`. Rules that
+**M3 ticker storage (S-2).** Layout: one table, daily-partitioned, clustered columnstore ordered by `(market_id, ts)`. Rules that
 apply to any layout: partition by day and drop a day with `TRUNCATE ... WITH (PARTITIONS (n))`, never `DELETE`; `LOCK_ESCALATION = AUTO`
 on partitioned tables; the ingest writer retries on SQL errors 1205 and 4891; count rows with `COUNT_BIG(*)`, not `dm_db_partition_stats`;
 size the ingest buffer for a 30 s stall until the sealing method is measured. The hot-rowstore-plus-cold-columnstore layout (B) was
-measured and is not proposed: 11 s full scans while a day is hot, 6x the bytes per row, 10x the log, and a rollover job.
+measured and is not used: 11 s full scans while a day is hot, 6x the bytes per row, 10x the log, and a rollover job.
 
 **M8 installer (S-4).** Install the Visual C++ 2015-2022 x64 runtime, or ship `vcruntime140.dll` and `vcruntime140_1.dll` beside `libsodium.dll`;
 publish apps self-contained; preflight (read-only, exit 1 with "REFUSING") before any change; SQL Server from a generated configuration file
 (no key, no password) with TCP and named pipes disabled, Windows authentication only, virtual service accounts, every wait bounded; verification
 that asserts "no network exposure" (not "no TCP socket": the loopback admin connection always exists) and waits, bounded, for the
 delayed-start service after a reboot; disable the telemetry service and usage metrics (to be tested).
+
+### 6.4 M3 Vertical slice: decisions and slices
+
+Decisions (approved by the owner 2026-10-18; D-numbers are those of the M3 proposal):
+
+| # | Decision |
+|---|---|
+| D1 | Ticker storage is the S-2 layout "A": one table, daily-partitioned, clustered columnstore ordered by `(market_id, ts)`. The eight S-2 findings (section 6.3) are rules for the schema and the writers. |
+| D1b | The S-4 installer requirements (section 6.3) are accepted as M8 requirements. |
+| D2 | Data source: **Kalshi production with the read-only key** (public market data; GET and subscribe only). Demo stays the default in code and config; production is selected explicitly. A long production ingest soak needs the owner's fresh go-ahead before it starts. |
+| D3 | Schema migrations with **DbUp** (plain SQL scripts, journal table, forward only). |
+| D4 | CI database: the runner's **LocalDB (SQL Server 2025 17.0.4025.3, Express)**. The slice 3.0 probe showed it supports daily partitioning, an ordered clustered columnstore on the partition scheme, `LOCK_ESCALATION = AUTO`, `DATETRUNC`, `TRUNCATE ... WITH (PARTITIONS)` and `REORGANIZE ... COMPRESS_ALL_ROW_GROUPS`. No SQL install step in CI. Express limits (10 GB, small buffer pool) are fine for tests; scale and durability tests run on `kaldb`. |
+| D5 | The API listens on **loopback only** in M3; the CLI runs on `kaldb` through remoting until M4 adds TLS and tokens. |
+| D6 | An in-memory order book builder with sequence-gap detection and a `book` CLI view for a configured watch list. Deltas are not persisted. |
+| D7 | M3 logs gaps (`ingest_gap`); M4 backfills trades. |
+| D8 | Market scope: open, non-combo markets only. Combo tickers (prefix `KXMVE`) are skipped and counted. |
+
+Projects: `KalTerm.Data` (schema, migrations, writers, readers), `KalTerm.Ingest` (discovery, stream ingest, host),
+`KalTerm.Api`, `KalTerm.Contracts` (models crossing the API), `KalTerm.Cli`. Schema v1 tables: `market`, `ticker`, `trade`,
+`ingest_gap`, `ingest_state`; money columns are `bigint` fixed-point (`_e6` dollars, `_e2` counts); no foreign keys on time-series
+tables. Database: `DELAYED_DURABILITY = DISABLED`, `PAGE_VERIFY = CHECKSUM`, a hard `MAXSIZE` set at provisioning. Writers use
+`SqlBulkCopy` (flush at 1 s or 5,000 rows; buffer sized for a 30 s stall) and retry on 1205, 4891 and transient errors. Reads use
+Dapper. The CLI uses System.CommandLine and Spectre.Console.
+
+Out of M3: TLS and tokens (M4), trade backfill (M4), the Windows service installer (M8), order persistence and trading (M6),
+analytics (M5 onward), combo markets.
+
+| Slice | Content | Status |
+|---|---|---|
+| 3.0 | Prerequisites: CI probe of the runner's SQL Server (D4), this plan | done |
+| 3.1 | `KalTerm.Data`: schema v1, DbUp migrations, provisioning, integration tests on LocalDB | |
+| 3.2 | Write path: bulk writers, retry policy, buffer and stall behavior | |
+| 3.3 | Market discovery (REST, open non-combo markets, `market` upserts) | |
+| 3.4 | Stream ingest (WebSocket to writers, gap log) and the host | |
+| 3.5 | `KalTerm.Api` and `KalTerm.Contracts` (loopback, read endpoints) | |
+| 3.6 | `KalTerm.Cli` (market view, status including downtime and gaps) | |
+| 3.7 | In-memory order book builder, sequence-gap detection, `book` view | |
+| 3.8 | End to end on `kaldb`: the M3 gate (demo feed ingests and the CLI reads it) | |
 
 ## 7. Risks
 

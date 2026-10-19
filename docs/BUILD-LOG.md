@@ -366,6 +366,16 @@ common-parameter aliases (`-Db` is `-Debug`'s alias). The harness's own path gua
 (a false positive on paths with spaces or wildcards), so tools delete databases through SQL and leave files in place. Write scripts to
 files; large heredocs and backslash-heavy one-liners are fragile here.
 
+### 2.8 M3 slice 3.0: what SQL Server does the CI runner offer (2026-10-18)
+
+A throwaway workflow on the branch `ci/probe-sql` (never merged) ran on `windows-latest` (image `windows-2025-vs2026` 20261007.264.1,
+Windows Server 2025, 4 cores, 16 GB, 33 GB free on C:). No SQL Server service is installed (only `SQLWriter`), but **LocalDB is**:
+instance `MSSQLLocalDB`, version SQL Server 2025 RTM-CU3 17.0.4025.3, Express edition, with `SqlLocalDB.exe` and `sqlcmd` on the PATH.
+On a fresh LocalDB instance every feature the S-2 layout needs worked: partition function and scheme, a partitioned table with an
+ordered clustered columnstore index, `LOCK_ESCALATION = AUTO`, `DATETRUNC`, `TRUNCATE ... WITH (PARTITIONS (1))` (one row left of two),
+and `REORGANIZE ... COMPRESS_ALL_ROW_GROUPS`. Decision D4: integration tests use LocalDB in CI. Lesson: a final `choco list | Select-String`
+with no match returned exit 1 and failed the step; end diagnostic steps with `exit 0`.
+
 ## 3. M2 Core
 
 ### 3.1 Fixed-point money (2026-10-16): done
