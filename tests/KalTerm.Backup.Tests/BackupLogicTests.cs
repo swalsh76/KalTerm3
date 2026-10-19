@@ -61,6 +61,17 @@ public class BackupNamingTests
     }
 }
 
+public class BackupSqlTests
+{
+    [Fact]
+    public void TheBackupStatementAlwaysChecksumsAndCompressesUnlessTheEditionCannot()
+    {
+        Assert.Equal("BACKUP DATABASE [KalTerm] TO DISK = @path WITH CHECKSUM, COMPRESSION, INIT, FORMAT", SqlBackupDatabase.BackupSql("KalTerm", BackupKind.Full, compress: true));
+        Assert.Equal("BACKUP DATABASE [KalTerm] TO DISK = @path WITH DIFFERENTIAL, CHECKSUM, NO_COMPRESSION, INIT, FORMAT", SqlBackupDatabase.BackupSql("KalTerm", BackupKind.Differential, compress: false));
+        Assert.Equal(1844, SqlBackupDatabase.CompressionNotSupported);
+    }
+}
+
 public class ManifestTests
 {
     [Fact]

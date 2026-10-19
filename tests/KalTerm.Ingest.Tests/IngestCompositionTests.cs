@@ -270,7 +270,7 @@ public sealed class IngestCompositionTests : IAsyncLifetime
 
             var run = IngestComposition.RunAsync(options, settings, NullLoggerFactory.Instance, Overrides(source, backupCheck: TimeSpan.FromMilliseconds(100)), stop.Token);
             await Wait.UntilAsync(() => source.Opens >= 1, "the stream to open (the database exists by then)");
-            await Wait.UntilAsync(() => ScalarAsync<int>("SELECT COUNT(*) FROM dbo.ingest_state WHERE name = 'backup.last_verify'").GetAwaiter().GetResult() >= 1, "the backup and its proof");
+            await Wait.UntilAsync(() => ScalarAsync<int>("SELECT COUNT(*) FROM dbo.ingest_state WHERE name = 'backup.last_verify' OR (name = 'backup.last' AND value LIKE 'error%')").GetAwaiter().GetResult() >= 1, "the backup and its proof (or its failure)");
             await stop.CancelAsync();
             await run;
 

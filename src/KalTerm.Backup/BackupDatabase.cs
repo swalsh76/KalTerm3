@@ -111,14 +111,31 @@ public sealed partial class SqlBackupDatabase : IBackupDatabase
     }
 
     /// <inheritdoc/>
-    public Task BackupAsync(BackupKind kind, string path, CancellationToken cancellationToken = default)
+    public async Task BackupAsync(BackupKind kind, string path, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return ExecuteAsync(
-            $"BACKUP DATABASE {Quote(Name)} TO DISK = @path WITH {(kind == BackupKind.Differential ? "DIFFERENTIAL, " : string.Empty)}CHECKSUM, COMPRESSION, INIT, FORMAT",
-            [new SqlParameter("@path", path)],
-            cancellationToken);
+        try
+        {
+            await ExecuteAsync(BackupSql(Name, kind, compress: true), [new SqlParameter("@path", path)], cancellationToken).ConfigureAwait(false);
+        }
+        catch (SqlException ex) when (ex.Number == CompressionNotSupported)
+        {
+            // Express editions (and LocalDB) restore compressed backups but cannot make them: the backup is the same, only bigger.
+            await ExecuteAsync(BackupSql(Name, kind, compress: false), [new SqlParameter("@path", path)], cancellationToken).ConfigureAwait(false);
+        }
     }
+
+    /// <summary>SQL Server's error for <c>BACKUP ... WITH COMPRESSION</c> on an edition that cannot compress.</summary>
+    public const int CompressionNotSupported = 1844;
+
+    /// <summary>The backup statement.</summary>
+    /// <param name="database">The database name (already validated).</param>
+    /// <param name="kind">Full or differential.</param>
+    /// <param name="compress">Whether to compress.</param>
+    /// <returns>The statement, with the file as <c>@path</c>.</returns>
+    public static string BackupSql(string database, BackupKind kind, bool compress) =>
+        $"BACKUP DATABASE {Quote(database)} TO DISK = @path WITH {(kind == BackupKind.Differential ? "DIFFERENTIAL, " : string.Empty)}CHECKSUM, {(compress ? "COMPRESSION" : "NO_COMPRESSION")}, INIT, FORMAT"
+        ;
 
     /// <inheritdoc/>
     public Task VerifyAsync(string path, CancellationToken cancellationToken = default)
