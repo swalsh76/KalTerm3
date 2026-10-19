@@ -595,4 +595,23 @@ public sealed class CommandTests : IDisposable
 
         Assert.Contains("trade backfill: 2 waiting, 1 failed", _cli.Output, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task TheStatusBackupLineSaysNotConfiguredOrShowsTheLastGoodBackupAndAnyFailure()
+    {
+        await _cli.RunAsync("status");
+        Assert.Contains("Backup    not configured", _cli.Output, StringComparison.Ordinal);
+
+        using var good = new Harness();
+        good.Api.Status = Status() with { Backup = new BackupStatusDto(true, "kalterm-full-20261019-080000.bak", "2026-10-19T08:00:00.000000+00:00", 7200, "ok full", "2026-10-19T08:00:00.000000+00:00", "ok restored", "2026-10-19T08:05:00.000000+00:00") };
+        await good.RunAsync("status");
+        Assert.Contains("last good kalterm-full-20261019-080000.bak, 2h ago  |  last proof by restore ok", good.Output, StringComparison.Ordinal);
+
+        using var failing = new Harness();
+        failing.Api.Status = Status() with { Backup = new BackupStatusDto(true, null, null, null, "error the share is gone", "2026-10-19T09:00:00.000000+00:00", "error bad pages", "2026-10-19T08:05:00.000000+00:00") };
+        await failing.RunAsync("status");
+        Assert.Contains("no finished backup yet", failing.Output, StringComparison.Ordinal);
+        Assert.Contains("last attempt failed: error the share is gone", failing.Output, StringComparison.Ordinal);
+        Assert.Contains("proof failed: error bad pages", failing.Output, StringComparison.Ordinal);
+    }
 }

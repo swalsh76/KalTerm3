@@ -31,7 +31,7 @@ public static class LocalDbServer
         InitialCatalog = "master",
         IntegratedSecurity = true,
         Encrypt = SqlConnectionEncryptOption.Optional,
-        ConnectTimeout = 15,
+        ConnectTimeout = 90,   // the first connection starts the instance, which can take a while when several test assemblies start it at once
     }.ConnectionString;
 
     /// <summary>Checks once per process whether LocalDB can be reached.</summary>

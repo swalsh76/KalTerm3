@@ -26,7 +26,7 @@ The SQL Server instance the tests use on the server. Default lpc:.\KALTERM.
 param(
     [string]$ComputerName = $env:KALTERM_TEST_HOST,
     [string]$CredentialPath = $env:KALTERM_TEST_CRED,
-    [ValidateSet('data', 'ingest', 'api')][string[]]$Suites = @('data', 'ingest', 'api'),
+    [ValidateSet('data', 'ingest', 'api', 'backup')][string[]]$Suites = @('data', 'ingest', 'api', 'backup'),
     [string]$Instance = 'lpc:.\KALTERM'
 )
 $ErrorActionPreference = 'Stop'
@@ -41,6 +41,7 @@ $map = @{
     data   = @('tests\KalTerm.Data.Tests\KalTerm.Data.Tests.csproj', 'data-tests-nocov', 'KalTerm.Data.Tests.exe')
     ingest = @('tests\KalTerm.Ingest.Tests\KalTerm.Ingest.Tests.csproj', 'ingest-tests-nocov', 'KalTerm.Ingest.Tests.exe')
     api    = @('tests\KalTerm.Api.Tests\KalTerm.Api.Tests.csproj', 'api-tests-nocov', 'KalTerm.Api.Tests.exe')
+    backup = @('tests\KalTerm.Backup.Tests\KalTerm.Backup.Tests.csproj', 'backup-tests-nocov', 'KalTerm.Backup.Tests.exe')
 }
 $work = 'C:\KalTermSpikes\m3'   # the same folder on this machine (publish output) and on the server
 

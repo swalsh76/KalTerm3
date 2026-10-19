@@ -33,6 +33,7 @@ internal static class Views
         rows.Add(new Markup($"[bold]Retention[/] oldest raw data {Escape(storage.OldestDataDay ?? None)}  |  governor {governor}"));
         rows.Add(new Markup($"[bold]Markets[/]   {Escape(MarketCounts(status.Markets))}"));
         rows.Add(new Markup($"[bold]Books[/]     {Books(status.Books)}"));
+        rows.Add(new Markup($"[bold]Backup[/]    {BackupLine(status.Backup)}"));
         rows.Add(new Markup($"[bold]Gaps[/]      {status.Gaps.Count} in the last {status.Gaps.WindowHours} h{GapKinds(status.Gaps.ByKind)}{BackfillCounts(status.Gaps)}"));
         rows.Add(new Markup($"[grey]{Escape(status.Gaps.Note)}[/]"));
         return new Rows(rows);
@@ -260,6 +261,23 @@ internal static class Views
 
     private static string MarketCounts(IReadOnlyDictionary<string, long> byStatus) =>
         byStatus.Count == 0 ? "none" : string.Join("  |  ", byStatus.OrderByDescending(p => p.Value).ThenBy(p => p.Key, StringComparer.Ordinal).Select(p => $"{p.Key} {p.Value.ToString("N0", CultureInfo.InvariantCulture)}"));
+
+    private static string BackupLine(BackupStatusDto? backup)
+    {
+        if (backup is null || !backup.Configured)
+        {
+            return "not configured";
+        }
+
+        var good = backup.LastGood is null ? "[red]no finished backup yet[/]" : $"last good {Escape(backup.LastGood)}, {Age(backup.LastGoodAgeSeconds)}";
+        var failed = backup.Last is { } last && last.StartsWith("error", StringComparison.Ordinal) && (backup.LastGoodAt is null || string.CompareOrdinal(backup.LastAt, backup.LastGoodAt) >= 0)
+            ? $"  |  [red]last attempt failed:[/] {Escape(last)}"
+            : string.Empty;
+        var verify = backup.LastVerify is null
+            ? string.Empty
+            : backup.LastVerify.StartsWith("error", StringComparison.Ordinal) ? $"  |  [red]proof failed:[/] {Escape(backup.LastVerify)}" : "  |  last proof by restore ok";
+        return good + failed + verify;
+    }
 
     private static string BackfillCounts(GapSummaryDto gaps) =>
         (gaps.BackfillPending, gaps.BackfillFailed) switch

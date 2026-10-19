@@ -155,6 +155,7 @@ public sealed record GapSummaryDto(int WindowHours, long Count, IReadOnlyDiction
 /// <param name="Markets">Market counts by status.</param>
 /// <param name="Gaps">Recent gaps.</param>
 /// <param name="Books">The published order books.</param>
+/// <param name="Backup">The backups; <see langword="null"/> from a server that predates them.</param>
 public sealed record StatusDto(
     string Time,
     IReadOnlyList<string> Problems,
@@ -163,7 +164,27 @@ public sealed record StatusDto(
     StorageDto Storage,
     IReadOnlyDictionary<string, long> Markets,
     GapSummaryDto Gaps,
-    BooksStatusDto Books);
+    BooksStatusDto Books,
+    BackupStatusDto? Backup = null);
+
+/// <summary>The state of the backups.</summary>
+/// <param name="Configured">Whether a backup target is set, so backups are expected.</param>
+/// <param name="LastGood">The name of the newest finished backup.</param>
+/// <param name="LastGoodAt">When it finished.</param>
+/// <param name="LastGoodAgeSeconds">How long ago that was.</param>
+/// <param name="Last">What the last attempt did (<c>ok ...</c> or <c>error ...</c>).</param>
+/// <param name="LastAt">When that attempt ended.</param>
+/// <param name="LastVerify">What the last proof by restore did (<c>ok ...</c> or <c>error ...</c>).</param>
+/// <param name="LastVerifyAt">When that ended.</param>
+public sealed record BackupStatusDto(
+    bool Configured,
+    string? LastGood,
+    string? LastGoodAt,
+    long? LastGoodAgeSeconds,
+    string? Last,
+    string? LastAt,
+    string? LastVerify,
+    string? LastVerifyAt);
 
 /// <summary>The published order books in total.</summary>
 /// <param name="Watched">How many markets have a published book.</param>

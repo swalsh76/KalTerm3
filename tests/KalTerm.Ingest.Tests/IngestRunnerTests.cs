@@ -24,6 +24,7 @@ public class IngestRunnerTests
         BookPublishInterval = TimeSpan.FromMilliseconds(20),
         GovernorCheckInterval = TimeSpan.FromMilliseconds(40),
         BackfillInterval = TimeSpan.FromMilliseconds(30),
+        BackupCheckInterval = TimeSpan.FromMilliseconds(30),
         Schedule = now => (now.AddMilliseconds(30), PassKind.Incremental),
     };
 
@@ -33,7 +34,7 @@ public class IngestRunnerTests
         private readonly CancellationTokenSource _stop = new();
         private int _listings;
 
-        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null, KalTerm.Ingest.Backfill.ITradeBackfiller? backfiller = null)
+        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null, KalTerm.Ingest.Backfill.ITradeBackfiller? backfiller = null, KalTerm.Backup.IBackupJob? backup = null)
         {
             var markets = catalog?.ToList() ?? [];
             Source = new ScriptedSource(open);
@@ -62,7 +63,8 @@ public class IngestRunnerTests
                 Log,
                 books,
                 governor,
-                backfiller);
+                backfiller,
+                backup);
         }
 
         public FakeMarketStore Store { get; } = new();
@@ -423,6 +425,7 @@ public class IngestRunnerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BookPublishInterval = TimeSpan.Zero }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { GovernorCheckInterval = TimeSpan.Zero }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BackfillInterval = TimeSpan.Zero }.Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BackupCheckInterval = TimeSpan.Zero }.Validate());
         new IngestRunnerOptions().Validate();
 
         using var rig = new Rig(Sessions([]));
@@ -611,6 +614,20 @@ public class IngestRunnerTests
         await rig.StopAsync();
 
         Assert.Contains(rig.Log.Lines, l => l.Contains("backfill broke", StringComparison.Ordinal));
+        Assert.True(rig.State.Writes(IngestStateKeys.Running) > 0);
+    }
+
+    [Fact]
+    public async Task TheBackupJobLooksAtTheClockOnItsIntervalAndAFailureNeverStopsTheRun()
+    {
+        var job = new FakeBackupJob { Failure = new InvalidOperationException("backup job broke") };
+        using var rig = new Rig(Sessions([]), backup: job);
+
+        rig.Start();
+        await Wait.UntilAsync(() => job.Calls >= 3, "three looks at the backup schedule");
+        await rig.StopAsync();
+
+        Assert.Contains(rig.Log.Lines, l => l.Contains("backup job broke", StringComparison.Ordinal));
         Assert.True(rig.State.Writes(IngestStateKeys.Running) > 0);
     }
 }

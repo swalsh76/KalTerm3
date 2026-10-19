@@ -26,6 +26,7 @@ namespace KalTerm.Contracts;
 [JsonSerializable(typeof(StreamsDto))]
 [JsonSerializable(typeof(StorageDto))]
 [JsonSerializable(typeof(GapSummaryDto))]
+[JsonSerializable(typeof(BackupStatusDto))]
 [JsonSerializable(typeof(BooksStatusDto))]
 [JsonSerializable(typeof(BookLevelDto))]
 [JsonSerializable(typeof(OrderBookDto))]

@@ -45,7 +45,7 @@ public sealed class IngestCompositionTests : IAsyncLifetime
         return (T)(await command.ExecuteScalarAsync())!;
     }
 
-    private static IngestOverrides Overrides(IStreamSource source, KalTerm.Ingest.Backfill.ITradeSource? trades = null, KalTerm.Ingest.Backfill.BackfillOptions? backfill = null) => new(
+    private static IngestOverrides Overrides(IStreamSource source, KalTerm.Ingest.Backfill.ITradeSource? trades = null, KalTerm.Ingest.Backfill.BackfillOptions? backfill = null, TimeSpan? backupCheck = null) => new(
         source,
         _ => List([Open("E-1"), Open("E-2")]),
         (_, _) => List([]),
@@ -56,6 +56,7 @@ public sealed class IngestCompositionTests : IAsyncLifetime
             StreamRetryMax = TimeSpan.FromMilliseconds(40),
             Schedule = now => (now.AddHours(1), PassKind.Full),
             BackfillInterval = TimeSpan.FromMilliseconds(50),
+            BackupCheckInterval = backupCheck ?? TimeSpan.FromMinutes(1),
         },
         Trades: trades ?? new FakeTradeSource(),
         Backfill: backfill);
@@ -250,5 +251,37 @@ public sealed class IngestCompositionTests : IAsyncLifetime
         }
 
         return ids;
+    }
+
+    [Fact]
+    public async Task WithABackupTargetTheHostTakesAFullBackupOfItsOwnDatabaseAndProvesItByRestoring()
+    {
+        await Requirement.RequireLocalDbAsync();
+        var settings = KalshiSettings.Create(KalshiEnvironment.Demo, "test-key", KeyFile());
+        var target = Path.Combine(Path.GetTempPath(), "kalterm-composition-backup-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            await new KalTerm.Backup.BackupTarget(target).InitAsync(TestContext.Current.CancellationToken);
+            var options = Options();
+            options.BackupTarget = target;
+            options.BackupCredentialPath = Path.Combine(target, "no-credential-needed.cred");
+            var source = new ScriptedSource(_ => Task.FromResult<IStreamSession>(new ScriptedSession()));
+            using var stop = new CancellationTokenSource();
+
+            var run = IngestComposition.RunAsync(options, settings, NullLoggerFactory.Instance, Overrides(source, backupCheck: TimeSpan.FromMilliseconds(100)), stop.Token);
+            await Wait.UntilAsync(() => source.Opens >= 1, "the stream to open (the database exists by then)");
+            await Wait.UntilAsync(() => ScalarAsync<int>("SELECT COUNT(*) FROM dbo.ingest_state WHERE name = 'backup.last_verify' OR (name = 'backup.last' AND value LIKE 'error%')").GetAwaiter().GetResult() >= 1, "the backup and its proof (or its failure)");
+            await stop.CancelAsync();
+            await run;
+
+            Assert.StartsWith("ok full", await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'backup.last'"), StringComparison.Ordinal);
+            Assert.StartsWith("ok ", await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'backup.last_verify'"), StringComparison.Ordinal);
+            Assert.Equal(target, await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'backup.configured'"));
+            Assert.Single(await new KalTerm.Backup.BackupTarget(target).ListAsync(TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            Directory.Delete(target, recursive: true);
+        }
     }
 }

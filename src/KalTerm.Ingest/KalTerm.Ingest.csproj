@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\KalTerm.Core\KalTerm.Core.csproj" />
     <ProjectReference Include="..\KalTerm.Kalshi\KalTerm.Kalshi.csproj" />
+    <ProjectReference Include="..\KalTerm.Backup\KalTerm.Backup.csproj" />
     <ProjectReference Include="..\KalTerm.Data\KalTerm.Data.csproj" />
   </ItemGroup>
 

@@ -493,3 +493,87 @@ public class StatusBuilderBackfillTests
         Assert.Equal((0, 0), (oldDatabase.Gaps.BackfillPending, oldDatabase.Gaps.BackfillFailed));
     }
 }
+
+public class StatusBuilderBackupTests
+{
+    private static StatusSnapshot Healthy(BackupRecord? record) => new(
+        new IngestStateEntry(IngestStateKeys.Running, NowUtc.AddSeconds(-5)),
+        NowUtc.AddSeconds(-1),
+        NowUtc.AddSeconds(-3),
+        10L * 1024 * 1024 * 1024,
+        100L * 1024 * 1024 * 1024,
+        800L * 1024 * 1024 * 1024,
+        new Dictionary<string, long> { ["active"] = 100 },
+        new Dictionary<string, long>(),
+        BackupRecord: record);
+
+    private static IngestStateEntry At(string value, TimeSpan ago) => new(value, NowUtc - ago);
+
+    [Fact]
+    public void WithoutABackupTargetBackupsAreNotExpectedAndNothingIsAProblem()
+    {
+        var none = StatusBuilder.Build(Healthy(null), NowUtc);
+        var stray = StatusBuilder.Build(Healthy(new BackupRecord(null, At("error x", TimeSpan.FromHours(50)), null, null)), NowUtc);
+
+        Assert.Empty(none.Problems);
+        Assert.Empty(stray.Problems);
+        Assert.False(none.Backup!.Configured);
+        Assert.False(stray.Backup!.Configured);
+    }
+
+    [Fact]
+    public void AFreshGoodBackupAndProofAreReportedWithTheirAges()
+    {
+        var record = new BackupRecord(At(@"\\nas\backups", TimeSpan.FromDays(3)), At("ok full kalterm-full-x.bak 1 MB in 2 s; 0 old backups deleted", TimeSpan.FromHours(5)), At("kalterm-full-x.bak", TimeSpan.FromHours(5)), At("ok restored and checked", TimeSpan.FromHours(4)));
+
+        var status = StatusBuilder.Build(Healthy(record), NowUtc);
+
+        Assert.Empty(status.Problems);
+        var backup = status.Backup!;
+        Assert.Equal((true, "kalterm-full-x.bak", 5L * 3600), (backup.Configured, backup.LastGood, backup.LastGoodAgeSeconds));
+        Assert.StartsWith("ok full", backup.Last, StringComparison.Ordinal);
+        Assert.StartsWith("ok restored", backup.LastVerify, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ATargetWithNoFinishedBackupIsAProblemOnlyAfterThirtySixHours()
+    {
+        var soon = StatusBuilder.Build(Healthy(new BackupRecord(At("T", TimeSpan.FromHours(35)), null, null, null)), NowUtc);
+        var late = StatusBuilder.Build(Healthy(new BackupRecord(At("T", TimeSpan.FromHours(40)), null, null, null)), NowUtc);
+
+        Assert.Empty(soon.Problems);
+        Assert.Equal("no backup has finished in the 40 h since a backup target was configured", Assert.Single(late.Problems));
+    }
+
+    [Fact]
+    public void AGoodBackupOlderThanThirtySixHoursIsAProblem()
+    {
+        var edge = StatusBuilder.Build(Healthy(new BackupRecord(At("T", TimeSpan.FromDays(9)), null, At("b", TimeSpan.FromHours(36)), null)), NowUtc);
+        var old = StatusBuilder.Build(Healthy(new BackupRecord(At("T", TimeSpan.FromDays(9)), null, At("b", TimeSpan.FromHours(60)), null)), NowUtc);
+
+        Assert.Empty(edge.Problems);
+        Assert.Equal("the last good backup is 60 h old", Assert.Single(old.Problems));
+    }
+
+    [Fact]
+    public void AFailedLatestAttemptIsAProblemButAFailureOlderThanTheLastGoodBackupIsNot()
+    {
+        var failing = StatusBuilder.Build(Healthy(new BackupRecord(At("T", TimeSpan.FromDays(9)), At("error the share is gone", TimeSpan.FromMinutes(5)), At("b", TimeSpan.FromHours(20)), null)), NowUtc);
+        var healed = StatusBuilder.Build(Healthy(new BackupRecord(At("T", TimeSpan.FromDays(9)), At("ok full b", TimeSpan.FromHours(1)), At("b", TimeSpan.FromHours(1)), null)), NowUtc);
+        var neverGood = StatusBuilder.Build(Healthy(new BackupRecord(At("T", TimeSpan.FromHours(2)), At("error no marker", TimeSpan.FromMinutes(5)), null, null)), NowUtc);
+
+        Assert.Equal("the last backup attempt failed: error the share is gone", Assert.Single(failing.Problems));
+        Assert.Empty(healed.Problems);
+        Assert.Contains("failed: error no marker", Assert.Single(neverGood.Problems), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AFailedProofByRestoreIsAProblem()
+    {
+        var record = new BackupRecord(At("T", TimeSpan.FromDays(9)), At("ok full b", TimeSpan.FromHours(1)), At("b", TimeSpan.FromHours(1)), At("error the restored copy disagrees with its manifest", TimeSpan.FromMinutes(50)));
+
+        var status = StatusBuilder.Build(Healthy(record), NowUtc);
+
+        Assert.StartsWith("the last proof of a backup by restore failed: error the restored copy disagrees", Assert.Single(status.Problems), StringComparison.Ordinal);
+    }
+}

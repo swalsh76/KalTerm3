@@ -27,6 +27,10 @@ The release name on the server; defaults to the folder name.
 .PARAMETER WatchList
 Ingest only: the tickers whose order books are built and published (Ingest:WatchList, at most 100). Omitted means no order book subscription.
 
+.PARAMETER BackupTarget
+Ingest only: the folder the daily backups go to as the SERVER sees it (Ingest:BackupTarget), a folder or a \host\shareolder path. Omitted means no backups. The folder
+must carry the marker written by `tools\kaldbdmin.ps1 -- backup init-target`, and for a share the credential must be stored (`admin.ps1 -SetShareCredential`).
+
 .PARAMETER Restart
 Stop the running task and start it from this release.
 
@@ -44,6 +48,7 @@ param(
     [int]$ProvisionMaxSizeGb = 500,
     [string]$ApiUrl = 'http://127.0.0.1:5280',
     [string[]]$WatchList = @(),
+    [string]$BackupTarget,
     [switch]$Restart,
     [switch]$PrintWrapper
 )
@@ -65,6 +70,11 @@ if ($WatchList.Count -gt 0) {
         if ($WatchList[$i] -notmatch '^[A-Za-z0-9._-]+$') { throw "Not a ticker: entry $i" }
         $services.ingest.Env += "`$env:KALTERM_Ingest__WatchList__$i = '$($WatchList[$i])'"
     }
+}
+if ($BackupTarget) {
+    if ($Service -ne 'ingest') { throw '-BackupTarget applies to the ingest service only.' }
+    if ($BackupTarget -notmatch "^[^'`"`r`n]+$") { throw 'The backup target must not contain quotes or line breaks.' }
+    $services.ingest.Env += "`$env:KALTERM_Ingest__BackupTarget = '$BackupTarget'"
 }
 $spec = $services[$Service]
 
