@@ -122,7 +122,9 @@ $env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'   # plus KALSHI_KEY_ID
 .\tests\KalTerm.Kalshi.Tests\bin\Release\net10.0\KalTerm.Kalshi.Tests.exe --filter-method "*TheServerAcceptsOurSignatureOnAnAuthenticatedRead"
 ```
 
-Database tests (`KalTerm.Data.Tests`) run on LocalDB (`(localdb)\MSSQLLocalDB`). If it is missing they skip on a development machine and fail on CI.
+Database tests (`KalTerm.Data.Tests`, `KalTerm.Ingest.Tests`) run on LocalDB (`(localdb)\MSSQLLocalDB`). If it is missing they skip on a development machine and fail on CI.
+This workstation has no LocalDB, so **run them on the target server before committing database changes**: `tools/kaldb/run-db-tests.ps1 -ComputerName <host> -CredentialPath <cred file>`
+(or set `KALTERM_TEST_HOST` and `KALTERM_TEST_CRED`) publishes, syncs by hash and runs them there as SYSTEM.
 `KALTERM_TEST_SQL_SERVER` selects another server; to run them on the target server see BUILD-LOG 5.1 (self-contained publish with `-p:NoCoverage=true`, then re-run `dotnet restore`).
 
 (Run the test assembly directly: `dotnet test --filter-class` would also hit the other test projects, which have no such class.)

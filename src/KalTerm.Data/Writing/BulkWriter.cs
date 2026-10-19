@@ -11,7 +11,7 @@ namespace KalTerm.Data.Writing;
 /// kept for the gap log (<see cref="TakeDroppedRange"/>).
 /// </summary>
 /// <typeparam name="T">The row type.</typeparam>
-public sealed partial class BulkWriter<T> : IAsyncDisposable
+public sealed partial class BulkWriter<T> : IRowWriter<T>, IAsyncDisposable
 {
     private readonly IBatchSink<T> _sink;
     private readonly IRowMapper<T> _mapper;

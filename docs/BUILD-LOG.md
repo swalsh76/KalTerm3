@@ -967,3 +967,31 @@ on the other 30-second ticks** of the windows (12 full and 18 incremental per ho
 - A `Dollars` helper in the test kit shadowed the `Dollars` type in another test file; removed.
 - `MarketDiscovery` now checks the cancellation token itself on every market instead of trusting the source to.
 - Shell heredocs with embedded quotes failed again; files were written with the editor tool.
+
+### 5.4 Slice 3.4a: the stream ingest pipeline (2026-10-18)
+
+Slice 3.4 is split (owner, 2026-10-18): **3.4a** is the pipeline with no network and no host (this entry); **3.4b** is the host (scheduler, partitions, start-up, shutdown, `ingest_state`).
+
+**Built.**
+- `KalTerm.Data.Writing.IRowWriter<T>` (`TryWrite`, `TakeDroppedRange`), implemented by `BulkWriter<T>`, so the logic in front of a writer is tested without a database.
+- `KalTerm.Data.Gaps`: `GapRecord`, `GapKinds` (`ws_reconnected`, `ws_lost`, `writer_dropped`), `IGapLog` and `GapStore` (plain inserts into `ingest_gap`, one transaction; every record is checked before anything is written).
+- `KalTerm.Ingest.StreamMapper`: ticker and trade messages to `TickerRow` / `TradeRow` in fixed-point. The row time is the server's `ts_ms` when it is positive and inside the calendar, else the receive time.
+- `KalTerm.Ingest.StreamIngestor.RunAsync(messages)`: routes rows to the writers through the `MarketIdMap`; counts (and does not store) data for a market not in the catalog, and messages whose payload cannot be read;
+  ignores `control` markers and other types; records a `ws_reconnected` gap from the last data message to the `reconnected` message; records `ws_lost` and rethrows when the stream ends with a `KalshiWsException`;
+  collects each writer's dropped range every second (`writer_dropped`). Gaps wait in a bounded list (1,000) and are retried while the database is down; the oldest are discarded and counted past the bound.
+  A final flush (bounded at 10 s) runs however the stream ends, including cancellation.
+
+**Left out of the plan's list, deliberately.** No gap row for an unknown-ticker burst: a market that appears before discovery sees it is a small, known loss, so it is counted and logged at 1, 10, 100, ... occurrences.
+
+**Verified.** Local: format clean, build without warnings, 4,330 tests, 0 failed (65 skipped, the database tests: no LocalDB on this workstation). Gate (local, database tests skipped): Core 98.3%, Ingest 97.4%, Kalshi 96.8%; Data is judged on CI.
+On `kaldb` (shared memory, as SYSTEM, `tools/kaldb/run-db-tests.ps1`): Data 111 of 111 run passed, Ingest 96 of 96 run passed (the skips are the opt-in throughput and live tests).
+
+**Problems and fixes.**
+- **`kaldb` found a silent truncation.** A gap `kind` of 33 characters was cut to the column's 32 by the SQL parameter, not refused. A misspelled kind would have been stored under the wrong name. `GapStore` now refuses a missing or over-long kind before storing anything (tested with and without a database).
+- The editor tool writes LF; the repo's `.editorconfig` wants CRLF, so `dotnet format` flags every new file. Run `dotnet format KalTerm.sln` after writing files.
+- xUnit1051 rejects a test helper that takes a `CancellationToken` unless every call passes `TestContext.Current.CancellationToken`; the stream helper takes none and the cancellation test throws from inside the stream.
+- `AutoAdvanceTimeProvider` with auto-firing timers cancels a `CancellationTokenSource(timeout, clock)` at once; ingest tests build it with `autoFire: false`.
+- Syncing the published tests to `kaldb` by file size missed 8 files whose size was unchanged; the script now compares SHA-256 and refuses to run unless every file matches.
+
+**Local model trial (PLAN 6.4), use 1.** The full test and coverage log (42,278 characters, about 10k tokens) went through the helper: 16 s, about 350 tokens back. Its counts (4,330 / 1 failed / 4,264 / 65) and the failing test and reason matched the raw log, and it also reported the missing LocalDB. The failure was read from the raw log and the coverage verdict came from `check-coverage.ps1`, as the rules require.
+Not a use: reading `KalshiWebSocket.cs` whole and a directory listing that printed 89 KB were wasted context; a narrower listing (or the helper) would have done.
