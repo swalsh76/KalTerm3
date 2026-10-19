@@ -1092,3 +1092,18 @@ Smoke run of the executable on this workstation: `/healthz` 200, `/readyz` and t
 - Database API tests must use the real clock: with the fake clock the seeded gap fell outside the "last 7 days" window.
 
 **Left out (as planned).** Series filter (no series ticker is stored), order book (3.7), candles, retention, auth, TLS (M4), watchlists, alerts, layouts, analytics, and a least-privilege database login for the API (M8). The API is not deployed to `kaldb` yet.
+
+#### 5.6.1 The API on `kaldb` (2026-10-19; owner's go-ahead)
+
+Deployed beside the ingest as the scheduled task `KalTerm-Api` (SYSTEM, at boot, the same wrapper as the ingest: waits for the SQL Server service, supervises the host), from the pinned release `C:\KalTerm\api\releases\api-b63069e`, listening on `http://127.0.0.1:5280` only. It reads the live soak database; the ingest is untouched.
+`tools/kaldb/deploy-service.ps1 -Service ingest|api` now does both deployments (the ingest's `deploy-ingest.ps1` is a thin forwarder). The wrapper it generates for the ingest is byte-for-byte the one already running (checked with `-PrintWrapper`), so the soak's deploy path did not change.
+
+**First calls against the live data** (over loopback from the server, while the ingest wrote about 25,000 ticker rows a minute into a database of over 1.5 million rows):
+- `/healthz` and `/readyz` 200; `/v1/status` 200: no problems, ingest `running` with a 14 s heartbeat, ticker and trade streams 0 to 1 s old, data file 264 MB of 102,400 MB, 920 GB free, markets by status, and the two `ingest_down` gaps from the reboot test.
+- `/v1/markets` pages by cursor (`limit=3` then the cursor gives the next page); the status and search filters work (`status=closed&q=KXHIGH`).
+- For the busiest market: the market itself, the latest 3 ticks, a forward read from 2 minutes ago in pages of 5 (page 2 starts one tick after page 1 ends), and the latest 3 trades with exact decimal strings and the taker side.
+- `limit=0` gives 422, an unknown market and an unknown route 404.
+- Timings once warm: 3 to 157 ms (the busiest market's ticks and trades 120 to 160 ms); the first call of each kind about 300 ms and the first status 700 ms, which is start-up (JIT).
+- The process uses about 45 MB and listens on `127.0.0.1:5280` only.
+
+**Not yet:** the API runs as SYSTEM with the same database rights as the ingest; a least-privilege login (read-only) is M8's. Nothing reaches it from outside the machine; the CLI (3.6) will reach it through remoting until M4 adds TLS and tokens.
