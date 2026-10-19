@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KalTerm.Data\KalTerm.Data.csproj" />
+    <ProjectReference Include="..\KalTerm.Security\KalTerm.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>

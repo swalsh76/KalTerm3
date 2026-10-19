@@ -229,6 +229,6 @@ public sealed record OrderBookPage(IReadOnlyList<OrderBookDto> Books);
 public sealed record HealthDto(string Status);
 
 /// <summary>The body of every error response.</summary>
-/// <param name="Error">A short code: <c>invalid_parameter</c>, <c>not_found</c>, <c>unavailable</c>.</param>
+/// <param name="Error">A short code: <c>invalid_parameter</c>, <c>not_found</c>, <c>unavailable</c>, <c>unauthorized</c> (no valid token), <c>too_many_attempts</c>.</param>
 /// <param name="Fields">For <c>invalid_parameter</c>, which parameters were wrong (never their values).</param>
 public sealed record ErrorDto(string Error, IReadOnlyList<string>? Fields = null);

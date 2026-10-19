@@ -6,7 +6,7 @@ namespace KalTerm.Data.Tests;
 public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
 {
     [Fact]
-    public async Task CreatesTheSixTablesAndTheJournal()
+    public async Task CreatesTheTablesAndTheJournal()
     {
         db.Require();
 
@@ -19,7 +19,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
             tables.Add(reader.GetString(0));
         }
 
-        Assert.Equal(["ingest_gap", "ingest_state", "market", "orderbook_state", "SchemaVersions", "ticker", "trade"], tables);
+        Assert.Equal(["api_token", "app_user", "ingest_gap", "ingest_state", "market", "orderbook_state", "SchemaVersions", "ticker", "trade"], tables);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
         var journal = await db.ScalarAsync<int>("SELECT COUNT(*) FROM dbo.SchemaVersions");
 
         Assert.Empty(again);
-        Assert.Equal(3, journal);
+        Assert.Equal(4, journal);
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
     {
         db.Require();
 
-        var constraints = await db.ScalarAsync<int>("SELECT (SELECT COUNT(*) FROM sys.foreign_keys) + (SELECT COUNT(*) FROM sys.key_constraints WHERE parent_object_id IN (OBJECT_ID('dbo.ticker'), OBJECT_ID('dbo.trade')))");
+        var constraints = await db.ScalarAsync<int>("SELECT (SELECT COUNT(*) FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID('dbo.ticker'), OBJECT_ID('dbo.trade')) OR referenced_object_id IN (OBJECT_ID('dbo.ticker'), OBJECT_ID('dbo.trade'))) + (SELECT COUNT(*) FROM sys.key_constraints WHERE parent_object_id IN (OBJECT_ID('dbo.ticker'), OBJECT_ID('dbo.trade')))");
 
         Assert.Equal(0, constraints);
     }

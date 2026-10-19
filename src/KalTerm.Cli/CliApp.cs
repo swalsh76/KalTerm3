@@ -123,6 +123,39 @@ internal static partial class CliApp
         }));
         root.Subcommands.Add(book);
 
+        // ---- trust, login, logout ----
+        var trustAddress = new Argument<string?>("server") { Description = "The server as host:port (default: the --api address)", Arity = ArgumentArity.ZeroOrOne };
+        var trustFingerprint = new Option<string?>("--fingerprint") { Description = "The certificate fingerprint the server's operator gave you; trusts without asking when it matches" };
+        var trust = new Command("trust", "Trust a server's certificate (the first time you connect to it, or after it was rotated)");
+        trust.Arguments.Add(trustAddress);
+        trust.Options.Add(trustFingerprint);
+        trust.SetAction(async (parsed, ct) =>
+        {
+            if (parsed.GetValue(trustAddress) is { } given)
+            {
+                return EndpointKey.TryParse(given, out var named)
+                    ? await RunGuarded(env, () => TrustCommands.TrustAsync(env, named, parsed.GetValue(trustFingerprint), ct)).ConfigureAwait(false)
+                    : Fail(env, "give the server as host:port, for example kaldb:5280");
+            }
+
+            return TryResolve(env, parsed.GetValue(api), out var resolved, out var problem)
+                ? await RunGuarded(env, () => TrustCommands.TrustAsync(env, resolved, parsed.GetValue(trustFingerprint), ct)).ConfigureAwait(false)
+                : Fail(env, problem!);
+        });
+        root.Subcommands.Add(trust);
+
+        var tokenFromInput = new Option<bool>("--token-stdin") { Description = "Read the token from standard input (one line) instead of asking" };
+        var login = new Command("login", "Store your API token for a server (ask the server's operator for one)");
+        login.Options.Add(tokenFromInput);
+        login.SetAction(async (parsed, ct) => TryResolve(env, parsed.GetValue(api), out var resolved, out var problem)
+            ? await RunGuarded(env, () => TrustCommands.LoginAsync(env, resolved, parsed.GetValue(tokenFromInput), ct)).ConfigureAwait(false)
+            : Fail(env, problem!));
+        root.Subcommands.Add(login);
+
+        var logout = new Command("logout", "Forget your stored API token for a server");
+        logout.SetAction(parsed => TryResolve(env, parsed.GetValue(api), out var resolved, out var problem) ? TrustCommands.Logout(env, resolved) : Fail(env, problem!));
+        root.Subcommands.Add(logout);
+
         // ---- gaps ----
         var gapSince = new Option<string?>("--since") { Description = "How far back to look, for example 30m, 12h or 7d (default 24h)" };
         var gapLimit = new Option<int>("--limit") { Description = "How many to show", DefaultValueFactory = _ => 50 };
@@ -263,10 +296,9 @@ internal static partial class CliApp
             env.Out.Profile.Capabilities.Ansi = false;
         }
 
-        var address = apiOption ?? env.GetVariable(CliEnvironment.ApiVariable) ?? KalTermApiClient.DefaultBaseAddress;
-        if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+        if (!TryResolve(env, apiOption, out var uri, out var problem))
         {
-            return Fail(env, $"the API address '{address}' is not an http or https address");
+            return Fail(env, problem!);
         }
 
         var client = env.CreateApi(uri);
@@ -274,13 +306,17 @@ internal static partial class CliApp
         {
             return await body(client, asJson).ConfigureAwait(false);
         }
+        catch (TlsTrustException ex)
+        {
+            return Fail(env, ex.Message);
+        }
         catch (ApiUnavailableException ex)
         {
             return Fail(env, ex.Message);
         }
         catch (ApiException ex)
         {
-            return Fail(env, ex.Code == "not_found" ? "not found" : ex.Message);
+            return Fail(env, Explain(ex, uri));
         }
         finally
         {
@@ -302,7 +338,48 @@ internal static partial class CliApp
         }
     }
 
-    private static int Fail(CliEnvironment env, string message)
+    /// <summary>The API address to use: <c>--api</c>, else <c>KALTERM_API_URL</c>, else the loopback default.</summary>
+    private static bool TryResolve(CliEnvironment env, string? apiOption, out Uri uri, out string? problem)
+    {
+        var address = apiOption ?? env.GetVariable(CliEnvironment.ApiVariable) ?? KalTermApiClient.DefaultBaseAddress;
+        problem = null;
+        if (Uri.TryCreate(address, UriKind.Absolute, out var parsed) && parsed.Scheme is "http" or "https")
+        {
+            uri = parsed;
+            return true;
+        }
+
+        uri = null!;
+        problem = $"the API address '{address}' is not an http or https address";
+        return false;
+    }
+
+    private static string Explain(ApiException ex, Uri address) => ex.Code switch
+    {
+        "not_found" => "not found",
+        "unauthorized" => $"{EndpointKey.Of(address)} did not accept the token (none is stored, it was revoked, or it is wrong): run kterm login --api {address.GetLeftPart(UriPartial.Authority)}",
+        "too_many_attempts" => "too many failed attempts from this computer; wait a minute and try again",
+        _ => ex.Message,
+    };
+
+    /// <summary>Runs a trust or login step, turning the failures a person can fix into one line.</summary>
+    private static async Task<int> RunGuarded(CliEnvironment env, Func<Task<int>> step)
+    {
+        try
+        {
+            return await step().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is ApiUnavailableException or TlsTrustException or InvalidDataException)
+        {
+            return Fail(env, ex.Message);
+        }
+        catch (ApiException ex)
+        {
+            return Fail(env, ex.Code == "unauthorized" ? "the server did not accept the token; nothing was stored" : ex.Message);
+        }
+    }
+
+    internal static int Fail(CliEnvironment env, string message)
     {
         env.Error.MarkupLine($"[red]error:[/] {Escape(message)}");
         return Failed;

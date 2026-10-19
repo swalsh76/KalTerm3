@@ -125,6 +125,14 @@ dotnet run --project src/KalTerm.Cli -c Release -- status
 .\tools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
 ```
 
+Read the server from this computer (once per server: trust its certificate, then store your token; the operator makes users and tokens on the server with `kalterm-admin user add` and `token create`):
+
+```powershell
+dotnet run --project src/KalTerm.Cli -c Release -- trust kaldb:5280          # compare the fingerprint with `kalterm-admin cert show`
+dotnet run --project src/KalTerm.Cli -c Release -- login --api https://kaldb:5280
+dotnet run --project src/KalTerm.Cli -c Release -- status --api https://kaldb:5280     # or set KALTERM_API_URL
+```
+
 Back up, restore and prove backups on the server (`kalterm-admin`, run on the server through remoting; the share credential is entered once with `-SetShareCredential`):
 
 ```powershell

@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KalTerm.Contracts\KalTerm.Contracts.csproj" />
+    <ProjectReference Include="..\KalTerm.Security\KalTerm.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>

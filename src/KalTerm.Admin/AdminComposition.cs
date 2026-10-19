@@ -1,5 +1,6 @@
 using KalTerm.Backup;
 using KalTerm.Data;
+using KalTerm.Data.Auth;
 using KalTerm.Data.State;
 
 namespace KalTerm.Admin;
@@ -7,6 +8,21 @@ namespace KalTerm.Admin;
 /// <summary>Builds the admin services from the same settings the ingest host reads (<c>KALTERM_Ingest__*</c>).</summary>
 internal static class AdminComposition
 {
+    /// <summary>Builds the user, token and certificate services; nothing connects to SQL Server until a command runs.</summary>
+    /// <param name="get">Reads a setting by name (the <c>Ingest</c> section for the database, <c>Api</c> for the TLS folder); <see langword="null"/> when it is not set.</param>
+    /// <returns>The services.</returns>
+    public static AccessServices CreateAccess(Func<string, string?> get)
+    {
+        ArgumentNullException.ThrowIfNull(get);
+        var connection = new DatabaseConnectionOptions
+        {
+            Server = get("Server") ?? DatabaseConnectionOptions.SharedMemoryServer,
+            Database = get("Database") ?? DatabaseConnectionOptions.DefaultDatabase,
+            ApplicationName = "KalTerm.Admin",
+        };
+        return new AccessServices(new UserStore(new DataSource(connection)), get("TlsDirectory") ?? @"C:\KalTerm\tls", TimeProvider.System);
+    }
+
     /// <summary>Builds the services.</summary>
     /// <param name="get">Reads a setting of the <c>Ingest</c> section by name; <see langword="null"/> when it is not set.</param>
     /// <returns>The services. Nothing connects to SQL Server until a command runs.</returns>

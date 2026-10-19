@@ -1,6 +1,7 @@
 using System.Globalization;
 using KalTerm.Contracts;
 using KalTerm.Data;
+using KalTerm.Data.Auth;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -59,8 +60,9 @@ public static class ApiEndpoints
     /// <param name="services">The service collection.</param>
     /// <param name="source">Opens connections.</param>
     /// <param name="options">Reader limits; <see langword="null"/> for the defaults.</param>
+    /// <param name="requireToken">Whether requests need a token (always, except in tests and a development run on loopback).</param>
     /// <returns>The same collection.</returns>
-    public static IServiceCollection AddKalTermApi(this IServiceCollection services, DataSource source, ReaderOptions? options = null)
+    public static IServiceCollection AddKalTermApi(this IServiceCollection services, DataSource source, ReaderOptions? options = null, bool requireToken = true)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(source);
@@ -71,6 +73,10 @@ public static class ApiEndpoints
         services.AddSingleton<IBookReader>(new BookReader(source, options));
         services.AddSingleton<IStatusReader>(new StatusReader(source, options));
         services.AddSingleton<IReadinessProbe>(new DatabaseReadinessProbe(source));
+        services.AddSingleton<IUserStore>(new UserStore(source));
+        services.AddSingleton(new ApiAuthOptions(requireToken));
+        services.AddSingleton<AuthThrottle>();
+        services.AddSingleton(provider => new TokenAuthenticator(provider.GetRequiredService<IUserStore>(), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton(TimeProvider.System);
         return services;
     }
@@ -82,6 +88,7 @@ public static class ApiEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
         ApiPipeline.Use(app);
+        ApiAuthentication.Use(app);
         Map(app);
         return app;
     }

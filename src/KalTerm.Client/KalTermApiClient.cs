@@ -41,13 +41,18 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
     /// <param name="baseAddress">The API's address, for example <see cref="DefaultBaseAddress"/>.</param>
     /// <param name="handler">The HTTP handler (for tests); a standard one when <see langword="null"/>. The client takes ownership of it.</param>
     /// <param name="timeout">How long one call may take; 30 seconds when <see langword="null"/>.</param>
+    /// <param name="token">The API token to send with every call; none when <see langword="null"/>.</param>
     /// <returns>The client.</returns>
-    public static KalTermApiClient Create(Uri baseAddress, HttpMessageHandler? handler = null, TimeSpan? timeout = null)
+    public static KalTermApiClient Create(Uri baseAddress, HttpMessageHandler? handler = null, TimeSpan? timeout = null, string? token = null)
     {
         ArgumentNullException.ThrowIfNull(baseAddress);
         var http = new HttpClient(handler ?? new SocketsHttpHandler(), disposeHandler: true) { BaseAddress = baseAddress, Timeout = timeout ?? DefaultTimeout };
         http.DefaultRequestHeaders.UserAgent.ParseAdd("KalTerm-Client/1");
         http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Trim());
+        }
         return new KalTermApiClient(http, ownsClient: true);
     }
 

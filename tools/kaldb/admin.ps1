@@ -23,7 +23,7 @@ stored there protected for that machine, never in a file you can read and never 
 Publish kalterm-admin again before syncing.
 
 .PARAMETER BackupTarget
-The backup folder as the SERVER sees it, for example \\nas\backups\KalTerm. Must match the ingest host's Ingest:BackupTarget.
+The backup folder as the SERVER sees it, for example \\nas\backups\KalTerm. Needed by the backup and restore commands only (not user, token or cert); must match the ingest host's Ingest:BackupTarget.
 
 .PARAMETER SetShareCredential
 Ask for the share's user name and password and store them on the server (checks them against the share first).
@@ -45,7 +45,6 @@ param(
 $ErrorActionPreference = 'Stop'
 if (-not $ComputerName -or -not $CredentialPath) { throw 'Pass -ComputerName and -CredentialPath, or set KALTERM_TEST_HOST and KALTERM_TEST_CRED.' }
 if (-not (Test-Path $CredentialPath)) { throw "Credential file not found: $CredentialPath" }
-if (-not $BackupTarget) { throw 'Pass -BackupTarget (the folder as the server sees it, for example \\host\share\KalTerm) or set KALTERM_BACKUP_TARGET.' }
 
 $local = 'C:\KalTermSpikes\m3\admin'      # the published tool on this machine
 $remote = 'C:\KalTerm\admin'               # and on the server
@@ -77,7 +76,7 @@ try {
 
     $result = Invoke-Command -Session $session -ArgumentList $remote, (, @($Arguments)), $BackupTarget, $Instance, $Database, $stdin -ScriptBlock {
         param($dir, $arguments, $target, $instance, $database, $stdin)
-        $env:KALTERM_Ingest__BackupTarget = $target
+        if ($target) { $env:KALTERM_Ingest__BackupTarget = $target }
         $env:KALTERM_Ingest__Server = $instance
         $env:KALTERM_Ingest__Database = $database
         # kalterm-admin's own error lines (stderr) are its output, not a failure of this script: carry them back tagged, then the exit code.

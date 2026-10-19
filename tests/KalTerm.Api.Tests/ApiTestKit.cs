@@ -1,9 +1,11 @@
 using KalTerm.Contracts;
 using KalTerm.Data;
+using KalTerm.Data.Auth;
 using KalTerm.Data.Books;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -147,6 +149,7 @@ internal sealed class FakeReaders
         services.AddSingleton<IBookReader>(Books);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
+        services.AddSingleton(new ApiAuthOptions(false));
     }
 }
 
@@ -172,8 +175,30 @@ internal sealed class ApiTestHost : IAsyncDisposable
         return await BuildAsync(fakes.Register, fakes, new AutoAdvanceTimeProvider(autoFire: false, utcStart: Samples.Now));
     }
 
+    /// <summary>With tokens required, a fake user store, a controllable clock and a hook that runs before the API (to set the caller's addresses).</summary>
+    public static async Task<ApiTestHost> StartWithAuthAsync(IUserStore users, AutoAdvanceTimeProvider time, Action<HttpContext>? before = null)
+    {
+        var fakes = new FakeReaders();
+        return await BuildAsync(
+            services =>
+            {
+                fakes.Register(services);
+                services.AddSingleton(users);
+                services.AddSingleton(new ApiAuthOptions(true));
+                services.AddSingleton<AuthThrottle>();
+                services.AddSingleton(provider => new TokenAuthenticator(provider.GetRequiredService<IUserStore>(), provider.GetRequiredService<TimeProvider>()));
+            },
+            fakes,
+            time,
+            before is null ? null : app => app.Use(async (context, next) =>
+            {
+                before(context);
+                await next(context);
+            }));
+    }
+
     /// <summary>Over a real database; the clock is the real one, because the rows in it are stamped with real times.</summary>
-    public static Task<ApiTestHost> StartWithDatabaseAsync(DataSource source) => BuildAsync(services => services.AddKalTermApi(source), new FakeReaders(), TimeProvider.System);
+    public static Task<ApiTestHost> StartWithDatabaseAsync(DataSource source) => BuildAsync(services => services.AddKalTermApi(source, null, requireToken: false), new FakeReaders(), TimeProvider.System);
 
     public async Task<(HttpResponseMessage Response, string Body)> GetAsync(string url)
     {
@@ -196,7 +221,7 @@ internal sealed class ApiTestHost : IAsyncDisposable
         await _app.DisposeAsync();
     }
 
-    private static async Task<ApiTestHost> BuildAsync(Action<IServiceCollection> register, FakeReaders fakes, TimeProvider time)
+    private static async Task<ApiTestHost> BuildAsync(Action<IServiceCollection> register, FakeReaders fakes, TimeProvider time, Action<WebApplication>? before = null)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -204,6 +229,7 @@ internal sealed class ApiTestHost : IAsyncDisposable
         register(builder.Services);
         builder.Services.AddSingleton(time);
         var app = builder.Build();
+        before?.Invoke(app);
         app.UseKalTermApi();
         await app.StartAsync();
         return new ApiTestHost(app, fakes);

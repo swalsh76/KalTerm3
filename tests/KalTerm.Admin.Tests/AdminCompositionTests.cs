@@ -31,6 +31,18 @@ public class AdminCompositionTests
     }
 
     [Fact]
+    public void TheUserAndCertificateServicesNeedNoBackupTargetAndUseTheStandardTlsFolder()
+    {
+        var plain = AdminComposition.CreateAccess(Env());
+        var custom = AdminComposition.CreateAccess(Env(("TlsDirectory", @"D:\tls"), ("Database", "KalTermTest")));
+
+        Assert.Equal(@"C:\KalTerm\tls", plain.TlsDirectory);
+        Assert.Equal(@"D:\tls", custom.TlsDirectory);
+        Assert.NotNull(plain.Users);
+        Assert.Throws<ArgumentNullException>(() => AdminComposition.CreateAccess(null!));
+    }
+
+    [Fact]
     public void ABadSettingIsRefusedBeforeAnythingRuns()
     {
         Assert.Throws<InvalidOperationException>(() => AdminComposition.Create(Env(("BackupTarget", "x"), ("BackupAt", "later"))));
