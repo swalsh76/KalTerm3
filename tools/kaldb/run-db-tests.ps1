@@ -3,12 +3,12 @@
 Runs the database-backed test suites on the target server (kaldb) against its real SQL Server instance.
 
 .DESCRIPTION
-Publishes the Data and Ingest test projects self-contained with coverage off (coverlet.MTP is not in a publish's deps.json), copies only
+Publishes the Data, Ingest and Api test projects self-contained with coverage off (coverlet.MTP is not in a publish's deps.json), copies only
 the files whose SHA-256 differs to the server over WinRM, then runs each suite there as SYSTEM through a temporary scheduled task
 (non-interactive, shared memory) and prints each summary. Run from the repo root. See docs/BUILD-LOG.md 5.1.
 
-The server needs C:\KalTermSpikes\m3\run-data.ps1 and run-ingest.ps1 (each sets KALTERM_TEST_SQL_SERVER to 'lpc:.\KALTERM', changes into
-the suite's folder and runs its .exe). Nothing about the server (address, credential file) is stored in the repository: pass them in, or set
+For each suite it writes a small runner (C:\KalTermSpikes\m3\run-<suite>.ps1) on the server that points KALTERM_TEST_SQL_SERVER at the instance, changes
+into the suite's folder and runs its .exe. Nothing about the server (address, credential file) is stored in the repository: pass them in, or set
 KALTERM_TEST_HOST and KALTERM_TEST_CRED in your own environment.
 
 .PARAMETER ComputerName
@@ -18,12 +18,16 @@ The server's address or name. Defaults to $env:KALTERM_TEST_HOST.
 An Export-Clixml credential file for a local administrator on the server. Defaults to $env:KALTERM_TEST_CRED.
 
 .PARAMETER Suites
-Which suites to run: data, ingest. Default both.
+Which suites to run: data, ingest, api. Default all three.
+
+.PARAMETER Instance
+The SQL Server instance the tests use on the server. Default lpc:.\KALTERM.
 #>
 param(
     [string]$ComputerName = $env:KALTERM_TEST_HOST,
     [string]$CredentialPath = $env:KALTERM_TEST_CRED,
-    [ValidateSet('data', 'ingest')][string[]]$Suites = @('data', 'ingest')
+    [ValidateSet('data', 'ingest', 'api')][string[]]$Suites = @('data', 'ingest', 'api'),
+    [string]$Instance = 'lpc:.\KALTERM'
 )
 $ErrorActionPreference = 'Stop'
 if (-not $ComputerName -or -not $CredentialPath) {
@@ -34,8 +38,9 @@ if (-not (Test-Path $CredentialPath)) {
 }
 
 $map = @{
-    data   = @('tests\KalTerm.Data.Tests\KalTerm.Data.Tests.csproj', 'data-tests-nocov')
-    ingest = @('tests\KalTerm.Ingest.Tests\KalTerm.Ingest.Tests.csproj', 'ingest-tests-nocov')
+    data   = @('tests\KalTerm.Data.Tests\KalTerm.Data.Tests.csproj', 'data-tests-nocov', 'KalTerm.Data.Tests.exe')
+    ingest = @('tests\KalTerm.Ingest.Tests\KalTerm.Ingest.Tests.csproj', 'ingest-tests-nocov', 'KalTerm.Ingest.Tests.exe')
+    api    = @('tests\KalTerm.Api.Tests\KalTerm.Api.Tests.csproj', 'api-tests-nocov', 'KalTerm.Api.Tests.exe')
 }
 $work = 'C:\KalTermSpikes\m3'   # the same folder on this machine (publish output) and on the server
 
@@ -68,9 +73,15 @@ try {
 
     if ($bad -ne 0) { throw "$bad files differ after the copy; not running" }
 
-    Invoke-Command -Session $session -ArgumentList $Suites, $work -ScriptBlock {
-        param($suites, $dir)
+    $runners = @{}
+    foreach ($n in $Suites) {
+        $runners[$n] = "`$env:KALTERM_TEST_SQL_SERVER = '$Instance'`r`nSet-Location '$work\$($map[$n][1])'`r`n& .\$($map[$n][2])`r`nexit `$LASTEXITCODE`r`n"
+    }
+
+    Invoke-Command -Session $session -ArgumentList $Suites, $work, $runners -ScriptBlock {
+        param($suites, $dir, $runners)
         foreach ($n in $suites) {
+            Set-Content "$dir\run-$n.ps1" $runners[$n] -Encoding ASCII
             Remove-Item "$dir\last-$n.txt" -ErrorAction SilentlyContinue
             $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command `"& '$dir\run-$n.ps1' *> '$dir\last-$n.txt'`""
             Register-ScheduledTask -TaskName "kt-run-$n" -Action $action -Principal (New-ScheduledTaskPrincipal -UserId 'SYSTEM' -RunLevel Highest) -Force | Out-Null

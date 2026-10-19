@@ -26,6 +26,7 @@ namespace KalTerm.Contracts;
 [JsonSerializable(typeof(StorageDto))]
 [JsonSerializable(typeof(GapSummaryDto))]
 [JsonSerializable(typeof(StatusDto))]
+[JsonSerializable(typeof(HealthDto))]
 [JsonSerializable(typeof(ErrorDto))]
 public sealed partial class ApiJson : JsonSerializerContext
 {

@@ -109,6 +109,12 @@ Run the ingest process (demo by default; `KALSHI_ENV=production` plus the key va
 dotnet run --project src/KalTerm.Ingest.Host -c Release
 ```
 
+Run the read-only API (loopback only until TLS and tokens exist; default `http://127.0.0.1:5280`, database `KalTerm` on `lpc:.`; `KALTERM_Api__Url`, `KALTERM_Api__Server`, `KALTERM_Api__Database` override):
+
+```powershell
+dotnet run --project src/KalTerm.Api.Host -c Release
+```
+
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in
 CI). **The owner granted standing permission (2026-10-16) for the assistant to run them itself**, within these limits:
 GET only and never an order; the key id and path come from the owner's User environment variables

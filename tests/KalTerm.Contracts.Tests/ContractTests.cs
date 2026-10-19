@@ -81,6 +81,12 @@ public class ContractTests
     }
 
     [Fact]
+    public void AHealthCheck()
+    {
+        Pin(new HealthDto("ok"), """{"status":"ok"}""");
+    }
+
+    [Fact]
     public void AnError()
     {
         Pin(new ErrorDto("not_found"), """{"error":"not_found","fields":null}""");

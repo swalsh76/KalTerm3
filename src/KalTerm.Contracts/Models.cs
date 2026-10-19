@@ -139,6 +139,10 @@ public sealed record StatusDto(
     IReadOnlyDictionary<string, long> Markets,
     GapSummaryDto Gaps);
 
+/// <summary>The body of the health checks.</summary>
+/// <param name="Status"><c>ok</c> for liveness; <c>ready</c> or <c>not_ready</c> for readiness.</param>
+public sealed record HealthDto(string Status);
+
 /// <summary>The body of every error response.</summary>
 /// <param name="Error">A short code: <c>invalid_parameter</c>, <c>not_found</c>, <c>unavailable</c>.</param>
 /// <param name="Fields">For <c>invalid_parameter</c>, which parameters were wrong (never their values).</param>
