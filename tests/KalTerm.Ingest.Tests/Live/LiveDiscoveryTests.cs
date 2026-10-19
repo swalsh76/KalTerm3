@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using KalTerm.Data.Markets;
+using KalTerm.Kalshi.Models;
 using KalTerm.Kalshi.Rest;
 using static KalTerm.Kalshi.Tests.Live.LiveSupport;
 
@@ -19,6 +20,90 @@ public static class LiveDiscoveryGate
 /// </summary>
 public class LiveDiscoveryTests
 {
+    /// <summary>
+    /// Checks the incremental listing the 30-second windows rely on: that <c>min_updated_ts</c> with <c>mve_filter=exclude</c> is accepted,
+    /// that adding <c>status</c> is refused or not, and how many markets a 2-minute, 5-minute and 60-minute look-back returns. Bounded to a few pages.
+    /// </summary>
+    [Fact(Skip = Why, SkipUnless = nameof(LiveDiscoveryGate.Enabled), SkipType = typeof(LiveDiscoveryGate))]
+    public async Task TheUpdatedSinceListingIsAcceptedAndSmall()
+    {
+        var (settings, signer) = Credentials();
+        using (signer)
+        using (var client = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer }))
+        {
+            const int maxPages = 5;
+            var now = DateTimeOffset.UtcNow;
+            foreach (var minutes in new[] { 2, 5, 60 })
+            {
+                var since = now.AddMinutes(-minutes);
+                var timer = Stopwatch.StartNew();
+                var statuses = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                var count = 0;
+                var combos = 0;
+                string? cursor = null;
+                var pages = 0;
+                do
+                {
+                    var page = await client.MarketsPageAsync(
+                        KalshiQuery.Empty.With("min_updated_ts", since).With("mve_filter", "exclude").With("limit", 1000).With("cursor", cursor),
+                        TestContext.Current.CancellationToken);
+                    pages++;
+                    foreach (var market in page.Markets)
+                    {
+                        count++;
+                        combos += market.IsMultivariate ? 1 : 0;
+                        statuses[market.Status] = statuses.GetValueOrDefault(market.Status) + 1;
+                    }
+
+                    cursor = page.Cursor.Length == 0 ? null : page.Cursor;
+                }
+                while (cursor is not null && pages < maxPages);
+
+                Say($"min_updated_ts = now - {minutes} min (+ mve_filter=exclude): {count:N0} markets in {pages} page(s), {timer.Elapsed.TotalSeconds:F1} s, more pages: {cursor is not null}, combos: {combos}; statuses: {string.Join(", ", statuses.Select(s => $"{s.Key}={s.Value:N0}"))}");
+                Assert.Equal(0, combos);
+            }
+
+            try
+            {
+                var withStatus = await client.MarketsPageAsync(
+                    KalshiQuery.Empty.With("min_updated_ts", now.AddMinutes(-5)).With("status", "open").With("mve_filter", "exclude").With("limit", 5),
+                    TestContext.Current.CancellationToken);
+                Say($"min_updated_ts + status=open: accepted, {withStatus.Markets.Count} markets on the first page of 5");
+            }
+            catch (KalshiApiException ex)
+            {
+                Say($"min_updated_ts + status=open: refused with HTTP {ex.StatusCode}");
+            }
+        }
+    }
+
+    /// <summary>One full pass, then two incremental passes 30 seconds apart, as the schedule would run them; in-memory store, no database.</summary>
+    [Fact(Skip = Why, SkipUnless = nameof(LiveDiscoveryGate.Enabled), SkipType = typeof(LiveDiscoveryGate))]
+    public async Task AFullPassThenIncrementalPassesBehaveAsScheduled()
+    {
+        var (settings, signer) = Credentials();
+        using (signer)
+        using (var client = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer }))
+        {
+            var discovery = new MarketDiscovery(
+                new FakeMarketStore(),
+                new MarketIdMap(),
+                client.IterateOpenMarketsAsync,
+                listUpdatedSince: client.IterateMarketsUpdatedSinceAsync);
+
+            var full = await discovery.RunAsync(PassKind.Full, TestContext.Current.CancellationToken);
+            Say($"full pass: {full.Seen:N0} stored, {full.Duration.TotalSeconds:F1} s");
+            for (var i = 1; i <= 2; i++)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+                var incremental = await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+                Say($"incremental pass {i}: {incremental.Kind}, {incremental.Seen:N0} stored ({incremental.Matched:N0} known, {incremental.Added.Count:N0} new), {incremental.Removed.Count:N0} no longer tradable, {incremental.Ignored:N0} ignored (history or not yet open), {incremental.SkippedCombos} combos, {incremental.Duration.TotalSeconds:F1} s");
+                Assert.Equal(PassKind.Incremental, incremental.Kind);
+                Assert.True(incremental.Duration < TimeSpan.FromSeconds(30), "an incremental pass must be shorter than the 30-second tick");
+            }
+        }
+    }
+
     [Fact(Skip = Why, SkipUnless = nameof(LiveDiscoveryGate.Enabled), SkipType = typeof(LiveDiscoveryGate))]
     public async Task CountsTheOpenNonComboMarkets()
     {

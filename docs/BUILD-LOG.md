@@ -950,9 +950,18 @@ against an in-memory store (no database):
 **Database half of a pass at that size** (`DiscoveryScaleTests`, 122,000 synthetic markets, opt-in `KALTERM_THROUGHPUT=1`, `kaldb`): first insert pass 6.4 s, an update pass with nothing
 changed 5.8 s, a pass with 100 gone and 100 new 5.8 s.
 
-**What this means for the schedule (to decide).** One pass costs about 25 to 32 s of Kalshi listing plus about 6 s of database work, sequentially, so roughly 30 to 38 s, and about
-122 requests. The 30-second windows are therefore about one pass long: the loop will run back to back for ten minutes an hour (a missed tick is skipped, never queued), which is a
-sustained 3 to 4 requests a second against Kalshi's read limit and about twice the database work of a 5-minute pass. Options are listed in the 3.3 report; none is built.
+**What this meant for the schedule, and the decision (owner, 2026-10-18: option 2).** One full pass costs about 18 to 32 s of Kalshi listing plus about 6 s of database work and about 122
+requests, which is one 30-second tick long, so a full pass every 30 s in the windows would run back to back. Decision: **full passes only on the 5-minute boundaries, incremental passes
+on the other 30-second ticks** of the windows (12 full and 18 incremental per hour; `RefreshSchedule.KindOf`).
+- `KalshiRestClient.IterateMarketsUpdatedSinceAsync(since)`: `min_updated_ts` + `mve_filter=exclude`, 1,000 per page. Verified live (probe test, GET only): accepted; adding `status=open`
+  is refused with HTTP 400 (as the KalshiTerm2 reference found), so the feed returns markets in whatever status they now have. Statuses seen: `active`, `closed`, `determined`, `finalized`,
+  `inactive`, `initialized`. A 2-minute look-back near the top of an hour returned 2,811 markets (mostly the hourly settlements) in 3 pages and 1.0 s.
+- `MarketDiscovery.RunAsync(PassKind.Incremental)`: looks back from the last completed pass by a 2-minute overlap; stores the markets we already know (with their true new status, which is how a
+  settlement is recorded) plus unknown markets that are `active`; **ignores** unknown markets that are not tradable (settled history, not yet open) so the catalog stays "open markets" (D8);
+  reports known markets that came back non-tradable as `Removed` (idempotent across the overlap); never unlists; before any completed pass it runs as a full pass; a failed pass leaves the bookmark.
+- Live end-to-end check (production, read-only key, in-memory store): full pass 121,749 markets in 17.7 s; then, 30 s apart, incremental passes of **0.1 s each** storing 71 and 108 markets
+  (22 and 108 known, 49 new, 14 no longer tradable, 61 and 74 ignored). That is mid-hour (03:09 UTC); the top-of-hour windows carry more settlements, about 2,800 in 2 minutes, still seconds.
+- Not measured: how late Kalshi's `updated` index runs behind a change; the 2-minute overlap is the reference's measured safety margin and is a constructor argument.
 
 **Problems and fixes.**
 - A `Dollars` helper in the test kit shadowed the `Dollars` type in another test file; removed.

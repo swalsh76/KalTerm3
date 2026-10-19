@@ -114,6 +114,17 @@ public sealed partial class KalshiRestClient : IDisposable
         IterateMarketsAsync(KalshiQuery.Empty.With("status", "open").With("mve_filter", "exclude").With("limit", MarketPageSize), cancellationToken);
 
     /// <summary>
+    /// Every non-combo market whose metadata changed at or after <paramref name="since"/>: new markets, status changes, closes and
+    /// settlements. <c>min_updated_ts</c> is valid together with <c>mve_filter=exclude</c> but not with <c>status</c>, so markets come back in
+    /// whatever status they now have, which is how a market leaving the open list is seen with its true status. Prices and volume do not count as changes.
+    /// </summary>
+    /// <param name="since">The moment to look back to; sent as whole epoch seconds.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    /// <returns>The changed markets.</returns>
+    public IAsyncEnumerable<Market> IterateMarketsUpdatedSinceAsync(DateTimeOffset since, CancellationToken cancellationToken = default) =>
+        IterateMarketsAsync(KalshiQuery.Empty.With("min_updated_ts", since).With("mve_filter", "exclude").With("limit", MarketPageSize), cancellationToken);
+
+    /// <summary>
     /// Executed trades across all markets, combos included. Filter with <c>min_ts</c> / <c>max_ts</c> (epoch seconds) and
     /// optionally <c>ticker</c>; used to backfill what a disconnect missed.
     /// </summary>

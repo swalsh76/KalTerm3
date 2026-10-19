@@ -166,7 +166,7 @@ Decisions (approved by the owner 2026-10-18; D-numbers are those of the M3 propo
 | D6 | An in-memory order book builder with sequence-gap detection and a `book` CLI view for a configured watch list. Deltas are not persisted. |
 | D7 | M3 logs gaps (`ingest_gap`); M4 backfills trades. |
 | D8 | Market scope: open, non-combo markets only. Combo tickers (prefix `KXMVE`) are skipped and counted. |
-| D9 | Catalog refresh (owner, 2026-10-18): every 5 minutes on the clock, except every 30 seconds in the last 5 and first 5 minutes of each UTC hour (`RefreshSchedule`). Markets that drop out of the open list are marked `unlisted` after a complete, non-empty listing; a failed or empty listing unlists nothing. |
+| D9 | Catalog refresh (owner, 2026-10-18): every 5 minutes on the clock, except every 30 seconds in the last 5 and first 5 minutes of each UTC hour (`RefreshSchedule`). The 5-minute ticks run a **full** pass; the other 30-second ticks run an **incremental** pass (`min_updated_ts` + `mve_filter=exclude`, 2-minute overlap), because a full pass takes about one tick. Markets that drop out of the open list are marked `unlisted` after a complete, non-empty full listing; a failed or empty listing unlists nothing; an incremental pass records true statuses of known markets and never unlists. |
 
 Projects: `KalTerm.Data` (schema, migrations, writers, readers), `KalTerm.Ingest` (discovery, stream ingest, host),
 `KalTerm.Api`, `KalTerm.Contracts` (models crossing the API), `KalTerm.Cli`. Schema v1 tables: `market`, `ticker`, `trade`,

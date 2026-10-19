@@ -86,4 +86,43 @@ public class RefreshScheduleTests
         Assert.Equal(TimeSpan.FromSeconds(20), RefreshSchedule.DelayUntilNext(local));
         Assert.True(RefreshSchedule.InFastWindow(local));
     }
+
+    [Theory]
+    [InlineData(10, 0, 0, true)]
+    [InlineData(10, 0, 30, false)]
+    [InlineData(10, 1, 0, false)]
+    [InlineData(10, 4, 30, false)]
+    [InlineData(10, 5, 0, true)]
+    [InlineData(10, 10, 0, true)]
+    [InlineData(10, 50, 0, true)]
+    [InlineData(10, 55, 0, true)]
+    [InlineData(10, 55, 30, false)]
+    [InlineData(10, 56, 0, false)]
+    [InlineData(10, 59, 30, false)]
+    public void OnlyTheFiveMinuteBoundariesRunTheFullPass(int hour, int minute, int second, bool full)
+    {
+        Assert.Equal(full ? PassKind.Full : PassKind.Incremental, RefreshSchedule.KindOf(At(hour, minute, second)));
+    }
+
+    [Fact]
+    public void EachHourHasTwelveFullPassesAndEighteenIncrementalOnes()
+    {
+        var kinds = new List<PassKind>();
+        var tick = At(0, 0, 0).AddTicks(-1);
+        var end = At(1, 0, 0);
+        while ((tick = RefreshSchedule.NextRun(tick)) < end)
+        {
+            kinds.Add(RefreshSchedule.KindOf(tick));
+        }
+
+        Assert.Equal(12, kinds.Count(k => k == PassKind.Full));
+        Assert.Equal(18, kinds.Count(k => k == PassKind.Incremental));
+    }
+
+    [Fact]
+    public void NextPassCombinesTheTimeAndTheKind()
+    {
+        Assert.Equal((At(10, 55, 0), PassKind.Full), RefreshSchedule.NextPass(At(10, 52, 0)));
+        Assert.Equal((At(10, 55, 30), PassKind.Incremental), RefreshSchedule.NextPass(At(10, 55, 0)));
+    }
 }

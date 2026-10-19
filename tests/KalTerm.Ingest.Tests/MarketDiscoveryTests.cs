@@ -154,4 +154,168 @@ public class MarketDiscoveryTests
         Assert.Throws<ArgumentNullException>(() => new MarketDiscovery(store, ids, null!));
         Assert.Throws<ArgumentOutOfRangeException>(() => new MarketDiscovery(store, ids, list, batchSize: 0));
     }
+
+    private static readonly DateTimeOffset Start = new(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
+
+    private static MarketDiscovery WithIncremental(FakeMarketStore store, MarketIdMap ids, AutoAdvanceTimeProvider clock, IEnumerable<KalTerm.Kalshi.Models.Market> full, UpdatedListing updated, TimeSpan? overlap = null) =>
+        new(store, ids, Listing(full), clock, NullLogger.Instance, 1000, updated.Call, overlap);
+
+    [Fact]
+    public async Task AnIncrementalPassBeforeAnyPassRunsAsFull()
+    {
+        var clock = new AutoAdvanceTimeProvider(utcStart: Start);
+        var updated = new UpdatedListing();
+        var discovery = WithIncremental(new FakeMarketStore(), new MarketIdMap(), clock, [Open("A")], updated);
+
+        var result = await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+
+        Assert.Equal(PassKind.Full, result.Kind);
+        Assert.Empty(updated.Since);
+        Assert.Equal(Start.UtcDateTime, discovery.Bookmark);
+    }
+
+    [Fact]
+    public async Task NoPassHasABookmarkYet()
+    {
+        var discovery = WithIncremental(new FakeMarketStore(), new MarketIdMap(), new AutoAdvanceTimeProvider(), [], new UpdatedListing());
+
+        Assert.Null(discovery.Bookmark);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task EachIncrementalPassLooksBackFromTheLastPassByTheOverlap()
+    {
+        var clock = new AutoAdvanceTimeProvider(utcStart: Start);
+        var updated = new UpdatedListing();
+        var discovery = WithIncremental(new FakeMarketStore(), new MarketIdMap(), clock, [Open("A")], updated);
+        await discovery.RunAsync(TestContext.Current.CancellationToken);
+        clock.Advance(TimeSpan.FromSeconds(30));
+
+        await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+        clock.Advance(TimeSpan.FromSeconds(30));
+        await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+
+        Assert.Equal([Start.AddMinutes(-2), Start.AddSeconds(30).AddMinutes(-2)], updated.Since);
+    }
+
+    [Fact]
+    public async Task AnIncrementalPassStoresKnownMarketsAndNewActiveOnesAndIgnoresTheRest()
+    {
+        var store = new FakeMarketStore();
+        var ids = new MarketIdMap();
+        var clock = new AutoAdvanceTimeProvider(utcStart: Start);
+        var updated = new UpdatedListing([
+            Open("A").With("finalized"),        // known, settled: stored with its true status, reported as no longer tradable
+            Open("B"),                          // known, still active: refreshed
+            Open("C"),                          // unknown, active: a new market
+            Open("D").With("finalized"),        // unknown, settled history: ignored
+            Open("E").With("initialized"),      // unknown, not open yet: ignored
+            Combo("KXMVE-1"),                   // a combo that slipped through: skipped
+        ]);
+        var discovery = WithIncremental(store, ids, clock, [Open("A"), Open("B")], updated);
+        await discovery.RunAsync(TestContext.Current.CancellationToken);
+        var unlistCalls = store.UnlistCalls;
+        clock.Advance(TimeSpan.FromSeconds(30));
+
+        var result = await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+
+        Assert.Equal(PassKind.Incremental, result.Kind);
+        Assert.Equal(3, result.Seen);
+        Assert.Equal(2, result.Matched);
+        Assert.Equal(2, result.Ignored);
+        Assert.Equal(1, result.SkippedCombos);
+        Assert.Equal(["C"], result.Added);
+        Assert.Equal(["A"], result.Removed);
+        Assert.Equal("finalized", store.Statuses["A"]);
+        Assert.Equal("active", store.Statuses["C"]);
+        Assert.DoesNotContain("D", store.Statuses.Keys);
+        Assert.DoesNotContain("E", store.Statuses.Keys);
+        Assert.Equal(unlistCalls, store.UnlistCalls);   // an incremental pass never unlists
+        Assert.True(ids.TryGetId("C", out _));
+    }
+
+    [Fact]
+    public async Task AnIncrementalPassThatFindsNothingChangedIsNormalAndAdvancesTheBookmark()
+    {
+        var clock = new AutoAdvanceTimeProvider(utcStart: Start);
+        var updated = new UpdatedListing();
+        var discovery = WithIncremental(new FakeMarketStore(), new MarketIdMap(), clock, [Open("A")], updated);
+        await discovery.RunAsync(TestContext.Current.CancellationToken);
+        clock.Advance(TimeSpan.FromSeconds(30));
+
+        var result = await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, result.Seen);
+        Assert.Empty(result.Removed);
+        Assert.Equal(Start.UtcDateTime.AddSeconds(30), discovery.Bookmark);
+    }
+
+    [Fact]
+    public async Task AFailedIncrementalPassKeepsTheBookmarkSoTheNextOneCoversTheSameGround()
+    {
+        var clock = new AutoAdvanceTimeProvider(utcStart: Start);
+        var updated = new UpdatedListing([Open("A")]) { FailWith = new HttpRequestException("down") };
+        var discovery = WithIncremental(new FakeMarketStore(), new MarketIdMap(), clock, [Open("A")], updated);
+        await discovery.RunAsync(TestContext.Current.CancellationToken);
+        clock.Advance(TimeSpan.FromSeconds(30));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken));
+        updated.FailWith = null;
+        clock.Advance(TimeSpan.FromSeconds(30));
+        await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+
+        Assert.Equal(Start.UtcDateTime.AddSeconds(60), discovery.Bookmark);
+        Assert.Equal(updated.Since[0], updated.Since[1]);   // both look back from the full pass
+    }
+
+    [Fact]
+    public async Task AnIncrementalPassWithoutAListingIsRefused()
+    {
+        var discovery = new MarketDiscovery(new FakeMarketStore(), new MarketIdMap(), Listing([Open("A")]));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AnIncrementalPassCanBeCancelled()
+    {
+        var clock = new AutoAdvanceTimeProvider(utcStart: Start);
+        var updated = new UpdatedListing([Open("A")]);
+        var discovery = WithIncremental(new FakeMarketStore(), new MarketIdMap(), clock, [Open("A")], updated);
+        await discovery.RunAsync(TestContext.Current.CancellationToken);
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => discovery.RunAsync(PassKind.Incremental, cts.Token));
+    }
+
+    [Fact]
+    public async Task IncrementalPassesWriteInBatches()
+    {
+        var store = new FakeMarketStore();
+        var clock = new AutoAdvanceTimeProvider(utcStart: Start);
+        var changed = Enumerable.Range(0, 5).Select(i => Open("N" + i)).ToList();
+        var updated = new UpdatedListing(changed);
+        var discovery = new MarketDiscovery(store, new MarketIdMap(), Listing([Open("A")]), clock, NullLogger.Instance, 2, updated.Call);
+        await discovery.RunAsync(TestContext.Current.CancellationToken);
+        store.BatchSizes.Clear();
+        clock.Advance(TimeSpan.FromSeconds(30));
+
+        await discovery.RunAsync(PassKind.Incremental, TestContext.Current.CancellationToken);
+
+        Assert.Equal([2, 2, 1], store.BatchSizes);
+    }
+
+    [Fact]
+    public void ANegativeOverlapIsRefused()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MarketDiscovery(new FakeMarketStore(), new MarketIdMap(), Listing([]), overlap: TimeSpan.FromSeconds(-1)));
+    }
+
+    [Fact]
+    public void TheDefaultOverlapIsTwoMinutes()
+    {
+        Assert.Equal(TimeSpan.FromMinutes(2), MarketDiscovery.DefaultOverlap);
+    }
 }

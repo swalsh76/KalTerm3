@@ -23,6 +23,25 @@ internal static class IngestTestKit
         }
     }
 
+    public static Market With(this Market market, string status) => market with { Status = status };
+
+    /// <summary>An incremental listing that answers each call with the next set of markets and records the look-back it was given.</summary>
+    public sealed class UpdatedListing(params IEnumerable<Market>[] answers)
+    {
+        private int _next;
+
+        public List<DateTimeOffset> Since { get; } = [];
+
+        public Exception? FailWith { get; set; }
+
+        public IAsyncEnumerable<Market> Call(DateTimeOffset since, CancellationToken cancellationToken)
+        {
+            Since.Add(since);
+            var answer = _next < answers.Length ? answers[_next++] : [];
+            return List(answer, FailWith);
+        }
+    }
+
     public static Func<CancellationToken, IAsyncEnumerable<Market>> Listing(IEnumerable<Market> markets, Exception? thenFail = null) =>
         _ => List(markets, thenFail);
 

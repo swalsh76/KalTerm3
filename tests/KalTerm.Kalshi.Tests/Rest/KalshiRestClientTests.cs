@@ -140,6 +140,25 @@ public class KalshiRestClientTests
     }
 
     [Fact]
+    public async Task UpdatedSinceAsksForChangedNonComboMarketsWithoutAStatusFilter()
+    {
+        var stub = new StubHttpMessageHandler()
+            .Respond(HttpStatusCode.OK, MarketsPage("c1", "A"))
+            .Respond(HttpStatusCode.OK, MarketsPage(string.Empty, "B"));
+        using var client = Client(stub, new AutoAdvanceTimeProvider());
+
+        var tickers = new List<string>();
+        await foreach (var market in client.IterateMarketsUpdatedSinceAsync(DateTimeOffset.FromUnixTimeSeconds(1_700_000_123), TestContext.Current.CancellationToken))
+        {
+            tickers.Add(market.Ticker);
+        }
+
+        Assert.Equal(["A", "B"], tickers);
+        Assert.Equal(Base + "/markets?min_updated_ts=1700000123&mve_filter=exclude&limit=1000", stub.Requests[0].Uri.AbsoluteUri);
+        Assert.Equal(Base + "/markets?min_updated_ts=1700000123&mve_filter=exclude&limit=1000&cursor=c1", stub.Requests[1].Uri.AbsoluteUri);
+    }
+
+    [Fact]
     public async Task PaginationStopsWhenTheConsumerStops()
     {
         var stub = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, MarketsPage("c1", "A", "B"));
@@ -438,7 +457,7 @@ public class KalshiRestClientTests
     private static readonly string[] ApprovedPublicMethods =
     [
         "ClockSkewAsync", "Dispose", "EventAsync", "EventsPageAsync", "ExchangeStatusAsync", "IterateEventsAsync",
-        "IterateMarketsAsync", "IterateMultivariateEventsAsync", "IterateOpenMarketsAsync", "IterateTradesAsync", "MarketAsync", "MarketsPageAsync",
+        "IterateMarketsAsync", "IterateMarketsUpdatedSinceAsync", "IterateMultivariateEventsAsync", "IterateOpenMarketsAsync", "IterateTradesAsync", "MarketAsync", "MarketsPageAsync",
         "MultivariateEventsPageAsync", "OrderBookAsync", "SeriesAsync", "SeriesListAsync",
     ];
 
