@@ -1,0 +1,166 @@
+using System.Globalization;
+using KalTerm.Contracts;
+using Spectre.Console;
+using Spectre.Console.Rendering;
+using static KalTerm.Cli.Display;
+
+namespace KalTerm.Cli;
+
+/// <summary>What each command prints: pure functions from contract models to Spectre renderables. Every piece of API text is escaped before it reaches markup.</summary>
+internal static class Views
+{
+    public static IRenderable Status(StatusDto status)
+    {
+        var rows = new List<IRenderable> { new Markup($"[bold]Server status[/] {Moment(status.Time)} UTC"), new Text(string.Empty) };
+        if (status.Problems.Count > 0)
+        {
+            rows.Add(new Markup($"[bold red]NEEDS ATTENTION ({status.Problems.Count})[/]"));
+            rows.AddRange(status.Problems.Select(p => new Markup($"  [red]![/] {Escape(p)}")));
+        }
+        else
+        {
+            rows.Add(new Markup("[green]All checks passed.[/]"));
+        }
+
+        rows.Add(new Text(string.Empty));
+        var state = status.Ingest.State switch { "running" => "[green]running[/]", "stopped" => "[red]stopped[/]", var other => $"[yellow]{Escape(other)}[/]" };
+        rows.Add(new Markup($"[bold]Ingest[/]    {state}  last heartbeat {Age(status.Ingest.HeartbeatAgeSeconds)} ({Moment(status.Ingest.LastHeartbeat)} UTC)"));
+        rows.Add(new Markup($"[bold]Streams[/]   ticker {Stream(status.Streams.Ticker)}  |  trade {Stream(status.Streams.Trade)}"));
+        var storage = status.Storage;
+        var cap = storage.MaxBytes is { } max ? $"{Size(max)} ({Percent(storage.DataFileBytes, max)})" : "no cap";
+        rows.Add(new Markup($"[bold]Storage[/]   database file {Size(storage.DataFileBytes)} of {cap}  |  disk free {Size(storage.DiskFreeBytes)}"));
+        rows.Add(new Markup($"[bold]Markets[/]   {Escape(MarketCounts(status.Markets))}"));
+        rows.Add(new Markup($"[bold]Gaps[/]      {status.Gaps.Count} in the last {status.Gaps.WindowHours} h{GapKinds(status.Gaps.ByKind)}"));
+        rows.Add(new Markup($"[grey]{Escape(status.Gaps.Note)}[/]"));
+        return new Rows(rows);
+    }
+
+    public static IRenderable Markets(MarketPage page, int width)
+    {
+        var table = new TextTable().Column("Ticker").Column("Status").Column("Closes (UTC)").Column("Event");
+        foreach (var market in page.Markets)
+        {
+            table.Row(market.Ticker, new Cell(market.Status, StatusStyle(market.Status)), Moment(market.CloseTime), market.EventTicker);
+        }
+
+        return new Rows(table.Render(width), Footer(page.Markets.Count, page.NextCursor));
+    }
+
+    public static IRenderable Market(MarketDto market, TickDto? tick, IReadOnlyList<TradeDto> trades, int width)
+    {
+        var rows = new List<IRenderable> { new Markup($"[bold]{Escape(market.Ticker)}[/]  {StatusMarkup(market.Status)}"), new Text(string.Empty) };
+        void Field(string label, string? value) => rows.Add(new Markup($"  [grey]{Escape(label.PadRight(11))}[/] {Escape(value ?? None)}"));
+        Field("Event", market.EventTicker);
+        Field("Type", market.Type);
+        Field("Yes / No", $"{market.YesLabel} / {market.NoLabel}");
+        Field("Opens", market.OpenTime is null ? None : $"{Moment(market.OpenTime)} UTC");
+        Field("Closes", market.CloseTime is null ? None : $"{Moment(market.CloseTime)} UTC");
+        Field("Expires", market.ExpirationTime is null ? None : $"{Moment(market.ExpirationTime)} UTC");
+        Field("Result", market.Result.Length == 0 ? None : market.Result);
+        Field("Settlement", market.SettlementValue is null ? None : $"{Dollars(market.SettlementValue)} at {Moment(market.SettlementTime)} UTC");
+        Field("First seen", $"{Moment(market.FirstSeenAt)} UTC");
+        Field("Last seen", $"{Moment(market.LastSeenAt)} UTC");
+        rows.Add(new Text(string.Empty));
+        if (tick is null)
+        {
+            rows.Add(new Markup("[bold]Latest tick[/]  none recorded"));
+        }
+        else
+        {
+            rows.Add(new Markup($"[bold]Latest tick[/]  {Moment(tick.Time, true)} UTC"));
+            rows.Add(new Markup($"  price {Dollars(tick.Price)}  bid {Dollars(tick.YesBid)} x {Count(tick.YesBidSize)}  ask {Dollars(tick.YesAsk)} x {Count(tick.YesAskSize)}"));
+            rows.Add(new Markup($"  volume {Count(tick.Volume)}  open interest {Count(tick.OpenInterest)}"));
+        }
+
+        rows.Add(new Text(string.Empty));
+        rows.Add(new Markup("[bold]Recent trades[/]"));
+        rows.Add(trades.Count == 0 ? new Markup("  none recorded") : TradesTable(trades, width));
+        return new Rows(rows);
+    }
+
+    public static IRenderable Ticks(TickPage page, int width)
+    {
+        var table = new TextTable()
+            .Column("Time (UTC)").Column("Price", right: true).Column("Bid", right: true).Column("Ask", right: true)
+            .Column("Bid size", right: true).Column("Ask size", right: true).Column("Volume", right: true).Column("Open interest", right: true);
+        foreach (var tick in page.Ticks)
+        {
+            table.Row(Moment(tick.Time, true), Dollars(tick.Price), Dollars(tick.YesBid), Dollars(tick.YesAsk), Count(tick.YesBidSize), Count(tick.YesAskSize), Count(tick.Volume), Count(tick.OpenInterest));
+        }
+
+        return new Rows(table.Render(width), Footer(page.Ticks.Count, page.NextCursor));
+    }
+
+    public static IRenderable Trades(TradePage page, int width) =>
+        new Rows(TradesTable(page.Trades, width), Footer(page.Trades.Count, page.NextCursor));
+
+    public static IRenderable Gaps(GapPage page, DateTime now, int width)
+    {
+        var table = new TextTable().Column("Id", right: true).Column("Kind").Column("From (UTC)").Column("To (UTC)").Column("Length", right: true).Column("Detail");
+        foreach (var gap in page.Gaps)
+        {
+            table.Row(
+                gap.Id.ToString(CultureInfo.InvariantCulture),
+                gap.Kind,
+                Moment(gap.From),
+                gap.To is null ? new Cell("open", "yellow") : Moment(gap.To),
+                GapLength(gap, now),
+                gap.Detail ?? string.Empty);
+        }
+
+        return new Rows(table.Render(width), new Markup($"[grey]{page.Gaps.Count} shown. Data in a gap is lost; ticker updates cannot be recovered.[/]"));
+    }
+
+    /// <summary>How long a gap lasted (or has lasted so far, with a plus sign, when it is still open).</summary>
+    private static string GapLength(GapDto gap, DateTime now)
+    {
+        if (!DateTimeOffset.TryParse(gap.From, CultureInfo.InvariantCulture, DateTimeStyles.None, out var start))
+        {
+            return None;
+        }
+
+        if (gap.To is null)
+        {
+            return Span(now - start.UtcDateTime) + "+";
+        }
+
+        return DateTimeOffset.TryParse(gap.To, CultureInfo.InvariantCulture, DateTimeStyles.None, out var end) ? Span(end.UtcDateTime - start.UtcDateTime) : None;
+    }
+
+    private static IRenderable TradesTable(IReadOnlyList<TradeDto> trades, int width)
+    {
+        var table = new TextTable().Column("Time (UTC)").Column("Yes", right: true).Column("No", right: true).Column("Count", right: true).Column("Taker").Column("Block");
+        foreach (var trade in trades)
+        {
+            table.Row(
+                Moment(trade.Time, true),
+                Dollars(trade.YesPrice),
+                Dollars(trade.NoPrice),
+                Count(trade.Count),
+                trade.TakerSide is null ? None : new Cell(trade.TakerSide, trade.TakerSide == "yes" ? "green" : "red"),
+                trade.IsBlockTrade ? "block" : string.Empty);
+        }
+
+        return table.Render(width);
+    }
+
+    private static Markup Footer(int shown, string? cursor) => new Markup($"[grey]{shown} shown.{(cursor is null ? string.Empty : $" More available: --cursor {Escape(cursor)}")}[/]");
+
+    private static string? StatusStyle(string status) => status switch
+    {
+        "active" => "green",
+        "closed" or "determined" or "finalized" => "yellow",
+        "unlisted" => "grey",
+        _ => null,
+    };
+
+    private static string StatusMarkup(string status) => StatusStyle(status) is { } style ? $"[{style}]{Escape(status)}[/]" : Escape(status);
+
+    private static string Stream(StreamDto stream) => stream.LastTime is null ? "[red]none in 24 h[/]" : Age(stream.AgeSeconds);
+
+    private static string MarketCounts(IReadOnlyDictionary<string, long> byStatus) =>
+        byStatus.Count == 0 ? "none" : string.Join("  |  ", byStatus.OrderByDescending(p => p.Value).ThenBy(p => p.Key, StringComparer.Ordinal).Select(p => $"{p.Key} {p.Value.ToString("N0", CultureInfo.InvariantCulture)}"));
+
+    private static string GapKinds(IReadOnlyDictionary<string, long> byKind) =>
+        byKind.Count == 0 ? string.Empty : "  (" + Escape(string.Join(", ", byKind.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => $"{p.Key} {p.Value}"))) + ")";
+}
