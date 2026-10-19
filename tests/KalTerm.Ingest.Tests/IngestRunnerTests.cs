@@ -23,6 +23,7 @@ public class IngestRunnerTests
         StopTimeout = TimeSpan.FromSeconds(5),
         BookPublishInterval = TimeSpan.FromMilliseconds(20),
         GovernorCheckInterval = TimeSpan.FromMilliseconds(40),
+        BackfillInterval = TimeSpan.FromMilliseconds(30),
         Schedule = now => (now.AddMilliseconds(30), PassKind.Incremental),
     };
 
@@ -32,7 +33,7 @@ public class IngestRunnerTests
         private readonly CancellationTokenSource _stop = new();
         private int _listings;
 
-        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null)
+        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null, KalTerm.Ingest.Backfill.ITradeBackfiller? backfiller = null)
         {
             var markets = catalog?.ToList() ?? [];
             Source = new ScriptedSource(open);
@@ -60,7 +61,8 @@ public class IngestRunnerTests
                 TimeProvider.System,
                 Log,
                 books,
-                governor);
+                governor,
+                backfiller);
         }
 
         public FakeMarketStore Store { get; } = new();
@@ -420,6 +422,7 @@ public class IngestRunnerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { PartitionDaysAhead = 0 }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BookPublishInterval = TimeSpan.Zero }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { GovernorCheckInterval = TimeSpan.Zero }.Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BackfillInterval = TimeSpan.Zero }.Validate());
         new IngestRunnerOptions().Validate();
 
         using var rig = new Rig(Sessions([]));
@@ -582,5 +585,32 @@ public class IngestRunnerTests
         await rig.StopAsync();
 
         Assert.Contains(rig.Log.Lines, l => l.Contains("governor broke", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task TheBackfillRunsGapAfterGapWithoutWaitingThenWaitsForMore()
+    {
+        var backfiller = new FakeBackfiller { GapsToRecover = 3 };
+        using var rig = new Rig(Sessions([]), options: Fast with { BackfillInterval = TimeSpan.FromMinutes(5) }, backfiller: backfiller);
+
+        rig.Start();
+        await Wait.UntilAsync(() => backfiller.Calls >= 4, "three gaps and then one empty look");
+        await rig.StopAsync();
+
+        Assert.Equal(4, backfiller.Calls);   // after the empty look it waits five minutes
+    }
+
+    [Fact]
+    public async Task ABackfillThatFailsIsLoggedAndTheRunCarriesOn()
+    {
+        var backfiller = new FakeBackfiller { Failure = new InvalidOperationException("backfill broke") };
+        using var rig = new Rig(Sessions([]), backfiller: backfiller);
+
+        rig.Start();
+        await Wait.UntilAsync(() => backfiller.Calls >= 2, "two failing runs");
+        await rig.StopAsync();
+
+        Assert.Contains(rig.Log.Lines, l => l.Contains("backfill broke", StringComparison.Ordinal));
+        Assert.True(rig.State.Writes(IngestStateKeys.Running) > 0);
     }
 }

@@ -239,3 +239,27 @@ internal sealed class FakeGovernor : KalTerm.Data.Governor.IStorageGovernor
             : Task.FromException<KalTerm.Data.Governor.GovernorReport>(Failure);
     }
 }
+
+/// <summary>A backfiller that hands out a number of "gaps" and counts its calls.</summary>
+internal sealed class FakeBackfiller : KalTerm.Ingest.Backfill.ITradeBackfiller
+{
+    private int _calls;
+
+    public int Calls => Volatile.Read(ref _calls);
+
+    /// <summary>How many calls find a gap to recover; later calls find none.</summary>
+    public int GapsToRecover { get; set; }
+
+    public Exception? Failure { get; set; }
+
+    public Task<KalTerm.Ingest.Backfill.BackfillOutcome?> RunOnceAsync(CancellationToken cancellationToken = default)
+    {
+        var call = Interlocked.Increment(ref _calls);
+        if (Failure is not null)
+        {
+            return Task.FromException<KalTerm.Ingest.Backfill.BackfillOutcome?>(Failure);
+        }
+
+        return Task.FromResult<KalTerm.Ingest.Backfill.BackfillOutcome?>(call <= GapsToRecover ? new KalTerm.Ingest.Backfill.BackfillOutcome(call, "done", 1, 1, "n") : null);
+    }
+}

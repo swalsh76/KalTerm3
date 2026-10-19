@@ -27,6 +27,9 @@ public sealed partial class IngestHostOptions
     /// <summary>How many days of raw ticker and trade data are kept (<c>Ingest:RetentionDays</c>); older days are dropped whole once a day. Default 30; at least 4.</summary>
     public int RetentionDays { get; set; } = 30;
 
+    /// <summary>Whether the trades of closed gaps are recovered from REST (<c>Ingest:BackfillEnabled</c>). Default true.</summary>
+    public bool BackfillEnabled { get; set; } = true;
+
     /// <summary>
     /// The markets whose order books are built and published (<c>Ingest:WatchList:0</c>, <c>Ingest:WatchList:1</c>, ...). Empty means no order book subscription at
     /// all. Changing it needs a restart in M3.

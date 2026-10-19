@@ -58,6 +58,9 @@ public class MappingTests
         Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredTick)null!));
         Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredTrade)null!));
         Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredGap)null!));
+        var recovered = Mapping.ToDto(new StoredGap(6, "ingest_down", NowUtc, NowUtc.AddMinutes(1), null, "done", 120, 7, NowUtc.AddMinutes(2), "window recovered"));
+        Assert.Equal(new BackfillDto("done", 120, 7, ApiFormat.Moment(NowUtc.AddMinutes(2)), "window recovered"), recovered.Backfill);
+        Assert.Equal("pending", Mapping.ToDto(new StoredGap(5, "ws_lost", NowUtc, null, "x")).Backfill!.Status);
         Assert.Throws<ArgumentNullException>(() => Mapping.ToDto((StoredBook)null!, NowUtc, 10));
     }
 }
@@ -462,5 +465,31 @@ public class StatusBuilderStorageTests
         Assert.Null(status.Storage.UsedPercent);
         Assert.Null(status.Storage.GovernorLast);
         Assert.Equal(400L * Gb, status.Storage.UsedBytes);   // without a used figure the file size stands in
+    }
+}
+
+public class StatusBuilderBackfillTests
+{
+    private static StatusSnapshot Healthy() => new(
+        new IngestStateEntry(IngestStateKeys.Running, NowUtc.AddSeconds(-5)),
+        NowUtc.AddSeconds(-1),
+        NowUtc.AddSeconds(-3),
+        10L * 1024 * 1024 * 1024,
+        100L * 1024 * 1024 * 1024,
+        800L * 1024 * 1024 * 1024,
+        new Dictionary<string, long> { ["active"] = 100 },
+        new Dictionary<string, long> { ["ingest_down"] = 1 });
+
+    [Fact]
+    public void WaitingBackfillsAreCountedButOnlyFailedOnesAreAProblem()
+    {
+        var waiting = StatusBuilder.Build(Healthy() with { Backfill = new BackfillCounts(2, 0) }, NowUtc);
+        var failed = StatusBuilder.Build(Healthy() with { Backfill = new BackfillCounts(0, 3) }, NowUtc);
+        var oldDatabase = StatusBuilder.Build(Healthy(), NowUtc);
+
+        Assert.Empty(waiting.Problems);
+        Assert.Equal((2, 0), (waiting.Gaps.BackfillPending, waiting.Gaps.BackfillFailed));
+        Assert.Equal("3 gap(s) could not have their trades recovered (see kterm gaps)", Assert.Single(failed.Problems));
+        Assert.Equal((0, 0), (oldDatabase.Gaps.BackfillPending, oldDatabase.Gaps.BackfillFailed));
     }
 }

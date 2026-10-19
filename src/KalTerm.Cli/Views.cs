@@ -33,7 +33,7 @@ internal static class Views
         rows.Add(new Markup($"[bold]Retention[/] oldest raw data {Escape(storage.OldestDataDay ?? None)}  |  governor {governor}"));
         rows.Add(new Markup($"[bold]Markets[/]   {Escape(MarketCounts(status.Markets))}"));
         rows.Add(new Markup($"[bold]Books[/]     {Books(status.Books)}"));
-        rows.Add(new Markup($"[bold]Gaps[/]      {status.Gaps.Count} in the last {status.Gaps.WindowHours} h{GapKinds(status.Gaps.ByKind)}"));
+        rows.Add(new Markup($"[bold]Gaps[/]      {status.Gaps.Count} in the last {status.Gaps.WindowHours} h{GapKinds(status.Gaps.ByKind)}{BackfillCounts(status.Gaps)}"));
         rows.Add(new Markup($"[grey]{Escape(status.Gaps.Note)}[/]"));
         return new Rows(rows);
     }
@@ -185,7 +185,7 @@ internal static class Views
 
     public static IRenderable Gaps(GapPage page, DateTime now, int width)
     {
-        var table = new TextTable().Column("Id", right: true).Column("Kind").Column("From (UTC)").Column("To (UTC)").Column("Length", right: true).Column("Detail");
+        var table = new TextTable().Column("Id", right: true).Column("Kind").Column("From (UTC)").Column("To (UTC)").Column("Length", right: true).Column("Trades").Column("Detail");
         foreach (var gap in page.Gaps)
         {
             table.Row(
@@ -194,11 +194,22 @@ internal static class Views
                 Moment(gap.From),
                 gap.To is null ? new Cell("open", "yellow") : Moment(gap.To),
                 GapLength(gap, now),
+                Recovery(gap.Backfill),
                 gap.Detail ?? string.Empty);
         }
 
         return new Rows(table.Render(width), new Markup($"[grey]{page.Gaps.Count} shown. Data in a gap is lost; ticker updates cannot be recovered.[/]"));
     }
+
+    /// <summary>How the trades of a gap are being recovered, in a few words.</summary>
+    private static Cell Recovery(BackfillDto? backfill) => backfill switch
+    {
+        null => None,
+        { Status: "done" } done => new Cell($"recovered {done.Added?.ToString("N0", CultureInfo.InvariantCulture) ?? None} of {done.Found?.ToString("N0", CultureInfo.InvariantCulture) ?? None}", "green"),
+        { Status: "failed" } => new Cell("FAILED", "red"),
+        { Status: "pending" or "running" } waiting => new Cell(waiting.Status, "yellow"),
+        var other => other.Status,
+    };
 
     /// <summary>How long a gap lasted (or has lasted so far, with a plus sign, when it is still open).</summary>
     private static string GapLength(GapDto gap, DateTime now)
@@ -249,6 +260,13 @@ internal static class Views
 
     private static string MarketCounts(IReadOnlyDictionary<string, long> byStatus) =>
         byStatus.Count == 0 ? "none" : string.Join("  |  ", byStatus.OrderByDescending(p => p.Value).ThenBy(p => p.Key, StringComparer.Ordinal).Select(p => $"{p.Key} {p.Value.ToString("N0", CultureInfo.InvariantCulture)}"));
+
+    private static string BackfillCounts(GapSummaryDto gaps) =>
+        (gaps.BackfillPending, gaps.BackfillFailed) switch
+        {
+            (0, 0) => string.Empty,
+            var (pending, failed) => $"  |  trade backfill: {pending} waiting{(failed > 0 ? $", [red]{failed} failed[/]" : string.Empty)}",
+        };
 
     private static string GapKinds(IReadOnlyDictionary<string, long> byKind) =>
         byKind.Count == 0 ? string.Empty : "  (" + Escape(string.Join(", ", byKind.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => $"{p.Key} {p.Value}"))) + ")";

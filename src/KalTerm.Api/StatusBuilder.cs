@@ -27,7 +27,7 @@ public static class StatusBuilder
     public const long DiskFreeWarningBytes = 50L * 1024 * 1024 * 1024;
 
     /// <summary>What a gap means for the data.</summary>
-    public const string GapNote = "Ticker updates in a gap are lost and cannot be recovered; trade backfill arrives in a later milestone.";
+    public const string GapNote = "Ticker updates and order books in a gap are lost and cannot be recovered; trades are recovered from REST (see each gap's backfill).";
 
     /// <summary>Builds the report.</summary>
     /// <param name="snapshot">What the database says.</param>
@@ -61,6 +61,11 @@ public static class StatusBuilder
 
         CheckGovernor(snapshot.GovernorLast, now, running, problems);
 
+        if (snapshot.Backfill is { Failed: > 0 } backfill)
+        {
+            problems.Add($"{backfill.Failed} gap(s) could not have their trades recovered (see kterm gaps)");
+        }
+
         if (snapshot.DiskFreeBytes is { } free && free < DiskFreeWarningBytes)
         {
             problems.Add($"only {free / (1024 * 1024 * 1024)} GB free on the data disk");
@@ -73,7 +78,7 @@ public static class StatusBuilder
             new StreamsDto(ticker, trade),
             new StorageDto(snapshot.DataFileBytes, snapshot.MaxFileBytes, snapshot.DiskFreeBytes, used, usedPercent, snapshot.OldestDataDay, snapshot.GovernorLast?.Value, snapshot.GovernorLast is { } last ? AgeSeconds(last.UpdatedAt, now) : null),
             new Dictionary<string, long>(snapshot.MarketsByStatus, StringComparer.Ordinal),
-            new GapSummaryDto((int)GapWindow.TotalHours, snapshot.GapsByKind.Values.Sum(), new Dictionary<string, long>(snapshot.GapsByKind, StringComparer.Ordinal), GapNote),
+            new GapSummaryDto((int)GapWindow.TotalHours, snapshot.GapsByKind.Values.Sum(), new Dictionary<string, long>(snapshot.GapsByKind, StringComparer.Ordinal), GapNote, snapshot.Backfill?.Pending ?? 0, snapshot.Backfill?.Failed ?? 0),
             books);
     }
 

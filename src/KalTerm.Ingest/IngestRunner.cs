@@ -6,6 +6,7 @@ using KalTerm.Data.Governor;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
+using KalTerm.Ingest.Backfill;
 using KalTerm.Ingest.Books;
 using KalTerm.Kalshi.WebSocket;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,9 @@ public sealed record IngestRunnerOptions
 
     /// <summary>How often the boundaries are topped up while running. Default 1 hour.</summary>
     public TimeSpan PartitionCheckInterval { get; init; } = TimeSpan.FromHours(1);
+
+    /// <summary>How long the trade backfill waits when no gap is waiting. Default 30 seconds.</summary>
+    public TimeSpan BackfillInterval { get; init; } = TimeSpan.FromSeconds(30);
 
     /// <summary>How often the storage governor checks retention and the size budget. Default 15 minutes.</summary>
     public TimeSpan GovernorCheckInterval { get; init; } = TimeSpan.FromMinutes(15);
@@ -49,7 +53,7 @@ public sealed record IngestRunnerOptions
     /// <summary>Throws <see cref="ArgumentOutOfRangeException"/> if a value cannot work.</summary>
     public void Validate()
     {
-        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
+        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || BackfillInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
             || StreamRetryBase <= TimeSpan.Zero || StopTimeout <= TimeSpan.Zero || BookPublishInterval <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(IngestRunnerOptions), "every interval and timeout must be positive");
@@ -109,6 +113,7 @@ public sealed partial class IngestRunner
     private readonly StreamIngestor _ingestor;
     private readonly IBookKeeper? _books;
     private readonly IStorageGovernor? _governor;
+    private readonly ITradeBackfiller? _backfill;
     private long _restarts;
     private long _discoveryFailures;
     private DateTimeOffset _startedAt;
@@ -132,6 +137,7 @@ public sealed partial class IngestRunner
     /// <param name="logger">Receives the log.</param>
     /// <param name="books">Keeps and publishes the order books of the watch list; <see langword="null"/> when none are kept.</param>
     /// <param name="governor">Applies the retention and the size budget; <see langword="null"/> when none is kept.</param>
+    /// <param name="backfiller">Recovers the trades of closed gaps from REST; <see langword="null"/> when none is kept.</param>
     public IngestRunner(
         IMarketStore store,
         MarketIdMap ids,
@@ -147,7 +153,8 @@ public sealed partial class IngestRunner
         TimeProvider? time = null,
         ILogger? logger = null,
         IBookKeeper? books = null,
-        IStorageGovernor? governor = null)
+        IStorageGovernor? governor = null,
+        ITradeBackfiller? backfiller = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(ids);
@@ -173,6 +180,7 @@ public sealed partial class IngestRunner
         _logger = logger ?? NullLogger.Instance;
         _books = books;
         _governor = governor;
+        _backfill = backfiller;
         _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger, books);
     }
 
@@ -221,6 +229,11 @@ public sealed partial class IngestRunner
         if (_books is not null)
         {
             loops.Add(Guard(BookLoopAsync, linked));
+        }
+
+        if (_backfill is not null)
+        {
+            loops.Add(Guard(BackfillLoopAsync, linked));
         }
 
         try
@@ -386,6 +399,23 @@ public sealed partial class IngestRunner
         {
             await Task.Delay(_options.BookPublishInterval, _time, cancellationToken).ConfigureAwait(false);
             await TryAsync("order book publish", () => _books!.PublishAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Recovers the trades of closed gaps, one gap after another, then waits <see cref="IngestRunnerOptions.BackfillInterval"/> for the next. It has its own loop because a long gap
+    /// takes minutes and the maintenance loop must keep the heartbeat.
+    /// </summary>
+    private async Task BackfillLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            BackfillOutcome? outcome = null;
+            await TryAsync("trade backfill", async () => outcome = await _backfill!.RunOnceAsync(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+            if (outcome is null)
+            {
+                await Task.Delay(_options.BackfillInterval, _time, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 

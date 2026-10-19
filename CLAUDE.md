@@ -124,7 +124,7 @@ dotnet run --project src/KalTerm.Cli -c Release -- status
 ```
 
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in
-CI). **The owner granted standing permission (2026-10-16) for the assistant to run them itself**, within these limits:
+CI). **The owner withdrew the standing permission on 2026-10-19: always offer the live run as an explicit opt-in and run it only after a yes.** When run, the limits are:
 GET only and never an order; the key id and path come from the owner's User environment variables
 `KALSHI_KEY_ID` / `KALSHI_PRIVATE_KEY_PATH`, loaded into each command's own process and removed afterwards; never print or
 read the key id, the key path or the key file (check it exists with `Test-Path` only); delete `live-summary.txt` after reading

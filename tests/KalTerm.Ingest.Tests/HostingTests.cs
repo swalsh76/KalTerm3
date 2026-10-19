@@ -55,6 +55,12 @@ public class IngestHostOptionsTests
     }
 
     [Fact]
+    public void TheTradeBackfillIsOnByDefault()
+    {
+        Assert.True(new IngestHostOptions().BackfillEnabled);
+    }
+
+    [Fact]
     public void ADefaultOptionsKeepsThirtyDaysOfRawData()
     {
         Assert.Equal(30, new IngestHostOptions().RetentionDays);
