@@ -907,5 +907,10 @@ Limits: 30 s runs on an empty table with one writer; compression, log growth and
 - Error 4060 (cannot open database) was first classified as poison. The host must survive a server restart or a database still recovering, so the restart errors retry.
 - `Microsoft.Data.SqlClient` retries a failed connect once after 10 s by default, which hid the writer's own backoff and made each failed attempt take 10 s;
   `ConnectRetryCount = 0` is now in the connection string (tested).
+- **CI (LocalDB) found two things `kaldb` did not.** (1) Right after `CREATE DATABASE` the provisioner's settings query once returned a NULL column
+  (`SqlNullValueException`), apparently while the new database was not yet fully online; it now waits, bounded at 60 s, until the database is `ONLINE` and every
+  setting is readable. (2) SQL Server refuses `SPLIT RANGE` on a populated partition of a columnstore table, and the last partition holds every day after the newest
+  boundary, so once rows exist with no boundary above them it can never be split. **Rule for the host (slice 3.4): add boundaries (today and some days ahead) at
+  start-up before the writers start, and keep adding ahead of the clock.** `PartitionManager` says so; the writer database tests add their boundaries first.
 - The harness blocks `Remove-Item` even inside a script that runs on the server; use `[System.IO.File]::Delete` there.
 - Fake clock tests: `AutoAdvanceTimeProvider` in manual mode leaves cancelled timers in its queue, so tests pump until their condition holds instead of firing a counted number of timers; 25 consecutive runs of the unit suite passed.

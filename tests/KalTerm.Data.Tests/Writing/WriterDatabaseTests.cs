@@ -4,8 +4,22 @@ using static KalTerm.Data.Tests.Writing.WriterTestKit;
 
 namespace KalTerm.Data.Tests.Writing;
 
-public class WriterDatabaseTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+public sealed class WriterDatabaseTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
+    private static readonly DateOnly TestDay = new(2026, 6, 1);
+    private static readonly DateOnly PartitionDay = new(2026, 8, 1);
+
+    /// <summary>Boundaries before any row, as the host does at start-up: a populated last partition can no longer be split.</summary>
+    public async ValueTask InitializeAsync()
+    {
+        db.Require();
+        await using var connection = await db.OpenAsync();
+        await PartitionManager.EnsureBoundariesAsync(connection, TestDay.AddDays(-1), TestDay.AddDays(2), TestContext.Current.CancellationToken);
+        await PartitionManager.EnsureBoundariesAsync(connection, PartitionDay, PartitionDay.AddDays(2), TestContext.Current.CancellationToken);
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
     private static BulkWriterOptions Quick(int flushRows = 3) => new()
     {
         FlushRows = flushRows,
@@ -73,12 +87,7 @@ public class WriterDatabaseTests(DatabaseFixture db) : IClassFixture<DatabaseFix
     public async Task RowsOnTwoDaysLandInTwoPartitions()
     {
         db.Require();
-        var day = new DateOnly(2026, 8, 1);
-        await using (var connection = await db.OpenAsync())
-        {
-            await PartitionManager.EnsureBoundariesAsync(connection, day, day.AddDays(1), TestContext.Current.CancellationToken);
-        }
-
+        var day = PartitionDay;
         await using var writer = Writers.Ticker(new DataSource(db.Options), Quick(4));
         writer.Start();
         var first = day.ToDateTime(new TimeOnly(23, 59, 59), DateTimeKind.Utc);
