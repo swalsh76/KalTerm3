@@ -12,9 +12,13 @@ namespace KalTerm.Ingest.Backfill;
 /// <summary>Reads executed trades from Kalshi for a time range.</summary>
 public interface ITradeSource
 {
-    /// <summary>Every trade, of every market, with a time from <paramref name="from"/> to <paramref name="until"/> (whole seconds, both ends inclusive).</summary>
-    /// <param name="from">The first second.</param>
-    /// <param name="until">The last second.</param>
+    /// <summary>
+    /// Every trade, of every market, with a time from <paramref name="from"/> up to but not including <paramref name="until"/>. Kalshi filters on whole seconds and its
+    /// <c>max_ts</c> is exclusive (measured live 2026-10-19: reading up to second N-1 loses every trade of second N-1), so neighbouring ranges that share an end and a start
+    /// neither lose nor repeat a trade.
+    /// </summary>
+    /// <param name="from">The first moment (inclusive).</param>
+    /// <param name="until">The end (exclusive).</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The trades, in the order Kalshi returns them.</returns>
     IAsyncEnumerable<Trade> TradesAsync(DateTimeOffset from, DateTimeOffset until, CancellationToken cancellationToken = default);
@@ -201,7 +205,7 @@ public sealed partial class TradeBackfiller : ITradeBackfiller
 
             var stored = await _store.StoredTradesAsync(start - _options.Tolerance, end + _options.Tolerance, cancellationToken).ConfigureAwait(false);
             var sinceDelay = 0;
-            await foreach (var trade in _source.TradesAsync(new DateTimeOffset(start), new DateTimeOffset(last ? end : end.AddSeconds(-1)), cancellationToken).ConfigureAwait(false))
+            await foreach (var trade in _source.TradesAsync(new DateTimeOffset(start), new DateTimeOffset(last ? end.AddSeconds(1) : end), cancellationToken).ConfigureAwait(false))
             {
                 found++;
                 if (++sinceDelay >= 1000)

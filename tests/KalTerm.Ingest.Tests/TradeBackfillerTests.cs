@@ -79,7 +79,7 @@ internal sealed class FakeTradeSource : ITradeSource
             throw Fails;
         }
 
-        foreach (var trade in Trades.Where(t => t.CreatedTime >= from && t.CreatedTime <= until))
+        foreach (var trade in Trades.Where(t => t.CreatedTime >= from && t.CreatedTime < until))
         {
             cancellationToken.ThrowIfCancellationRequested();
             yield return trade;
@@ -167,7 +167,7 @@ public class TradeBackfillerTests
 
         var outcome = await rig.Backfiller.RunOnceAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal((At(Start.AddSeconds(-10)), At(Start.AddMinutes(5).AddSeconds(10))), Assert.Single(rig.Source.Requests));
+        Assert.Equal((At(Start.AddSeconds(-10)), At(Start.AddMinutes(5).AddSeconds(11))), Assert.Single(rig.Source.Requests));   // the end is exclusive, so one second more keeps the padded last second
         Assert.Equal(["t-1", "t-2", "t-5"], rig.Writer.Rows.Select(r => r.TradeId));
         var second = rig.Writer.Rows[1];
         Assert.Equal((Start.AddMinutes(4), 22, 400_000L, 600_000L, 325L, TakerSide.No, true), (second.Ts, second.MarketId, second.YesPriceE6, second.NoPriceE6, second.CountE2, second.TakerSide, second.IsBlock));
@@ -227,7 +227,7 @@ public class TradeBackfillerTests
         var from = At(Start.AddSeconds(-10));
         var to = At(Start.AddMinutes(40).AddSeconds(10));
         Assert.Equal(
-            [(from, from.AddMinutes(15).AddSeconds(-1)), (from.AddMinutes(15), from.AddMinutes(30).AddSeconds(-1)), (from.AddMinutes(30), to)],
+            [(from, from.AddMinutes(15)), (from.AddMinutes(15), from.AddMinutes(30)), (from.AddMinutes(30), to.AddSeconds(1))],
             rig.Source.Requests);
         Assert.Equal((Start.AddSeconds(-15), Start.AddMinutes(15).AddSeconds(-5)), rig.Store.StoredQueries[0]);
         Assert.Equal((Start.AddMinutes(30).AddSeconds(-15), Start.AddMinutes(40).AddSeconds(15)), rig.Store.StoredQueries[2]);
@@ -278,7 +278,7 @@ public class TradeBackfillerTests
 
         var end = At(Start.AddHours(10).AddSeconds(10));
         Assert.Equal(end.AddHours(-6), rig.Source.Requests[0].From);
-        Assert.Equal(end, rig.Source.Requests[^1].Until);
+        Assert.Equal(end.AddSeconds(1), rig.Source.Requests[^1].Until);
         Assert.Equal(24, rig.Source.Requests.Count);   // six hours in quarter-hour slices
         Assert.Contains("only its most recent part was recovered", outcome!.Note, StringComparison.Ordinal);
     }

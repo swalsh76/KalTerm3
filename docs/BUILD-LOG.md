@@ -1210,5 +1210,9 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - Tests: the backfiller against a fake store, source and writer (padding, slicing, caps, duplicates in storage and within and between slices, writer full, retries, failures,
   cancellation); the store on real tables on kaldb (claim order, settle, open and market-specific gaps, retry delays, takeover, completion); the readers; an end-to-end
   composition test (a pending gap, a fake REST source: two rows written, the combo skipped, the gap `done`); the runner loop. Data, Ingest and Api suites pass on kaldb.
-- Opt-in live check written, not yet run (the owner decides): `LiveTradeBackfillTests` reads a three-minute window that ended ten minutes ago, whole and as two slices, and
-  compares them (GET only, about 45 requests).
+- **Live check (owner opted in, 2026-10-19, production, GET only, public trade data) found a bug in the first version.** `LiveTradeBackfillTests` reads a three-minute window that ended
+  ten minutes ago, whole and as two slices. The first run: 27,808 trades whole but 15,223 + 12,430 in two slices; a second run with a per-second breakdown showed every missing trade
+  was in the last second before the cut. **Kalshi's `max_ts` is exclusive (and `min_ts` inclusive), and trade times carry milliseconds** (the filter is whole seconds). The first
+  version cut slices at `end - 1 s`, which would have lost a second of trades at every 15-minute boundary. Fixed: a slice is `[start, end)` with `max_ts = end`, the last slice
+  reads one second past the padded end, `ITradeSource` documents the exclusive end, and the unit tests pin the ranges. Final run: 28,982 whole = 14,626 + 14,356 in two slices,
+  no repeated id, every trade inside the window, yes + no = $1 on every trade (about 135 requests across the three runs).
