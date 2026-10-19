@@ -79,6 +79,7 @@ KalshiTerm 1 died of feature creep and directional changes. Guard against it:
 - Tests: xUnit v3 on Microsoft Testing Platform. Test methods use plain PascalCase, no underscores
   (CA1707 is an error), e.g. `VersionIsNotEmpty`.
 - Live tests (against the real Kalshi API) are run by the assistant without asking (standing permission, limits in Dev commands). Also write and run them where a fake cannot show real behavior (boundaries, units, precision, ordering, pagination, rate limits, timestamps): the slice 4.2 live check found that `max_ts` is exclusive, a bug no synthetic test could surface. Design each slice with the question "what would the real service do that my fake cannot?"
+- Tests never use a real host, share or account name (the repository is public, and a test that does file I/O on a path that exists on the developer's network is a write to production storage). Use `\nasackups\...` as text and `\127.0.0.1\kalterm-no-such-share\...` where a path is really touched.
 
 ## Dev commands
 
@@ -122,6 +123,15 @@ Read a KalTerm server with the CLI (`status` exits 2 when it finds problems). Lo
 ```powershell
 dotnet run --project src/KalTerm.Cli -c Release -- status
 .\tools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
+```
+
+Back up, restore and prove backups on the server (`kalterm-admin`, run on the server through remoting; the share credential is entered once with `-SetShareCredential`):
+
+```powershell
+.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -SetShareCredential
+.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -- backup init-target
+.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -- backup run --full
+.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -- restore --database KalTerm_check
 ```
 
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in

@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using KalTerm.Backup;
 using KalTerm.Data;
 using KalTerm.Data.Gaps;
 using KalTerm.Data.Governor;
@@ -25,6 +26,9 @@ public sealed record IngestRunnerOptions
 
     /// <summary>How often the boundaries are topped up while running. Default 1 hour.</summary>
     public TimeSpan PartitionCheckInterval { get; init; } = TimeSpan.FromHours(1);
+
+    /// <summary>How often the backup schedule looks at the clock. Default 1 minute.</summary>
+    public TimeSpan BackupCheckInterval { get; init; } = TimeSpan.FromMinutes(1);
 
     /// <summary>How long the trade backfill waits when no gap is waiting. Default 30 seconds.</summary>
     public TimeSpan BackfillInterval { get; init; } = TimeSpan.FromSeconds(30);
@@ -53,7 +57,7 @@ public sealed record IngestRunnerOptions
     /// <summary>Throws <see cref="ArgumentOutOfRangeException"/> if a value cannot work.</summary>
     public void Validate()
     {
-        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || BackfillInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
+        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || BackupCheckInterval <= TimeSpan.Zero || BackfillInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
             || StreamRetryBase <= TimeSpan.Zero || StopTimeout <= TimeSpan.Zero || BookPublishInterval <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(IngestRunnerOptions), "every interval and timeout must be positive");
@@ -114,6 +118,7 @@ public sealed partial class IngestRunner
     private readonly IBookKeeper? _books;
     private readonly IStorageGovernor? _governor;
     private readonly ITradeBackfiller? _backfill;
+    private readonly IBackupJob? _backup;
     private long _restarts;
     private long _discoveryFailures;
     private DateTimeOffset _startedAt;
@@ -138,6 +143,7 @@ public sealed partial class IngestRunner
     /// <param name="books">Keeps and publishes the order books of the watch list; <see langword="null"/> when none are kept.</param>
     /// <param name="governor">Applies the retention and the size budget; <see langword="null"/> when none is kept.</param>
     /// <param name="backfiller">Recovers the trades of closed gaps from REST; <see langword="null"/> when none is kept.</param>
+    /// <param name="backup">Takes the daily backup; <see langword="null"/> when backups are off.</param>
     public IngestRunner(
         IMarketStore store,
         MarketIdMap ids,
@@ -154,7 +160,8 @@ public sealed partial class IngestRunner
         ILogger? logger = null,
         IBookKeeper? books = null,
         IStorageGovernor? governor = null,
-        ITradeBackfiller? backfiller = null)
+        ITradeBackfiller? backfiller = null,
+        IBackupJob? backup = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(ids);
@@ -181,6 +188,7 @@ public sealed partial class IngestRunner
         _books = books;
         _governor = governor;
         _backfill = backfiller;
+        _backup = backup;
         _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger, books);
     }
 
@@ -234,6 +242,11 @@ public sealed partial class IngestRunner
         if (_backfill is not null)
         {
             loops.Add(Guard(BackfillLoopAsync, linked));
+        }
+
+        if (_backup is not null)
+        {
+            loops.Add(Guard(BackupLoopAsync, linked));
         }
 
         try
@@ -416,6 +429,18 @@ public sealed partial class IngestRunner
             {
                 await Task.Delay(_options.BackfillInterval, _time, cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    /// <summary>
+    /// Takes the daily backup when it is due. It has its own loop because a backup of a big database takes a long time and the maintenance loop must keep the heartbeat.
+    /// </summary>
+    private async Task BackupLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await TryAsync("backup", () => _backup!.RunIfDueAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(_options.BackupCheckInterval, _time, cancellationToken).ConfigureAwait(false);
         }
     }
 

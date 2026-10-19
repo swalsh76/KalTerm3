@@ -309,7 +309,8 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
             file.Used,
             oldestDay?.Value,
             governorLast is { } last ? new IngestStateEntry(last.Value, DateTime.SpecifyKind(last.UpdatedAt, DateTimeKind.Utc)) : null,
-            await BackfillAsync(connection, cancellationToken).ConfigureAwait(false));
+            await BackfillAsync(connection, cancellationToken).ConfigureAwait(false),
+            await BackupRecordAsync(connection, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task<DateTime?> NewestAsync(IDbConnection connection, string table, DateTime now, CancellationToken cancellationToken)
@@ -328,6 +329,18 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
         }
 
         return null;
+    }
+
+    private async Task<BackupRecord?> BackupRecordAsync(IDbConnection connection, CancellationToken cancellationToken)
+    {
+        var rows = (await connection.QueryAsync<(string Name, string Value, DateTime UpdatedAt)>(ReaderSupport.Command(
+            "SELECT name AS Name, value AS Value, updated_at AS UpdatedAt FROM dbo.ingest_state WHERE name LIKE 'backup.%'",
+            null,
+            _options,
+            cancellationToken)).ConfigureAwait(false)).ToDictionary(r => r.Name, r => new IngestStateEntry(r.Value, DateTime.SpecifyKind(r.UpdatedAt, DateTimeKind.Utc)), StringComparer.Ordinal);
+        return rows.Count == 0
+            ? null
+            : new BackupRecord(rows.GetValueOrDefault("backup.configured"), rows.GetValueOrDefault("backup.last"), rows.GetValueOrDefault("backup.last_good"), rows.GetValueOrDefault("backup.last_verify"));
     }
 
     private async Task<BackfillCounts?> BackfillAsync(IDbConnection connection, CancellationToken cancellationToken)

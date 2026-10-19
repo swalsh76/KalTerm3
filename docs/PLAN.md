@@ -212,6 +212,13 @@ with ticks and 30 k with trades, and the raw ticker table grows about 2.2 GB a d
 - Surfaces: `GET /v1/markets/{ticker}/candles?interval=&start=&end=&limit=` (paged like ticks) and `kterm candles TICKER --interval 15m --since 1d`.
   The candle job runs in the ingest host about once a minute for closed buckets.
 
+**Backup and restore (slice 4.3), approved 2026-10-19.** The target is a network share (a mapped drive on kaldb, `\\host\share`). kaldb is in a workgroup and SQL Server runs as a virtual service
+account that cannot authenticate to it, so SQL Server backs up to a local **staging** folder and the ingest host verifies and copies the file to the share with a credential kept on the server (DPAPI, machine
+scope, SYSTEM and administrators only), then deletes the staging file. Weekly full plus daily differential (the database uses the simple recovery model); retention is grandfather-father-son (7 days of
+differentials, 4 weekly fulls, 12 monthly fulls, configurable). The target needs a marker file; a restore is proven only by restoring into a NEW database and comparing it with the manifest (row counts per day
+from before and after the backup); restore never overwrites. Backups hold market data only; the key files and the service wrapper settings are **not** in them (documented in BUILD-LOG 5.12). A new
+`kalterm-admin` console (on the server) carries the commands; `kterm` stays read-only.
+
 **Time zones (standing requirement for every client).** The database and the API are UTC. Client terminals show times in a **user-selectable time zone**: the default is the
 system's local zone, but the user can always choose any other zone (or UTC) and the choice is stored per user (with layouts, once M4 auth exists; until then a CLI option and
 an environment variable). The system zone is only a default, never a fixed pass-through. The CLI today prints UTC with a "UTC" suffix; the zone option (`--tz`, an IANA or

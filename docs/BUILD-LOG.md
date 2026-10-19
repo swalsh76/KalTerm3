@@ -1189,7 +1189,7 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - Measured on kaldb: the oldest-day query takes 176 ms on 22 M rows, so it runs in the governor and its result is stored, not computed per status call.
 - Tests: policy against a fake store and clock (retention window, once a day, time of day, floors, shedding order, failures, cancellation); the store on real
   partitions on kaldb (oldest day, boundaries, truncation, refusal of a day without a boundary); runner and composition. Data, Ingest and Api suites pass on kaldb.
-- Not rolled out: kaldb still runs host-d475ac4. The rollout is one ingest restart and an API restart, at the owner's go-ahead.
+- Rolled out 2026-10-19 together with 4.2 (ingest `host-21c5cc5`, API `api-21c5cc5`): the first governor check was ok at 0 % used; `kterm status` shows the Retention line.
 
 ### 5.11 Slice 4.2: trade backfill (2026-10-19)
 
@@ -1216,3 +1216,41 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   version cut slices at `end - 1 s`, which would have lost a second of trades at every 15-minute boundary. Fixed: a slice is `[start, end)` with `max_ts = end`, the last slice
   reads one second past the padded end, `ITradeSource` documents the exclusive end, and the unit tests pin the ranges. Final run: 28,982 whole = 14,626 + 14,356 in two slices,
   no repeated id, every trade inside the window, yes + no = $1 on every trade (about 135 requests across the three runs).
+- Rolled out 2026-10-19 together with 4.1 (ingest `host-21c5cc5`, migration 0003 applied at start, then the API): the four `ingest_down` gaps of the soak were recovered the same minute (235 of 2,704, 55,282 of 63,978, 1,131 of 5,530 and 540 of 3,927 trades written; the rest already stored or combos), and `kterm gaps` shows them as recovered.
+
+### 5.12 Slice 4.3: backup and restore (2026-10-19)
+
+- Owner decisions: the target is a network share on another machine of the owner's (seen on kaldb as a mapped drive; its name is deliberately not in the repository), grandfather-father-son
+  retention, and a new admin console. kaldb is in a workgroup and SQL Server runs as the virtual account `NT SERVICE\MSSQL$KALTERM`, which cannot authenticate to the share, so SQL Server
+  writes to a **staging folder** (its own default backup folder) and the ingest host verifies the file and copies it to the share with a stored credential, then deletes the staging file.
+  The database uses the simple recovery model, so backups are full and differential only.
+- `KalTerm.Backup` (library): `BackupService` takes a full backup weekly (Sunday UTC, or when none is under 7 days old) and a differential on the other days; `WITH CHECKSUM, COMPRESSION`,
+  then `RESTORE VERIFYONLY`, then a copy to `name.bak.partial` on the target, a SHA-256 comparison of the copy, a rename and last the manifest (`name.bak.json`), so nothing that looks like a
+  backup exists until it is whole. The **target must carry a marker file** (`kalterm-admin backup init-target`, run once with the share present) and have 1.2 times the last backup free; the
+  staging folder too. Retention (`GfsRetention`, pure and tested): the newest full backup is always kept; the newest full of each of the last 4 ISO weeks (fathers) and 12 calendar months
+  (grandfathers); a differential only while it is under 7 days old (sons) **and** its full backup is kept; only files in our naming are ever deleted, the manifest first.
+- **The manifest holds per-day row counts of ticker and trade from just before and just after the backup.** Ingest keeps writing during a backup, so a restored copy is judged by
+  `min(before, after) <= restored <= max(before, after)` per day (tables only grow; retention may drop a whole old day), and a day that did not change must match exactly.
+- `RestoreService` never overwrites: it creates a **new** database (refusing the live name and any existing name), copies the chain (a differential and its full backup) to staging checking each
+  file's hash against the manifest, restores with `MOVE` to new files, runs `DBCC CHECKDB` (physical-only by default, `--full-check` for the complete check) and compares the counts with the
+  manifest. Switching the server to a restored copy stays a manual step. `VerifyAsync` does the same into a scratch database that is dropped again, and records the result.
+- `BackupSchedule` in the ingest host (own loop, checked every minute): a backup is due when none was ever good, when the last good one is over 26 hours old, or after 08:00 UTC when there has been
+  none today; after a failure it waits 30 minutes; after every full backup it proves the backup by restoring it (physical-only). `Ingest:BackupTarget` (empty = off), `BackupStaging`,
+  `BackupCredentialPath`, `BackupDaily/Weekly/Monthly`, `BackupAt`.
+- The share credential is stored by `kalterm-admin backup set-credential` (password from a prompt or standard input, tried against the share first) protected with DPAPI for the machine in a
+  file whose ACL allows only SYSTEM and administrators (`C:\KalTerm\secrets\backup-share.cred`); `tools\kaldb\admin.ps1 -SetShareCredential` asks on the workstation and stores it on the server.
+  The share connection (`WNetAddConnection2`) has no drive letter and lives only for the run.
+- `kalterm-admin` (new project, runs on the server; `kterm` stays read-only): `backup init-target | set-credential | run [--full|--diff] | list | verify [--full-check]` and
+  `restore --database NAME [--backup NAME] [--keep] [--full-check]`; `tools\kaldb\admin.ps1` runs it through remoting.
+- Reporting: `/v1/status` has a `backup` section and `kterm status` a Backup line. Problems: no finished backup 36 h after a target was configured; the last good backup older than 36 h; the latest
+  attempt failed; the last proof by restore failed.
+- Tests: GFS rules (six months of Sunday fulls with daily differentials), naming, manifest JSON and count comparison, the target (marker, space, listing, deletion of only our names, partial
+  files), the credential store (round trip, ACL), the services against a fake database (kinds by day, failure leaves nothing behind, retention, network connection used and released, chain
+  restore, hash mismatch, refusals), the schedule, the admin commands; and **real SQL Server on kaldb**: full and differential backups restored into a new database that passes `CHECKDB` and
+  whose counts equal the live ones, a damaged file failing verification, the whole service plus a proof by restore, and the ingest host taking a backup of its own database.
+- **A mistake worth recording:** the first version of the admin and service tests used the real share's UNC path. Because the workstation can reach that share, one test created the folder and the
+  marker file there and the others wrote 5-byte fake backups into it. It was noticed because two tests that should have failed passed; the five test-made files were checked (fake manifests) and
+  deleted, nothing else on the share was touched, and the tests now use only `\\127.0.0.1\kalterm-no-such-share` (an address on this computer where nothing can be written) and neutral names.
+  CLAUDE.md now says tests never use a real host, share or account name.
+- Not done yet: the rollout on kaldb needs the owner to enter the share's credential once (`admin.ps1 -SetShareCredential`) and run `admin.ps1 -- backup init-target`; then one ingest restart with
+  `-BackupTarget`. A restore drill into a new database on the real data follows.

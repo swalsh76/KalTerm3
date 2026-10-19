@@ -263,3 +263,19 @@ internal sealed class FakeBackfiller : KalTerm.Ingest.Backfill.ITradeBackfiller
         return Task.FromResult<KalTerm.Ingest.Backfill.BackfillOutcome?>(call <= GapsToRecover ? new KalTerm.Ingest.Backfill.BackfillOutcome(call, "done", 1, 1, "n") : null);
     }
 }
+
+/// <summary>A backup job that counts its looks at the clock and can be told to fail.</summary>
+internal sealed class FakeBackupJob : KalTerm.Backup.IBackupJob
+{
+    private int _calls;
+
+    public int Calls => Volatile.Read(ref _calls);
+
+    public Exception? Failure { get; set; }
+
+    public Task<bool> RunIfDueAsync(CancellationToken cancellationToken = default)
+    {
+        Interlocked.Increment(ref _calls);
+        return Failure is null ? Task.FromResult(false) : Task.FromException<bool>(Failure);
+    }
+}

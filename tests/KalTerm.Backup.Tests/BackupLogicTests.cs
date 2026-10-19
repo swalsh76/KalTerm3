@@ -332,17 +332,31 @@ public sealed class ShareAccessTests : IDisposable
         var store = new ShareCredentialStore(Path.Combine(_dir, "secrets", "share.cred"));
         Assert.Null(store.Load());
 
-        store.Save(new ShareCredential("navi\\steven", "p@ss:word\nwith newline"));
+        store.Save(new ShareCredential("nas\\admin", "p@ss:word\nwith newline"));
         var loaded = store.Load();
 
-        Assert.Equal(("navi\\steven", "p@ss:word\nwith newline"), (loaded!.UserName, loaded.Password));
+        Assert.Equal(("nas\\admin", "p@ss:word\nwith newline"), (loaded!.UserName, loaded.Password));
         Assert.DoesNotContain("p@ss", RawText(Path.Combine(_dir, "secrets", "share.cred")), StringComparison.Ordinal);
-        Assert.Equal("navi\\steven", loaded.ToString());
+        Assert.Equal("nas\\admin", loaded.ToString());
         store.Save(new ShareCredential("other", "x"));
         Assert.Equal("other", store.Load()!.UserName);
     }
 
     private static string RawText(string path) => System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(path));
+
+    [Fact]
+    public void TheCredentialFileIsOpenOnlyToSystemAndAdministrators()
+    {
+        var path = Path.Combine(_dir, "locked.cred");
+        new ShareCredentialStore(path).Save(new ShareCredential("u", "p"));
+
+        var rules = new FileInfo(path).GetAccessControl().GetAccessRules(true, true, typeof(System.Security.Principal.SecurityIdentifier)).Cast<System.Security.AccessControl.FileSystemAccessRule>().ToList();
+
+        Assert.All(rules, rule => Assert.False(rule.IsInherited));
+        Assert.Equivalent(
+            new[] { System.Security.Principal.WellKnownSidType.LocalSystemSid, System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid }.Select(s => new System.Security.Principal.SecurityIdentifier(s, null).Value).Order(),
+            rules.Select(r => r.IdentityReference.Value).Distinct().Order());
+    }
 
     [Fact]
     public void ADamagedOrForeignCredentialFileIsReportedNotTrusted()
@@ -356,12 +370,25 @@ public sealed class ShareAccessTests : IDisposable
     }
 
     [Theory]
-    [InlineData(@"\\navi\kdb", @"\\navi\kdb")]
-    [InlineData(@"\\navi\kdb\KalTerm\sub", @"\\navi\kdb")]
+    [InlineData(@"\\127.0.0.1\kalterm-no-such-share", @"\\127.0.0.1\kalterm-no-such-share")]
+    [InlineData(@"\\127.0.0.1\kalterm-no-such-share\KalTerm\sub", @"\\127.0.0.1\kalterm-no-such-share")]
     [InlineData(@"\\192.168.1.16\kdb\", @"\\192.168.1.16\kdb")]
     public void TheShareIsTheHostAndFirstFolderOfAUncPath(string unc, string share)
     {
         Assert.Equal(share, Win32ShareConnector.ShareRoot(unc));
+    }
+
+    [Fact]
+    public void ConnectingToAShareThatDoesNotExistFailsWithTheWindowsErrorAndNeverWithThePassword()
+    {
+        var connector = new Win32ShareConnector();
+
+        var failure = Assert.Throws<IOException>(() => connector.Connect(@"\\127.0.0.1\kalterm-no-such-share\folder", new ShareCredential("nobody", "never-shown-pw")));
+
+        Assert.Contains(@"\\127.0.0.1\kalterm-no-such-share", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("Windows error", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("never-shown-pw", failure.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentNullException>(() => connector.Connect(@"\\127.0.0.1\x", null!));
     }
 
     [Theory]

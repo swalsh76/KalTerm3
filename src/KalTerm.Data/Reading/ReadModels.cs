@@ -97,6 +97,7 @@ public sealed record MarketFilter(string? Status = null, string? EventTicker = n
 /// <param name="OldestDataDay">The storage governor's last record of the oldest raw day (<c>yyyy-MM-dd</c> or <c>none</c>); <see langword="null"/> if it never ran.</param>
 /// <param name="GovernorLast">The storage governor's last check; <see langword="null"/> if it never ran.</param>
 /// <param name="Backfill">Gaps waiting for or failing their trade backfill; <see langword="null"/> when the database predates schema v3.</param>
+/// <param name="BackupRecord">What the backup job has recorded; <see langword="null"/> when nothing was.</param>
 public sealed record StatusSnapshot(
     IngestStateEntry? Run,
     DateTime? LastTickerAt,
@@ -110,7 +111,8 @@ public sealed record StatusSnapshot(
     long? DataUsedBytes = null,
     string? OldestDataDay = null,
     IngestStateEntry? GovernorLast = null,
-    BackfillCounts? Backfill = null);
+    BackfillCounts? Backfill = null,
+    BackupRecord? BackupRecord = null);
 
 /// <summary>One market's published order book (a row of <c>dbo.orderbook_state</c>), levels best first.</summary>
 /// <param name="Ticker">The market.</param>
@@ -121,6 +123,13 @@ public sealed record StatusSnapshot(
 /// <param name="YesLevels">Yes bids.</param>
 /// <param name="NoLevels">No bids.</param>
 public sealed record StoredBook(string Ticker, DateTime UpdatedAt, DateTime PublishedAt, bool Stale, bool Approximate, IReadOnlyList<BookLevel> YesLevels, IReadOnlyList<BookLevel> NoLevels);
+
+/// <summary>What the backup job has recorded in the state table.</summary>
+/// <param name="Configured">The backup target and when backups began to be expected; <see langword="null"/> when none is set.</param>
+/// <param name="Last">The last attempt.</param>
+/// <param name="LastGood">The newest finished backup.</param>
+/// <param name="LastVerify">The last proof by restore.</param>
+public sealed record BackupRecord(IngestStateEntry? Configured, IngestStateEntry? Last, IngestStateEntry? LastGood, IngestStateEntry? LastVerify);
 
 /// <summary>The published order books in total.</summary>
 /// <param name="Watched">How many books are published.</param>

@@ -163,4 +163,23 @@ public class BackfillStoreTests(DatabaseFixture db) : IClassFixture<DatabaseFixt
         Assert.Equal("gave up", byKind["g_c_bad"].BackfillNote);
         Assert.Equal(new BackfillCounts(1, 1), status.Backfill);   // the open gap is not waiting for a backfill yet
     }
+
+    [Fact]
+    public async Task TheStatusReaderReadsBackThePrefixedBackupRecordsAndIgnoresOtherState()
+    {
+        db.Require();
+        var at = DateTime.UtcNow.AddMinutes(-9);
+        var state = new KalTerm.Data.State.IngestStateStore(new DataSource(db.Options));
+        await state.SetAsync("backup.configured", "T", at.AddDays(-2), TestContext.Current.CancellationToken);
+        await state.SetAsync("backup.last", "ok full x", at, TestContext.Current.CancellationToken);
+        await state.SetAsync("backup.last_good", "x.bak", at, TestContext.Current.CancellationToken);
+        await state.SetAsync("backup.last_verify", "ok restored", at, TestContext.Current.CancellationToken);
+        await state.SetAsync("something.else", "ignored", at, TestContext.Current.CancellationToken);
+
+        var status = await new StatusReader(new DataSource(db.Options)).ReadAsync(DateTime.UtcNow, TimeSpan.FromHours(24), TestContext.Current.CancellationToken);
+
+        var record = status.BackupRecord!;
+        Assert.Equal(("T", "ok full x", "x.bak", "ok restored"), (record.Configured!.Value, record.Last!.Value, record.LastGood!.Value, record.LastVerify!.Value));
+        Assert.Equal(DateTimeKind.Utc, record.LastGood.UpdatedAt.Kind);
+    }
 }

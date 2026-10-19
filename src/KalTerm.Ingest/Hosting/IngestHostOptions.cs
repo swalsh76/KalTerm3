@@ -31,6 +31,34 @@ public sealed partial class IngestHostOptions
     public bool BackfillEnabled { get; set; } = true;
 
     /// <summary>
+    /// Where finished backups are kept (<c>Ingest:BackupTarget</c>): a folder, or <c>\\host\share\folder</c>. Empty means no backups. The folder must carry the marker file written by
+    /// <c>kalterm-admin backup init-target</c>.
+    /// </summary>
+    public string? BackupTarget { get; set; }
+
+    /// <summary>Where SQL Server writes a backup before it is copied to the target (<c>Ingest:BackupStaging</c>); empty for SQL Server's own default backup folder.</summary>
+    public string? BackupStaging { get; set; }
+
+    /// <summary>Where the protected share credential is kept (<c>Ingest:BackupCredentialPath</c>).</summary>
+    public string BackupCredentialPath { get; set; } = Backup.BackupSettings.DefaultCredentialPath;
+
+    /// <summary>Days of differential backups kept. Default 7.</summary>
+    public int BackupDaily { get; set; } = 7;
+
+    /// <summary>Weeks of full backups kept. Default 4.</summary>
+    public int BackupWeekly { get; set; } = 4;
+
+    /// <summary>Months of full backups kept. Default 12.</summary>
+    public int BackupMonthly { get; set; } = 12;
+
+    /// <summary>The time of day (UTC) from which the daily backup runs (<c>Ingest:BackupAt</c>). Default 08:00.</summary>
+    public string BackupAt { get; set; } = Backup.BackupSettings.DefaultRunAt;
+
+    /// <summary>The backup settings these options describe, or <see langword="null"/> when no target is set.</summary>
+    /// <returns>The options.</returns>
+    public Backup.BackupOptions? ToBackupOptions() => Backup.BackupSettings.Create(BackupTarget, BackupStaging, BackupDaily, BackupWeekly, BackupMonthly, BackupAt);
+
+    /// <summary>
     /// The markets whose order books are built and published (<c>Ingest:WatchList:0</c>, <c>Ingest:WatchList:1</c>, ...). Empty means no order book subscription at
     /// all. Changing it needs a restart in M3.
     /// </summary>
@@ -60,6 +88,8 @@ public sealed partial class IngestHostOptions
         {
             throw new InvalidOperationException($"Ingest:RetentionDays must be more than {Data.Governor.StorageBudget.MinKeepDays}");
         }
+
+        _ = ToBackupOptions();   // throws InvalidOperationException when the backup settings cannot work
 
         if (PartitionDaysAhead < 1)
         {

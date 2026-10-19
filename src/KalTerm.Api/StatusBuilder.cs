@@ -20,6 +20,9 @@ public static class StatusBuilder
     /// <summary>The ingest process rewrites every published book at least every 15 seconds, even a quiet one; a minute without is a problem.</summary>
     public static readonly TimeSpan BooksStale = TimeSpan.FromSeconds(60);
 
+    /// <summary>A day's backup is expected once a day; a day and a half without a good one is a problem.</summary>
+    public static readonly TimeSpan BackupStale = TimeSpan.FromHours(36);
+
     /// <summary>The storage governor checks every 15 minutes; an hour without a check while ingest runs is a problem.</summary>
     public static readonly TimeSpan GovernorStale = TimeSpan.FromHours(1);
 
@@ -60,6 +63,7 @@ public static class StatusBuilder
         }
 
         CheckGovernor(snapshot.GovernorLast, now, running, problems);
+        var backup = Backup(snapshot.BackupRecord, now, problems);
 
         if (snapshot.Backfill is { Failed: > 0 } backfill)
         {
@@ -79,7 +83,50 @@ public static class StatusBuilder
             new StorageDto(snapshot.DataFileBytes, snapshot.MaxFileBytes, snapshot.DiskFreeBytes, used, usedPercent, snapshot.OldestDataDay, snapshot.GovernorLast?.Value, snapshot.GovernorLast is { } last ? AgeSeconds(last.UpdatedAt, now) : null),
             new Dictionary<string, long>(snapshot.MarketsByStatus, StringComparer.Ordinal),
             new GapSummaryDto((int)GapWindow.TotalHours, snapshot.GapsByKind.Values.Sum(), new Dictionary<string, long>(snapshot.GapsByKind, StringComparer.Ordinal), GapNote, snapshot.Backfill?.Pending ?? 0, snapshot.Backfill?.Failed ?? 0),
-            books);
+            books,
+            backup);
+    }
+
+    private static BackupStatusDto Backup(BackupRecord? record, DateTime now, List<string> problems)
+    {
+        var configured = record?.Configured is not null;
+        var dto = new BackupStatusDto(
+            configured,
+            record?.LastGood?.Value,
+            ApiFormat.Moment(record?.LastGood?.UpdatedAt),
+            record?.LastGood is { } good ? AgeSeconds(good.UpdatedAt, now) : null,
+            record?.Last?.Value,
+            ApiFormat.Moment(record?.Last?.UpdatedAt),
+            record?.LastVerify?.Value,
+            ApiFormat.Moment(record?.LastVerify?.UpdatedAt));
+        if (!configured)
+        {
+            return dto;
+        }
+
+        if (record!.LastGood is null)
+        {
+            if (now - record.Configured!.UpdatedAt > BackupStale)
+            {
+                problems.Add($"no backup has finished in the {AgeSeconds(record.Configured.UpdatedAt, now) / 3600} h since a backup target was configured");
+            }
+        }
+        else if (now - record.LastGood.UpdatedAt > BackupStale)
+        {
+            problems.Add($"the last good backup is {AgeSeconds(record.LastGood.UpdatedAt, now) / 3600} h old");
+        }
+
+        if (record.Last is { } last && last.Value.StartsWith("error", StringComparison.Ordinal) && (record.LastGood is null || last.UpdatedAt >= record.LastGood.UpdatedAt))
+        {
+            problems.Add($"the last backup attempt failed: {last.Value}");
+        }
+
+        if (record.LastVerify is { } verify && verify.Value.StartsWith("error", StringComparison.Ordinal))
+        {
+            problems.Add($"the last proof of a backup by restore failed: {verify.Value}");
+        }
+
+        return dto;
     }
 
     private static void CheckGovernor(IngestStateEntry? last, DateTime now, bool ingestRunning, List<string> problems)

@@ -5,7 +5,7 @@ using System.Text;
 namespace KalTerm.Backup;
 
 /// <summary>A user name and password for a network share.</summary>
-/// <param name="UserName">The account, for example <c>navi\steven</c> or <c>steven</c>.</param>
+/// <param name="UserName">The account, for example <c>nas\admin</c> or <c>admin</c>.</param>
 /// <param name="Password">Its password.</param>
 public sealed record ShareCredential(string UserName, string Password)
 {
@@ -45,11 +45,32 @@ public sealed class ShareCredentialStore(string path)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
             File.WriteAllBytes(path, ProtectedData.Protect(plain, Entropy, DataProtectionScope.LocalMachine));
+            RestrictToAdministrators(path);
         }
         finally
         {
             CryptographicOperations.ZeroMemory(plain);
         }
+    }
+
+    /// <summary>
+    /// Machine-scope protection lets any process on this computer decrypt the file, so the file itself is locked down: inheritance is removed and only SYSTEM and
+    /// administrators keep access.
+    /// </summary>
+    private static void RestrictToAdministrators(string file)
+    {
+        var info = new FileInfo(file);
+        var security = new System.Security.AccessControl.FileSecurity();
+        security.SetAccessRuleProtection(true, false);
+        foreach (var sid in new[] { System.Security.Principal.WellKnownSidType.LocalSystemSid, System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid })
+        {
+            security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+                new System.Security.Principal.SecurityIdentifier(sid, null),
+                System.Security.AccessControl.FileSystemRights.FullControl,
+                System.Security.AccessControl.AccessControlType.Allow));
+        }
+
+        info.SetAccessControl(security);
     }
 
     /// <summary>Reads the stored credential.</summary>

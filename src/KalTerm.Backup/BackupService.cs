@@ -59,7 +59,7 @@ public static class BackupStateKeys
     /// <summary>The name of the last good backup; its time is when it finished. Status raises a problem when this is older than 36 hours.</summary>
     public const string LastGood = "backup.last_good";
 
-    /// <summary>Present when a backup target is configured, so status knows to expect backups.</summary>
+    /// <summary>The backup target, written by the schedule when it changes; present means backups are expected, and its time is when that began.</summary>
     public const string Configured = "backup.configured";
 
     /// <summary>What the last verification (a restore into a scratch database) did.</summary>
@@ -124,7 +124,6 @@ public sealed partial class BackupService : IBackupService
         string? name = null;
         try
         {
-            await _state.SetAsync(BackupStateKeys.Configured, _options.TargetPath, _time.GetUtcNow().UtcDateTime, cancellationToken).ConfigureAwait(false);
             using var connection = Connect();
             var existing = await _target.ListAsync(cancellationToken).ConfigureAwait(false);
             var kind = force ?? Decide(existing, _time.GetUtcNow().UtcDateTime);

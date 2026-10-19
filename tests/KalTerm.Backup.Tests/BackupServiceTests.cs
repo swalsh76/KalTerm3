@@ -182,7 +182,6 @@ public sealed class BackupServiceTests : ServiceTestBase
         Assert.EndsWith(".bak.partial", Db.Backups[0].Path, StringComparison.Ordinal);
         Assert.StartsWith("ok full kalterm-full-20261019-080000.bak", State.Values[BackupStateKeys.Last].Value, StringComparison.Ordinal);
         Assert.Equal("kalterm-full-20261019-080000.bak", State.Values[BackupStateKeys.LastGood].Value);
-        Assert.Equal(TargetDir, State.Values[BackupStateKeys.Configured].Value);
     }
 
     [Fact]
@@ -364,13 +363,13 @@ public sealed class BackupServiceTests : ServiceTestBase
     public async Task ANetworkTargetIsConnectedWithTheStoredCredentialForTheWholeRunAndReleasedAfter()
     {
         var connector = new FakeConnector();
-        var unc = @"\\navi\kdb\KalTerm";
-        var service = Backups(Options(unc), connector, () => new ShareCredential("navi\\steven", "secret"));
+        var unc = @"\\127.0.0.1\kalterm-no-such-share\KalTerm";
+        var service = Backups(Options(unc), connector, () => new ShareCredential("nas\\admin", "secret"));
 
         var result = await service.RunAsync(null, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);   // there is no such share in the test, so the target check fails after connecting
-        Assert.Equal([(unc, "navi\\steven")], connector.Connections);
+        Assert.Equal([(unc, "nas\\admin")], connector.Connections);
         Assert.Equal(1, connector.Disposed);
     }
 
@@ -381,7 +380,7 @@ public sealed class BackupServiceTests : ServiceTestBase
         var connector = new FakeConnector();
 
         var result = await Backups(null, connector, () => new ShareCredential("x", "y")).RunAsync(null, TestContext.Current.CancellationToken);
-        var noCredential = await Backups(Options(@"\\navi\kdb\KalTerm"), connector, () => null).RunAsync(null, TestContext.Current.CancellationToken);
+        var noCredential = await Backups(Options(@"\\127.0.0.1\kalterm-no-such-share\KalTerm"), connector, () => null).RunAsync(null, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Empty(connector.Connections);
@@ -545,7 +544,7 @@ public sealed class RestoreServiceTests : ServiceTestBase
     public async Task ANetworkTargetIsConnectedForTheRestoreToo()
     {
         var connector = new FakeConnector();
-        var (_, restore) = await ServicesAsync(() => new ShareCredential("u", "p"), connector, @"\\navi\kdb\KalTerm");
+        var (_, restore) = await ServicesAsync(() => new ShareCredential("u", "p"), connector, @"\\127.0.0.1\kalterm-no-such-share\KalTerm");
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => restore.RestoreAsync("KalTerm_e", null, false, true, TestContext.Current.CancellationToken));
 

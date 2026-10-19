@@ -1,3 +1,4 @@
+using KalTerm.Backup;
 using KalTerm.Data;
 using KalTerm.Data.Books;
 using KalTerm.Data.Gaps;
@@ -32,7 +33,8 @@ internal sealed record IngestOverrides(
     IOrderBookRest? OrderBookRest = null,
     OrderBookKeeperOptions? Keeper = null,
     ITradeSource? Trades = null,
-    BackfillOptions? Backfill = null);
+    BackfillOptions? Backfill = null,
+    IBackupJob? Backup = null);
 
 /// <summary>Builds the real ingest process from its settings and runs it: database ready, then the <see cref="IngestRunner"/> over real storage and the Kalshi feed.</summary>
 public static class IngestComposition
@@ -95,6 +97,7 @@ public static class IngestComposition
             var backfiller = options.BackfillEnabled
                 ? new TradeBackfiller(new BackfillStore(data), overrides?.Trades ?? new RestTradeSource(rest!), tradeWriter, ids, overrides?.Backfill, time, loggerFactory.CreateLogger<TradeBackfiller>())
                 : null;
+            var backup = overrides?.Backup ?? CreateBackupJob(options, data, state, time, loggerFactory);
             var runner = new IngestRunner(
                 store,
                 ids,
@@ -111,7 +114,8 @@ public static class IngestComposition
                 loggerFactory.CreateLogger<IngestRunner>(),
                 keeper,
                 new StorageGovernor(new GovernorStore(data), state, new GovernorOptions { RawRetentionDays = options.RetentionDays }, time, loggerFactory.CreateLogger<StorageGovernor>()),
-                backfiller);
+                backfiller,
+                backup);
             try
             {
                 await runner.RunAsync(cancellationToken).ConfigureAwait(false);
@@ -126,5 +130,25 @@ public static class IngestComposition
             rest?.Dispose();
             signer?.Dispose();
         }
+    }
+
+    /// <summary>The daily backup job, or <see langword="null"/> when no backup target is configured.</summary>
+    private static BackupSchedule? CreateBackupJob(IngestHostOptions options, DataSource data, IIngestState state, TimeProvider time, ILoggerFactory loggerFactory)
+    {
+        if (options.ToBackupOptions() is not { } backupOptions)
+        {
+            return null;
+        }
+
+        var database = new SqlBackupDatabase(data, options.Database);
+        var credentials = new ShareCredentialStore(options.BackupCredentialPath);
+        var connector = new Win32ShareConnector();
+        return new BackupSchedule(
+            new BackupService(database, state, backupOptions, connector, credentials.Load, time, loggerFactory.CreateLogger<BackupService>()),
+            new RestoreService(database, state, backupOptions, connector, credentials.Load, time, loggerFactory.CreateLogger<RestoreService>()),
+            state,
+            backupOptions,
+            time,
+            loggerFactory.CreateLogger<BackupSchedule>());
     }
 }

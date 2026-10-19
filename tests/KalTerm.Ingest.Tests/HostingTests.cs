@@ -55,6 +55,28 @@ public class IngestHostOptionsTests
     }
 
     [Fact]
+    public void BackupsAreOffByDefaultAndASensibleTargetTurnsThemOn()
+    {
+        Assert.Null(new IngestHostOptions().ToBackupOptions());
+
+        var options = new IngestHostOptions { BackupTarget = @"\\nas\backups\KalTerm", BackupAt = "03:30", BackupWeekly = 5 };
+        options.Validate();
+        var backup = options.ToBackupOptions()!;
+
+        Assert.Equal((@"\\nas\backups\KalTerm", new TimeOnly(3, 30), 5, 7, 12), (backup.TargetPath, backup.RunAt, backup.Retention.Weekly, backup.Retention.Daily, backup.Retention.Monthly));
+    }
+
+    [Theory]
+    [InlineData("25:00", 7)]
+    [InlineData("08:00", 0)]
+    public void ABackupSettingThatCannotWorkIsRefusedAtStartUp(string at, int daily)
+    {
+        var options = new IngestHostOptions { BackupTarget = "x", BackupAt = at, BackupDaily = daily };
+
+        Assert.Throws<InvalidOperationException>(options.Validate);
+    }
+
+    [Fact]
     public void TheTradeBackfillIsOnByDefault()
     {
         Assert.True(new IngestHostOptions().BackfillEnabled);
