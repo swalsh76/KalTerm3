@@ -1,0 +1,319 @@
+{
+ "generator": "tools/vectors/generate_api_format.py",
+ "referenceCommit": "3d19d501c84ddf89e9b7df63185e5d17eecec320",
+ "python": "3.14.7",
+ "dollars": [
+  {
+   "input": null,
+   "expected": null
+  },
+  {
+   "input": "0",
+   "expected": "0.000000"
+  },
+  {
+   "input": "1",
+   "expected": "0.000001"
+  },
+  {
+   "input": "-1",
+   "expected": "-0.000001"
+  },
+  {
+   "input": "9",
+   "expected": "0.000009"
+  },
+  {
+   "input": "10",
+   "expected": "0.000010"
+  },
+  {
+   "input": "99",
+   "expected": "0.000099"
+  },
+  {
+   "input": "100",
+   "expected": "0.000100"
+  },
+  {
+   "input": "999",
+   "expected": "0.000999"
+  },
+  {
+   "input": "1000",
+   "expected": "0.001000"
+  },
+  {
+   "input": "560000",
+   "expected": "0.560000"
+  },
+  {
+   "input": "-560000",
+   "expected": "-0.560000"
+  },
+  {
+   "input": "999999",
+   "expected": "0.999999"
+  },
+  {
+   "input": "1000000",
+   "expected": "1.000000"
+  },
+  {
+   "input": "-1000000",
+   "expected": "-1.000000"
+  },
+  {
+   "input": "1000001",
+   "expected": "1.000001"
+  },
+  {
+   "input": "1234567",
+   "expected": "1.234567"
+  },
+  {
+   "input": "41000",
+   "expected": "0.041000"
+  },
+  {
+   "input": "410000",
+   "expected": "0.410000"
+  },
+  {
+   "input": "59000",
+   "expected": "0.059000"
+  },
+  {
+   "input": "123456789012",
+   "expected": "123456.789012"
+  },
+  {
+   "input": "-123456789012",
+   "expected": "-123456.789012"
+  },
+  {
+   "input": "9223372036854775807",
+   "expected": "9223372036854.775807"
+  },
+  {
+   "input": "-9223372036854775807",
+   "expected": "-9223372036854.775807"
+  }
+ ],
+ "counts": [
+  {
+   "input": null,
+   "expected": null
+  },
+  {
+   "input": "0",
+   "expected": "0.00"
+  },
+  {
+   "input": "1",
+   "expected": "0.01"
+  },
+  {
+   "input": "-1",
+   "expected": "-0.01"
+  },
+  {
+   "input": "9",
+   "expected": "0.09"
+  },
+  {
+   "input": "10",
+   "expected": "0.10"
+  },
+  {
+   "input": "99",
+   "expected": "0.99"
+  },
+  {
+   "input": "100",
+   "expected": "1.00"
+  },
+  {
+   "input": "101",
+   "expected": "1.01"
+  },
+  {
+   "input": "-101",
+   "expected": "-1.01"
+  },
+  {
+   "input": "1850",
+   "expected": "18.50"
+  },
+  {
+   "input": "123400",
+   "expected": "1234.00"
+  },
+  {
+   "input": "9900",
+   "expected": "99.00"
+  },
+  {
+   "input": "10000",
+   "expected": "100.00"
+  },
+  {
+   "input": "1000000",
+   "expected": "10000.00"
+  },
+  {
+   "input": "9223372036854775807",
+   "expected": "92233720368547758.07"
+  },
+  {
+   "input": "-9223372036854775807",
+   "expected": "-92233720368547758.07"
+  }
+ ],
+ "moments": [
+  {
+   "input": "2026-10-18T22:23:48.123000+00:00",
+   "expected": "2026-10-18T22:23:48.123000+00:00"
+  },
+  {
+   "input": "2026-10-18T22:23:48+00:00",
+   "expected": "2026-10-18T22:23:48.000000+00:00"
+  },
+  {
+   "input": "2026-01-01T00:00:00+00:00",
+   "expected": "2026-01-01T00:00:00.000000+00:00"
+  },
+  {
+   "input": "2026-12-31T23:59:59.999000+00:00",
+   "expected": "2026-12-31T23:59:59.999000+00:00"
+  },
+  {
+   "input": "2026-10-18T22:23:48.000001+00:00",
+   "expected": "2026-10-18T22:23:48.000001+00:00"
+  },
+  {
+   "input": "2000-02-29T12:00:00.500000+00:00",
+   "expected": "2000-02-29T12:00:00.500000+00:00"
+  },
+  {
+   "input": "2026-10-18T16:23:48.123000-06:00",
+   "expected": "2026-10-18T22:23:48.123000+00:00"
+  }
+ ],
+ "cursorEncodings": [
+  {
+   "text": "A",
+   "cursor": "QQ"
+  },
+  {
+   "text": "KXHIGHNY-26OCT18-T70",
+   "cursor": "S1hISUdITlktMjZPQ1QxOC1UNzA"
+  },
+  {
+   "text": "2026-10-18T22:23:48.123000+00:00|0000-trade",
+   "cursor": "MjAyNi0xMC0xOFQyMjoyMzo0OC4xMjMwMDArMDA6MDB8MDAwMC10cmFkZQ"
+  },
+  {
+   "text": "a|b|c",
+   "cursor": "YXxifGM"
+  },
+  {
+   "text": "\u00fc",
+   "cursor": "w7w"
+  },
+  {
+   "text": "market with spaces",
+   "cursor": "bWFya2V0IHdpdGggc3BhY2Vz"
+  },
+  {
+   "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "cursor": "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg"
+  },
+  {
+   "text": "?>~",
+   "cursor": "Pz5-"
+  },
+  {
+   "text": "\u00e9\u00e8",
+   "cursor": "w6nDqA"
+  }
+ ],
+ "cursorDecodings": [
+  {
+   "cursor": "QQ",
+   "text": "A"
+  },
+  {
+   "cursor": "QQ==",
+   "text": "A"
+  },
+  {
+   "cursor": "S1hISUdI",
+   "text": "KXHIGH"
+  },
+  {
+   "cursor": "YnxjfGQ",
+   "text": "b|c|d"
+  },
+  {
+   "cursor": "w7w",
+   "text": "\u00fc"
+  },
+  {
+   "cursor": "!!!",
+   "text": null
+  },
+  {
+   "cursor": "====",
+   "text": null
+  },
+  {
+   "cursor": "A",
+   "text": null
+  },
+  {
+   "cursor": "AA",
+   "text": "\u0000"
+  },
+  {
+   "cursor": "QUJD",
+   "text": "ABC"
+  },
+  {
+   "cursor": "QUJDRA",
+   "text": "ABCD"
+  },
+  {
+   "cursor": "QUJDRA==",
+   "text": "ABCD"
+  },
+  {
+   "cursor": "*",
+   "text": null
+  },
+  {
+   "cursor": "",
+   "text": null
+  },
+  {
+   "cursor": "-_-_",
+   "text": null
+  },
+  {
+   "cursor": "AAAA",
+   "text": "\u0000\u0000\u0000"
+  },
+  {
+   "cursor": "gA",
+   "text": null
+  },
+  {
+   "cursor": "_w",
+   "text": null
+  },
+  {
+   "cursor": "wA",
+   "text": null
+  }
+ ]
+}

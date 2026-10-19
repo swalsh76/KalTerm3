@@ -100,6 +100,7 @@ python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTe
 python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
 python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
 python tools/vectors/generate_ws_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
+python tools/vectors/generate_api_format.py --reference C:/Users/stebe/dev/KalshiTerm2
 ```
 
 Run the ingest process (demo by default; `KALSHI_ENV=production` plus the key variables for production, and `KALTERM_Ingest__ProvisionMaxSizeGb=<n>` to let it create the database):
