@@ -190,14 +190,7 @@ analytics (M5 onward), combo markets.
 | 3.7 | In-memory order book builder, sequence-gap detection, `book` view | |
 | 3.8 | End to end on `kaldb`: the M3 gate (demo feed ingests and the CLI reads it) | |
 
-**Dev tooling trial: local model for bulk digestion (owner, 2026-10-18; slice 3.4).** The workstation's GPU runs a local model
-(Ollama, `qwen2.5-coder:14b`) behind a helper script that lives outside the repo (`~/.claude/local-llm.ps1`). It is assistant
-tooling, not product code, and nothing in the product depends on it. During slice 3.4 the assistant may route large mechanical
-outputs through it (full test and coverage runs, long diffs, long logs) so that only a short answer enters the cloud context.
-Rules: failures, security-relevant output and CI gates are always read from the raw output (`check-coverage.ps1` stays the
-coverage judge); the model never writes repo code; each use records the input size and whether the answer was spot-checked.
-At the end of 3.4, BUILD-LOG reports the savings and any missed or wrong digests, with a keep, drop or extend recommendation.
-Without a "keep" the trial ends and the helper is dropped.
+**Dev tooling trial: local model for bulk digestion (owner, 2026-10-18): ended the same day.** A local model (Ollama, `qwen2.5-coder:14b`) was tried for digesting large test and log output during slice 3.4a and discontinued by the owner; it, the helper script and the model files were removed from the workstation. On structured output (tests, builds, coverage) `grep`, `tail` and `check-coverage.ps1` are exact, instant and as cheap, and the trial rules still required reading failures from the raw output, so it saved nothing (BUILD-LOG 5.4). Not to be revisited unless the owner raises it.
 
 ## 7. Risks
 
