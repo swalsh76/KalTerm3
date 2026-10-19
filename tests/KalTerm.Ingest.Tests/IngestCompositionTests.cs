@@ -45,7 +45,7 @@ public sealed class IngestCompositionTests : IAsyncLifetime
         return (T)(await command.ExecuteScalarAsync())!;
     }
 
-    private static IngestOverrides Overrides(IStreamSource source) => new(
+    private static IngestOverrides Overrides(IStreamSource source, KalTerm.Ingest.Backfill.ITradeSource? trades = null, KalTerm.Ingest.Backfill.BackfillOptions? backfill = null) => new(
         source,
         _ => List([Open("E-1"), Open("E-2")]),
         (_, _) => List([]),
@@ -55,7 +55,10 @@ public sealed class IngestCompositionTests : IAsyncLifetime
             StreamRetryBase = TimeSpan.FromMilliseconds(10),
             StreamRetryMax = TimeSpan.FromMilliseconds(40),
             Schedule = now => (now.AddHours(1), PassKind.Full),
-        });
+            BackfillInterval = TimeSpan.FromMilliseconds(50),
+        },
+        Trades: trades ?? new FakeTradeSource(),
+        Backfill: backfill);
 
     private string KeyFile()
     {
@@ -199,5 +202,53 @@ public sealed class IngestCompositionTests : IAsyncLifetime
         Assert.Equal("550000:200", await ScalarAsync<string>("SELECT no_levels FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-1'"));
         Assert.False(await ScalarAsync<bool>("SELECT is_stale FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-1'"));
         Assert.True(await ScalarAsync<bool>("SELECT is_stale FROM dbo.orderbook_state s JOIN dbo.market m ON m.market_id = s.market_id WHERE m.ticker = 'E-2'"));
+    }
+
+    [Fact]
+    public async Task AClosedGapHasItsMissingTradesRecoveredAndAlreadyStoredOnesAreNotDuplicated()
+    {
+        await Requirement.RequireLocalDbAsync();
+        var settings = KalshiSettings.Create(KalshiEnvironment.Demo, "test-key", KeyFile());
+        await DatabasePreparer.PrepareAsync(Options(), NullLogger.Instance, TestContext.Current.CancellationToken);
+        var gapStart = DateTime.UtcNow.AddMinutes(-20);
+        var gapEnd = gapStart.AddMinutes(5);
+        await new GapStore(Source()).AppendAsync([new GapRecord(GapKinds.IngestDown, gapStart, gapEnd, "test gap")], TestContext.Current.CancellationToken);
+        var trades = new FakeTradeSource();
+        trades.Trades.AddRange(
+        [
+            new Kalshi.Models.Trade("rec-1", "E-1", Core.Money.Dollars.Parse("0.40"), Core.Money.Dollars.Parse("0.60"), Core.Money.Contracts.Parse("2.00"), new DateTimeOffset(gapStart.AddMinutes(1)), "yes"),
+            new Kalshi.Models.Trade("rec-2", "E-2", Core.Money.Dollars.Parse("0.30"), Core.Money.Dollars.Parse("0.70"), Core.Money.Contracts.Parse("1.00"), new DateTimeOffset(gapStart.AddMinutes(2)), "no"),
+            new Kalshi.Models.Trade("rec-3", "KXMVEX-1", Core.Money.Dollars.Parse("0.30"), Core.Money.Dollars.Parse("0.70"), Core.Money.Contracts.Parse("1.00"), new DateTimeOffset(gapStart.AddMinutes(2)), "no"),
+        ]);
+        var source = new ScriptedSource(_ => Task.FromResult<IStreamSession>(new ScriptedSession()));
+        using var stop = new CancellationTokenSource();
+
+        var run = IngestComposition.RunAsync(
+            Options(),
+            settings,
+            NullLoggerFactory.Instance,
+            Overrides(source, trades, new KalTerm.Ingest.Backfill.BackfillOptions { Settle = TimeSpan.Zero, PageDelay = TimeSpan.Zero }),
+            stop.Token);
+        await Wait.UntilAsync(() => ScalarAsync<int>("SELECT COUNT(*) FROM dbo.ingest_gap WHERE backfill_status = 'done'").GetAwaiter().GetResult() >= 1, "the gap to be recovered");
+        await stop.CancelAsync();
+        await run;
+
+        Assert.Equal(["rec-1", "rec-2"], await TradeIdsAsync());
+        Assert.Equal(3, await ScalarAsync<int>("SELECT backfill_found FROM dbo.ingest_gap WHERE kind = 'ingest_down' AND detail = 'test gap'"));
+        Assert.Equal(2, await ScalarAsync<int>("SELECT backfill_added FROM dbo.ingest_gap WHERE kind = 'ingest_down' AND detail = 'test gap'"));
+    }
+
+    private async Task<List<string>> TradeIdsAsync()
+    {
+        await using var connection = await Source().OpenAsync();
+        await using var command = new SqlCommand("SELECT trade_id FROM dbo.trade ORDER BY trade_id", connection);
+        await using var reader = await command.ExecuteReaderAsync();
+        var ids = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            ids.Add(reader.GetString(0));
+        }
+
+        return ids;
     }
 }

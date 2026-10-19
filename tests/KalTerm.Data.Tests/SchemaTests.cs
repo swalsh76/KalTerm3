@@ -31,7 +31,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
         var journal = await db.ScalarAsync<int>("SELECT COUNT(*) FROM dbo.SchemaVersions");
 
         Assert.Empty(again);
-        Assert.Equal(2, journal);
+        Assert.Equal(3, journal);
     }
 
     [Theory]

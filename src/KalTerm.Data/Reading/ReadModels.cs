@@ -38,7 +38,22 @@ public sealed record StoredTick(
 public sealed record StoredTrade(DateTime Ts, string TradeId, long YesPriceE6, long NoPriceE6, long CountE2, byte TakerSide, bool IsBlock);
 
 /// <summary>A gap in the stream data.</summary>
-public sealed record StoredGap(long Id, string Kind, DateTime StartedAt, DateTime? EndedAt, string? Detail);
+public sealed record StoredGap(
+    long Id,
+    string Kind,
+    DateTime StartedAt,
+    DateTime? EndedAt,
+    string? Detail,
+    string BackfillStatus = "pending",
+    int? BackfillFound = null,
+    int? BackfillAdded = null,
+    DateTime? BackfillAt = null,
+    string? BackfillNote = null);
+
+/// <summary>How many gaps are waiting for, or have failed, their trade backfill.</summary>
+/// <param name="Pending">Pending or running.</param>
+/// <param name="Failed">Out of attempts.</param>
+public sealed record BackfillCounts(int Pending, int Failed);
 
 /// <summary>Where to resume a market listing: after this ticker.</summary>
 /// <param name="Ticker">The last ticker of the previous page.</param>
@@ -81,6 +96,7 @@ public sealed record MarketFilter(string? Status = null, string? EventTicker = n
 /// <param name="DataUsedBytes">Space holding data inside the file; <see langword="null"/> when not read.</param>
 /// <param name="OldestDataDay">The storage governor's last record of the oldest raw day (<c>yyyy-MM-dd</c> or <c>none</c>); <see langword="null"/> if it never ran.</param>
 /// <param name="GovernorLast">The storage governor's last check; <see langword="null"/> if it never ran.</param>
+/// <param name="Backfill">Gaps waiting for or failing their trade backfill; <see langword="null"/> when the database predates schema v3.</param>
 public sealed record StatusSnapshot(
     IngestStateEntry? Run,
     DateTime? LastTickerAt,
@@ -93,7 +109,8 @@ public sealed record StatusSnapshot(
     BookStatus? Books = null,
     long? DataUsedBytes = null,
     string? OldestDataDay = null,
-    IngestStateEntry? GovernorLast = null);
+    IngestStateEntry? GovernorLast = null,
+    BackfillCounts? Backfill = null);
 
 /// <summary>One market's published order book (a row of <c>dbo.orderbook_state</c>), levels best first.</summary>
 /// <param name="Ticker">The market.</param>

@@ -57,10 +57,10 @@ public class ContractTests
     [Fact]
     public void AGapAndItsPage()
     {
-        var gap = new GapDto(7, "ingest_down", "2026-10-19T04:33:49.000000+00:00", "2026-10-19T04:40:46.000000+00:00", "the previous run stopped cleanly");
+        var gap = new GapDto(7, "ingest_down", "2026-10-19T04:33:49.000000+00:00", "2026-10-19T04:40:46.000000+00:00", "the previous run stopped cleanly", new BackfillDto("done", 120, 7, "2026-10-19T04:41:30.000000+00:00", "window recovered"));
 
-        Pin(gap, """{"id":7,"kind":"ingest_down","from":"2026-10-19T04:33:49.000000+00:00","to":"2026-10-19T04:40:46.000000+00:00","detail":"the previous run stopped cleanly"}""");
-        Pin(new GapPage([gap with { To = null, Detail = null }]), """{"gaps":[{"id":7,"kind":"ingest_down","from":"2026-10-19T04:33:49.000000+00:00","to":null,"detail":null}]}""");
+        Pin(gap, """{"id":7,"kind":"ingest_down","from":"2026-10-19T04:33:49.000000+00:00","to":"2026-10-19T04:40:46.000000+00:00","detail":"the previous run stopped cleanly","backfill":{"status":"done","found":120,"added":7,"at":"2026-10-19T04:41:30.000000+00:00","note":"window recovered"}}""");
+        Pin(new GapPage([gap with { To = null, Detail = null }]), """{"gaps":[{"id":7,"kind":"ingest_down","from":"2026-10-19T04:33:49.000000+00:00","to":null,"detail":null,"backfill":{"status":"done","found":120,"added":7,"at":"2026-10-19T04:41:30.000000+00:00","note":"window recovered"}}]}""");
     }
 
     [Fact]
@@ -73,12 +73,12 @@ public class ContractTests
             new StreamsDto(new StreamDto("2026-10-18T22:53:12.500000+00:00", 1), new StreamDto(null, null)),
             new StorageDto(142_606_336, 107_374_182_400, 988_000_000_000, 120_000_000, 0, "2026-10-17", "ok used=0% dropped=", 12),
             new Dictionary<string, long> { ["active"] = 120146, ["unlisted"] = 342 },
-            new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "ticker data in a gap is not recoverable; trades are backfilled"),
+            new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "ticker data in a gap is not recoverable; trades are backfilled", 1, 0),
             new BooksStatusDto(3, 1, 0, 4));
 
         Pin(
             status,
-            """{"time":"2026-10-18T22:53:13.000000+00:00","problems":["ingest heartbeat is 95 s old"],"ingest":{"state":"running","last_heartbeat":"2026-10-18T22:51:38.000000+00:00","heartbeat_age_seconds":95},"streams":{"ticker":{"last_time":"2026-10-18T22:53:12.500000+00:00","age_seconds":1},"trade":{"last_time":null,"age_seconds":null}},"storage":{"data_file_bytes":142606336,"max_bytes":107374182400,"disk_free_bytes":988000000000,"used_bytes":120000000,"used_percent":0,"oldest_data_day":"2026-10-17","governor_last":"ok used=0% dropped=","governor_age_seconds":12},"markets":{"active":120146,"unlisted":342},"gaps":{"window_hours":24,"count":2,"by_kind":{"ingest_down":2},"note":"ticker data in a gap is not recoverable; trades are backfilled"},"books":{"watched":3,"stale":1,"approximate":0,"published_age_seconds":4}}""");
+            """{"time":"2026-10-18T22:53:13.000000+00:00","problems":["ingest heartbeat is 95 s old"],"ingest":{"state":"running","last_heartbeat":"2026-10-18T22:51:38.000000+00:00","heartbeat_age_seconds":95},"streams":{"ticker":{"last_time":"2026-10-18T22:53:12.500000+00:00","age_seconds":1},"trade":{"last_time":null,"age_seconds":null}},"storage":{"data_file_bytes":142606336,"max_bytes":107374182400,"disk_free_bytes":988000000000,"used_bytes":120000000,"used_percent":0,"oldest_data_day":"2026-10-17","governor_last":"ok used=0% dropped=","governor_age_seconds":12},"markets":{"active":120146,"unlisted":342},"gaps":{"window_hours":24,"count":2,"by_kind":{"ingest_down":2},"note":"ticker data in a gap is not recoverable; trades are backfilled","backfill_pending":1,"backfill_failed":0},"books":{"watched":3,"stale":1,"approximate":0,"published_age_seconds":4}}""");
     }
 
     [Fact]

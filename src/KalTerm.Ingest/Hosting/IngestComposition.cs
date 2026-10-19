@@ -5,6 +5,7 @@ using KalTerm.Data.Governor;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
+using KalTerm.Ingest.Backfill;
 using KalTerm.Ingest.Books;
 using KalTerm.Kalshi.Auth;
 using KalTerm.Kalshi.Configuration;
@@ -29,7 +30,9 @@ internal sealed record IngestOverrides(
     IngestRunnerOptions? Runner = null,
     TimeProvider? Time = null,
     IOrderBookRest? OrderBookRest = null,
-    OrderBookKeeperOptions? Keeper = null);
+    OrderBookKeeperOptions? Keeper = null,
+    ITradeSource? Trades = null,
+    BackfillOptions? Backfill = null);
 
 /// <summary>Builds the real ingest process from its settings and runs it: database ready, then the <see cref="IngestRunner"/> over real storage and the Kalshi feed.</summary>
 public static class IngestComposition
@@ -67,7 +70,7 @@ public static class IngestComposition
             var listOpen = overrides?.ListOpenMarkets;
             var listUpdated = overrides?.ListUpdatedSince;
             var keepBooks = options.WatchList.Length > 0;
-            if (listOpen is null || listUpdated is null || (keepBooks && overrides?.OrderBookRest is null))
+            if (listOpen is null || listUpdated is null || (keepBooks && overrides?.OrderBookRest is null) || (options.BackfillEnabled && overrides?.Trades is null))
             {
                 rest = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer, Logger = loggerFactory.CreateLogger<KalshiRestClient>() });
                 var client = rest;
@@ -88,13 +91,17 @@ public static class IngestComposition
 
             var state = new IngestStateStore(data);
             var writerLogger = loggerFactory.CreateLogger(typeof(BulkWriter<>).Namespace!);
+            var tradeWriter = Writers.Trade(data, null, time, writerLogger);
+            var backfiller = options.BackfillEnabled
+                ? new TradeBackfiller(new BackfillStore(data), overrides?.Trades ?? new RestTradeSource(rest!), tradeWriter, ids, overrides?.Backfill, time, loggerFactory.CreateLogger<TradeBackfiller>())
+                : null;
             var runner = new IngestRunner(
                 store,
                 ids,
                 new MarketDiscovery(store, ids, listOpen, time, loggerFactory.CreateLogger<MarketDiscovery>(), listUpdatedSince: listUpdated),
                 source,
                 Writers.Ticker(data, null, time, writerLogger),
-                Writers.Trade(data, null, time, writerLogger),
+                tradeWriter,
                 new GapStore(data),
                 state,
                 new PartitionMaintenance(data),
@@ -103,7 +110,8 @@ public static class IngestComposition
                 time,
                 loggerFactory.CreateLogger<IngestRunner>(),
                 keeper,
-                new StorageGovernor(new GovernorStore(data), state, new GovernorOptions { RawRetentionDays = options.RetentionDays }, time, loggerFactory.CreateLogger<StorageGovernor>()));
+                new StorageGovernor(new GovernorStore(data), state, new GovernorOptions { RawRetentionDays = options.RetentionDays }, time, loggerFactory.CreateLogger<StorageGovernor>()),
+                backfiller);
             try
             {
                 await runner.RunAsync(cancellationToken).ConfigureAwait(false);

@@ -567,4 +567,32 @@ public sealed class CommandTests : IDisposable
         await second.RunAsync("status");
         Assert.Contains("oldest raw data -  |  governor has not run", second.Output, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task GapsShowHowTheirTradesWereRecovered()
+    {
+        _cli.Api.Gaps = new GapPage(
+        [
+            new GapDto(4, "ingest_down", "2026-10-18T22:50:00.000000+00:00", "2026-10-18T22:55:00.000000+00:00", null, new BackfillDto("done", 12_345, 120, "2026-10-18T22:56:00.000000+00:00", "n")),
+            new GapDto(3, "ws_reconnected", "2026-10-18T22:40:00.000000+00:00", "2026-10-18T22:41:00.000000+00:00", null, new BackfillDto("failed", null, null, null, "REST was down")),
+            new GapDto(2, "ws_reconnected", "2026-10-18T22:30:00.000000+00:00", "2026-10-18T22:31:00.000000+00:00", null, new BackfillDto("pending", null, null, null, null)),
+            new GapDto(1, "ws_lost", "2026-10-18T22:20:00.000000+00:00", "2026-10-18T22:21:00.000000+00:00", null, null),
+        ]);
+
+        await _cli.RunAsync("gaps");
+
+        Assert.Contains("recovered 120 of 12,345", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("FAILED", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("pending", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheStatusGapsLineCountsWaitingAndFailedBackfills()
+    {
+        _cli.Api.Status = Status() with { Gaps = new GapSummaryDto(24, 2, new Dictionary<string, long> { ["ingest_down"] = 2 }, "note", 2, 1) };
+
+        await _cli.RunAsync("status");
+
+        Assert.Contains("trade backfill: 2 waiting, 1 failed", _cli.Output, StringComparison.Ordinal);
+    }
 }

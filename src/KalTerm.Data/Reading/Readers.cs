@@ -30,6 +30,9 @@ internal static class ReaderSupport
     /// <summary>SQL Server's error for a table that does not exist.</summary>
     public const int InvalidObjectName = 208;
 
+    /// <summary>SQL Server's error for a column that does not exist.</summary>
+    public const int InvalidColumnName = 207;
+
     /// <summary>A varchar parameter. Dapper sends strings as nvarchar, which turns a varchar comparison into a scan; this keeps it a seek.</summary>
     public static DbString Ansi(string? value, int length) => new() { Value = value, IsAnsi = true, Length = length, IsFixedLength = false };
 
@@ -224,7 +227,9 @@ public sealed class GapReader(DataSource source, ReaderOptions? options = null) 
         await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
         return (await connection.QueryAsync<StoredGap>(ReaderSupport.Command(
             """
-            SELECT TOP (@limit) gap_id AS Id, kind AS Kind, started_at AS StartedAt, ended_at AS EndedAt, detail AS Detail FROM dbo.ingest_gap
+            SELECT TOP (@limit) gap_id AS Id, kind AS Kind, started_at AS StartedAt, ended_at AS EndedAt, detail AS Detail,
+                   backfill_status AS BackfillStatus, backfill_found AS BackfillFound, backfill_added AS BackfillAdded, backfill_at AS BackfillAt, backfill_note AS BackfillNote
+            FROM dbo.ingest_gap
             WHERE started_at < @end AND (ended_at IS NULL OR ended_at >= @start)
             ORDER BY started_at DESC, gap_id DESC
             """,
@@ -303,7 +308,8 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
             await BooksAsync(connection, cancellationToken).ConfigureAwait(false),
             file.Used,
             oldestDay?.Value,
-            governorLast is { } last ? new IngestStateEntry(last.Value, DateTime.SpecifyKind(last.UpdatedAt, DateTimeKind.Utc)) : null);
+            governorLast is { } last ? new IngestStateEntry(last.Value, DateTime.SpecifyKind(last.UpdatedAt, DateTimeKind.Utc)) : null,
+            await BackfillAsync(connection, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task<DateTime?> NewestAsync(IDbConnection connection, string table, DateTime now, CancellationToken cancellationToken)
@@ -322,6 +328,27 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
         }
 
         return null;
+    }
+
+    private async Task<BackfillCounts?> BackfillAsync(IDbConnection connection, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var counts = await connection.QuerySingleAsync<(int Pending, int Failed)>(ReaderSupport.Command(
+                """
+                SELECT ISNULL(SUM(CASE WHEN backfill_status IN ('pending', 'running') AND ended_at IS NOT NULL THEN 1 ELSE 0 END), 0) AS Pending,
+                       ISNULL(SUM(CASE WHEN backfill_status = 'failed' THEN 1 ELSE 0 END), 0) AS Failed
+                FROM dbo.ingest_gap
+                """,
+                null,
+                _options,
+                cancellationToken)).ConfigureAwait(false);
+            return new BackfillCounts(counts.Pending, counts.Failed);
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == ReaderSupport.InvalidColumnName)
+        {
+            return null;   // a database from before schema v3
+        }
     }
 
     private async Task<BookStatus?> BooksAsync(IDbConnection connection, CancellationToken cancellationToken)

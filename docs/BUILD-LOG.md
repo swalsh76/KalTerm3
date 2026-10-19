@@ -1190,3 +1190,29 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - Tests: policy against a fake store and clock (retention window, once a day, time of day, floors, shedding order, failures, cancellation); the store on real
   partitions on kaldb (oldest day, boundaries, truncation, refusal of a day without a boundary); runner and composition. Data, Ingest and Api suites pass on kaldb.
 - Not rolled out: kaldb still runs host-d475ac4. The rollout is one ingest restart and an API restart, at the owner's go-ahead.
+
+### 5.11 Slice 4.2: trade backfill (2026-10-19)
+
+- Owner approved the window rules (10 s padding, 6 h cap taking the most recent part, 15-minute slices, wait 30 s after a gap closes), backfilling the gaps already
+  recorded by the soak, and batching the rollout with 4.1 (one ingest restart). Ticker updates and order books in a gap are never recovered.
+- Migration 0003 adds `backfill_status` (pending, running, done, failed, skipped), `backfill_attempts`, `backfill_found`, `backfill_added`, `backfill_at` and
+  `backfill_note` to `ingest_gap`; older rows become `pending`, so the gaps recorded so far are recovered the first time the worker runs.
+- `TradeBackfiller` (`KalTerm.Ingest.Backfill`) runs in its own loop in the ingest host (a long gap takes minutes and the maintenance loop must keep the heartbeat). It claims
+  the oldest closed, settled, pending gap (`BackfillStore.ClaimNextAsync`, one UPDATE with READPAST, so a second process cannot take the same gap; a gap left `running` by a dead
+  process is taken over after 10 minutes). Per 15-minute slice it reads `GET /markets/trades` (`RestTradeSource`, whole-second `min_ts`/`max_ts`) and the trades already stored
+  for the slice plus 5 s; a trade is written only if its (market, trade id) is not stored and was not returned in the previous slice, so re-running a window cannot duplicate a
+  row (the reference's worst bug). Trades go through the normal trade writer; combo trades are skipped as in the stream, unknown tickers are counted. It pauses 100 ms after every
+  1,000 trades so discovery keeps its share of the one rate limiter. Three attempts, a minute longer between each, then `failed`.
+- Reporting: `GapDto.backfill` (status, found, added, at, note), `GapSummaryDto.backfill_pending` and `backfill_failed`; a failed backfill is a status problem; `kterm gaps` has a
+  Trades column and `kterm status` counts waiting and failed backfills. `Ingest:BackfillEnabled` (default true) switches it off.
+- Rollout order matters: the API reads the new columns, so ingest (which applies migration 0003 at start) must be restarted before the API. A new API against an unmigrated
+  database would fail `/v1/gaps`.
+- Tests: the backfiller against a fake store, source and writer (padding, slicing, caps, duplicates in storage and within and between slices, writer full, retries, failures,
+  cancellation); the store on real tables on kaldb (claim order, settle, open and market-specific gaps, retry delays, takeover, completion); the readers; an end-to-end
+  composition test (a pending gap, a fake REST source: two rows written, the combo skipped, the gap `done`); the runner loop. Data, Ingest and Api suites pass on kaldb.
+- **Live check (owner opted in, 2026-10-19, production, GET only, public trade data) found a bug in the first version.** `LiveTradeBackfillTests` reads a three-minute window that ended
+  ten minutes ago, whole and as two slices. The first run: 27,808 trades whole but 15,223 + 12,430 in two slices; a second run with a per-second breakdown showed every missing trade
+  was in the last second before the cut. **Kalshi's `max_ts` is exclusive (and `min_ts` inclusive), and trade times carry milliseconds** (the filter is whole seconds). The first
+  version cut slices at `end - 1 s`, which would have lost a second of trades at every 15-minute boundary. Fixed: a slice is `[start, end)` with `max_ts = end`, the last slice
+  reads one second past the padded end, `ITradeSource` documents the exclusive end, and the unit tests pin the ranges. Final run: 28,982 whole = 14,626 + 14,356 in two slices,
+  no repeated id, every trade inside the window, yes + no = $1 on every trade (about 135 requests across the three runs).

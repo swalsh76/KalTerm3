@@ -87,7 +87,16 @@ public sealed record TradePage(IReadOnlyList<TradeDto> Trades, string? NextCurso
 /// <param name="From">When the missing period began.</param>
 /// <param name="To">When it ended; <see langword="null"/> if it has not.</param>
 /// <param name="Detail">What the ingest process noted.</param>
-public sealed record GapDto(long Id, string Kind, string From, string? To, string? Detail);
+/// <param name="Backfill">How the trades of the gap are being recovered from REST. Ticker updates and order books are never recovered.</param>
+public sealed record GapDto(long Id, string Kind, string From, string? To, string? Detail, BackfillDto? Backfill = null);
+
+/// <summary>The recovery of one gap's trades.</summary>
+/// <param name="Status"><c>pending</c>, <c>running</c>, <c>done</c>, <c>failed</c> or <c>skipped</c>.</param>
+/// <param name="Found">Trades REST returned for the window.</param>
+/// <param name="Added">Of those, trades that were missing and were written.</param>
+/// <param name="At">When the last attempt started or finished.</param>
+/// <param name="Note">What happened, for example the window recovered or why it failed.</param>
+public sealed record BackfillDto(string Status, int? Found, int? Added, string? At, string? Note);
 
 /// <summary>Gaps, newest first.</summary>
 /// <param name="Gaps">The gaps.</param>
@@ -133,7 +142,9 @@ public sealed record StorageDto(
 /// <param name="Count">How many gaps started in the window.</param>
 /// <param name="ByKind">Gap counts by kind.</param>
 /// <param name="Note">What a gap means for the data.</param>
-public sealed record GapSummaryDto(int WindowHours, long Count, IReadOnlyDictionary<string, long> ByKind, string Note);
+/// <param name="BackfillPending">Gaps (of any age) whose trades are still to be recovered, including one in progress.</param>
+/// <param name="BackfillFailed">Gaps (of any age) whose trades could not be recovered after every attempt.</param>
+public sealed record GapSummaryDto(int WindowHours, long Count, IReadOnlyDictionary<string, long> ByKind, string Note, int BackfillPending = 0, int BackfillFailed = 0);
 
 /// <summary>The health report. Anything that needs attention is in <see cref="Problems"/>; an empty list means healthy.</summary>
 /// <param name="Time">When the report was made.</param>

@@ -91,6 +91,12 @@ public static class Mapping
     public static GapDto ToDto(StoredGap gap)
     {
         ArgumentNullException.ThrowIfNull(gap);
-        return new GapDto(gap.Id, gap.Kind, ApiFormat.Moment(gap.StartedAt), ApiFormat.Moment(gap.EndedAt), gap.Detail);
+        return new GapDto(
+            gap.Id,
+            gap.Kind,
+            ApiFormat.Moment(gap.StartedAt),
+            ApiFormat.Moment(gap.EndedAt),
+            gap.Detail,
+            new BackfillDto(gap.BackfillStatus, gap.BackfillFound, gap.BackfillAdded, ApiFormat.Moment(gap.BackfillAt), gap.BackfillNote));
     }
 }

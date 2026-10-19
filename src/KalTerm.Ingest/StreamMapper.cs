@@ -67,6 +67,24 @@ public static class StreamMapper
             message.IsBlockTrade);
     }
 
+    /// <summary>Maps a trade read from REST (whole-second time) onto its stored row.</summary>
+    /// <param name="trade">The REST trade.</param>
+    /// <param name="marketId">The market's id.</param>
+    /// <returns>The row.</returns>
+    public static TradeRow ToRow(Trade trade, int marketId)
+    {
+        ArgumentNullException.ThrowIfNull(trade);
+        return new TradeRow(
+            trade.CreatedTime.UtcDateTime,
+            marketId,
+            trade.TradeId,
+            trade.YesPriceDollars.Micros,
+            trade.NoPriceDollars.Micros,
+            trade.CountFp.Hundredths,
+            TakerSideOf(trade.TakerSide),
+            trade.IsBlockTrade);
+    }
+
     private static TakerSide TakerSideOf(string? side) => side?.ToUpperInvariant() switch
     {
         "YES" => TakerSide.Yes,
