@@ -247,4 +247,32 @@ public class StreamIngestorTests
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() => Ingestor().RunAsync(null!, TestContext.Current.CancellationToken));
     }
+
+    [Fact]
+    public async Task AGapNotedBetweenStreamsIsStoredByAFlush()
+    {
+        var ingestor = Ingestor();
+
+        ingestor.NoteGap(GapKinds.WsDown, Start.UtcDateTime, Start.AddSeconds(5).UtcDateTime, "no stream for 5 s");
+        Assert.Empty(_gaps.Stored);
+        await ingestor.FlushAsync(TestContext.Current.CancellationToken);
+
+        var gap = Assert.Single(_gaps.Stored);
+        Assert.Equal((GapKinds.WsDown, Start.UtcDateTime, Start.AddSeconds(5).UtcDateTime), (gap.Kind, gap.StartedAt, gap.EndedAt));
+        Assert.Equal(0, ingestor.Stats.GapsPending);
+    }
+
+    [Fact]
+    public async Task ItCanRunForALaterStreamAndCountersAndTheLastDataCarryOver()
+    {
+        var ingestor = Ingestor();
+        var lastData = Start.AddSeconds(1);
+
+        await ingestor.RunAsync(Stream([Ticker("A-1", lastData)]), TestContext.Current.CancellationToken);
+        await ingestor.RunAsync(Stream([Ticker("B-2", Start.AddSeconds(9)), Reconnected(Start.AddSeconds(30))]), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, ingestor.Stats.Tickers);
+        var gap = Assert.Single(_gaps.Stored);
+        Assert.Equal(Start.AddSeconds(9).UtcDateTime, gap.StartedAt);
+    }
 }

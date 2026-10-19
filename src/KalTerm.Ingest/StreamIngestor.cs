@@ -47,7 +47,8 @@ public sealed record StreamIngestorStats(
 
 /// <summary>
 /// Turns the WebSocket message stream into rows for the writers and records every gap in the data: a replaced link, a link lost for good,
-/// and rows a writer had to drop. Gaps are kept and retried while the database is unavailable. Run it once per stream.
+/// and rows a writer had to drop. Gaps are kept and retried while the database is unavailable. It can be run again for a later stream: counters,
+/// the last data time and any waiting gaps carry over.
 /// </summary>
 public sealed partial class StreamIngestor
 {
@@ -138,7 +139,7 @@ public sealed partial class StreamIngestor
                 Handle(message);
                 if (_time.GetUtcNow() >= _nextFlush)
                 {
-                    await FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await FlushCoreAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -151,9 +152,21 @@ public sealed partial class StreamIngestor
         finally
         {
             using var timeout = new CancellationTokenSource(_options.FinalFlushTimeout, _time);
-            await FlushAsync(timeout.Token).ConfigureAwait(false);
+            await FlushCoreAsync(timeout.Token).ConfigureAwait(false);
         }
     }
+
+    /// <summary>Records a gap that happened between streams. Call it only while <see cref="RunAsync"/> is not running; the next flush stores it.</summary>
+    /// <param name="kind">The gap kind, see <see cref="GapKinds"/>.</param>
+    /// <param name="from">When the gap began (UTC).</param>
+    /// <param name="to">When it ended (UTC).</param>
+    /// <param name="detail">Free text for the operator.</param>
+    public void NoteGap(string kind, DateTime from, DateTime to, string detail) => AddGap(new GapRecord(kind, from, to, detail));
+
+    /// <summary>Collects the writers' dropped ranges and stores the waiting gaps; a failed store leaves them for the next flush. Call it only while <see cref="RunAsync"/> is not running.</summary>
+    /// <param name="cancellationToken">Cancels the store.</param>
+    /// <returns>A task that completes when the flush has been attempted.</returns>
+    public Task FlushAsync(CancellationToken cancellationToken = default) => FlushCoreAsync(cancellationToken);
 
     private static bool IsPowerOfTen(long n)
     {
@@ -240,8 +253,7 @@ public sealed partial class StreamIngestor
         Volatile.Write(ref _pendingCount, _pending.Count);
     }
 
-    /// <summary>Collects the writers' dropped ranges and stores the waiting gaps; a failed store leaves them for the next flush.</summary>
-    private async Task FlushAsync(CancellationToken cancellationToken)
+    private async Task FlushCoreAsync(CancellationToken cancellationToken)
     {
         _nextFlush = _time.GetUtcNow() + _options.FlushInterval;
         AddDropped("ticker", _tickers.TakeDroppedRange());

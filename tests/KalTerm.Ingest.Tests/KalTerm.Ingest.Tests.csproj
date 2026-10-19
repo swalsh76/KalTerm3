@@ -28,5 +28,8 @@
   <ItemGroup>
     <!-- The live tests share the Kalshi test project's credential loader instead of copying it. -->
     <Compile Include="..\KalTerm.Kalshi.Tests\Live\LiveSupport.cs" Link="Live\LiveSupport.cs" />
+    <!-- The stream source test reuses the WebSocket test project's scripted connection and its test key. -->
+    <Compile Include="..\KalTerm.Kalshi.Tests\WebSocket\FakeWs.cs" Link="Shared\FakeWs.cs" />
+    <Content Include="..\KalTerm.Kalshi.Tests\Vectors\ed25519.json" Link="Vectors\ed25519.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
