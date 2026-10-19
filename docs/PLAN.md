@@ -166,6 +166,7 @@ Decisions (approved by the owner 2026-10-18; D-numbers are those of the M3 propo
 | D6 | An in-memory order book builder with sequence-gap detection and a `book` CLI view for a configured watch list. Deltas are not persisted. |
 | D7 | M3 logs gaps (`ingest_gap`); M4 backfills trades. |
 | D8 | Market scope: open, non-combo markets only. Combo tickers (prefix `KXMVE`) are skipped and counted. |
+| D9 | Catalog refresh (owner, 2026-10-18): every 5 minutes on the clock, except every 30 seconds in the last 5 and first 5 minutes of each UTC hour (`RefreshSchedule`). Markets that drop out of the open list are marked `unlisted` after a complete, non-empty listing; a failed or empty listing unlists nothing. |
 
 Projects: `KalTerm.Data` (schema, migrations, writers, readers), `KalTerm.Ingest` (discovery, stream ingest, host),
 `KalTerm.Api`, `KalTerm.Contracts` (models crossing the API), `KalTerm.Cli`. Schema v1 tables: `market`, `ticker`, `trade`,
@@ -182,7 +183,7 @@ analytics (M5 onward), combo markets.
 | 3.0 | Prerequisites: CI probe of the runner's SQL Server (D4), this plan | done |
 | 3.1 | `KalTerm.Data`: schema v1, DbUp migrations, provisioning, integration tests on LocalDB | done (BUILD-LOG 5.1) |
 | 3.2 | Write path: bulk writers, retry policy, buffer and stall behavior | done (BUILD-LOG 5.2) |
-| 3.3 | Market discovery (REST, open non-combo markets, `market` upserts) | |
+| 3.3 | Market discovery (REST, open non-combo markets, `market` upserts) and the refresh schedule | done (BUILD-LOG 5.3) |
 | 3.4 | Stream ingest (WebSocket to writers, gap log) and the host | |
 | 3.5 | `KalTerm.Api` and `KalTerm.Contracts` (loopback, read endpoints) | |
 | 3.6 | `KalTerm.Cli` (market view, status including downtime and gaps) | |

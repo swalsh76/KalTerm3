@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>KalTerm.Ingest.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.MTP" Condition="'$(NoCoverage)' != 'true'">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KalTerm.Ingest\KalTerm.Ingest.csproj" />
+    <ProjectReference Include="..\KalTerm.TestSupport\KalTerm.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="System.Globalization" />
+    <Using Include="KalTerm.TestSupport" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The live tests share the Kalshi test project's credential loader instead of copying it. -->
+    <Compile Include="..\KalTerm.Kalshi.Tests\Live\LiveSupport.cs" Link="Live\LiveSupport.cs" />
+  </ItemGroup>
+</Project>

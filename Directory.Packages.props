@@ -13,6 +13,8 @@
     <PackageVersion Include="NSec.Cryptography" Version="26.4.0" />
     <!-- Transitive via Microsoft.Data.SqlClient 7.1.1, which asks for 9.0.18 (known high-severity advisory); pinned to a patched version. -->
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.2" />
+    <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.2" />
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.2" />
   </ItemGroup>
 </Project>

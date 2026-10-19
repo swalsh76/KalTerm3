@@ -6,5 +6,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" />
+    <!-- Shared database fixture: it skips or fails through xUnit. The test projects bring the runner. -->
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KalTerm.Data\KalTerm.Data.csproj" />
   </ItemGroup>
 </Project>

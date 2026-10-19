@@ -922,3 +922,39 @@ Limits: 30 s runs on an empty table with one writer; compression, log growth and
 `check-coverage.ps1 -AssemblyMinimum`). `KalTerm.Data` was at 94.1% on CI, so the DbUp log adapter moved to its own internal class (`LoggerUpgradeLog`) and is tested at every
 level, which also covers the generated logger methods. What remains uncovered is deliberate: the provisioner's wait for a database that is not yet online (it needs a database stuck offline
 for up to 60 s), one loop-exit line in the writer, and the null-return branch of the settings read.
+
+### 5.3 Slice 3.3: market discovery (2026-10-18)
+
+**Built.**
+- `KalTerm.Data.Markets`: `MarketStore` upserts a batch with one round trip (bulk copy into a temporary table, then one `MERGE ... HOLDLOCK` that returns each ticker's id and
+  whether it was inserted), in one transaction; `market_id` never changes, `first_seen_at` is set once, `last_seen_at` moves. A ticker repeated in a batch counts once (last wins);
+  sub-titles are cut to the column's 256 characters rather than refused. `MarkUnlistedAsync` sets `status = 'unlisted'` on markets that are still tradable (`active`, `open`) and were
+  not seen in the pass. `MarketIdMap` is the in-memory ticker-to-id lookup the writers will use. `IMarketStore` lets the logic be tested without a database.
+- `KalshiRestClient.IterateOpenMarketsAsync`: `status=open`, `mve_filter=exclude`, 1,000 per page (on the client's approved-method list, tested).
+- `KalTerm.Ingest` (new project): `MarketDiscovery` runs one pass (list, skip and count any combo that slips through, upsert page by page, then unlist), `MarketMapper`, and
+  `RefreshSchedule`, the owner's cadence rule as a pure function: every 5 minutes on the clock, but every 30 s from :55:00 to :04:59 of each UTC hour (30 ticks an hour). The scheduler
+  loop that uses it is slice 3.4.
+- Safety rules, each tested: a listing that fails midway unlists nothing (what was stored stays); an empty listing unlists nothing (more likely a glitch than an exchange with no
+  open markets); unlisting only touches markets last seen before this pass started; an unlisted market that is listed again becomes tradable again.
+- `DatabaseFixture` and `Requirement` moved from `KalTerm.Data.Tests` to `KalTerm.TestSupport` (with xunit assert/core references and a reference to `KalTerm.Data`) so
+  `KalTerm.Ingest.Tests` shares them.
+
+**Verified on `kaldb`.** Data tests 107 of 107 and Ingest tests 46 of 46 over shared memory; no test database left behind.
+
+**Live sizing (production, read-only key, GET only, public data; 2026-10-18).** `LiveDiscoveryTests` listed the open non-combo markets once and ran the real discovery over them
+against an in-memory store (no database):
+- **121,880 open markets** (0 combos slipped through the filter), all with status `active`, in **12,847 events**; about 122 page requests, **32.0 s** to list them; a second pass (24.3 s)
+  saw 121,898, so about 18 markets appeared in the minute between.
+- Longest ticker 48 characters, event ticker 41, sub-title 92 (columns allow 128, 128, 256); every market has a close time; the mapping did not throw on any of them.
+
+**Database half of a pass at that size** (`DiscoveryScaleTests`, 122,000 synthetic markets, opt-in `KALTERM_THROUGHPUT=1`, `kaldb`): first insert pass 6.4 s, an update pass with nothing
+changed 5.8 s, a pass with 100 gone and 100 new 5.8 s.
+
+**What this means for the schedule (to decide).** One pass costs about 25 to 32 s of Kalshi listing plus about 6 s of database work, sequentially, so roughly 30 to 38 s, and about
+122 requests. The 30-second windows are therefore about one pass long: the loop will run back to back for ten minutes an hour (a missed tick is skipped, never queued), which is a
+sustained 3 to 4 requests a second against Kalshi's read limit and about twice the database work of a 5-minute pass. Options are listed in the 3.3 report; none is built.
+
+**Problems and fixes.**
+- A `Dollars` helper in the test kit shadowed the `Dollars` type in another test file; removed.
+- `MarketDiscovery` now checks the cancellation token itself on every market instead of trusting the source to.
+- Shell heredocs with embedded quotes failed again; files were written with the editor tool.
