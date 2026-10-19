@@ -25,7 +25,8 @@ public sealed record StreamIngestorOptions
 /// <summary>A snapshot of a <see cref="StreamIngestor"/>.</summary>
 /// <param name="Tickers">Ticker rows handed to the writer.</param>
 /// <param name="Trades">Trade rows handed to the writer.</param>
-/// <param name="UnknownMarkets">Data messages for a market not in the catalog yet (not stored).</param>
+/// <param name="UnknownMarkets">Data messages for a market not in the catalog yet (not stored); combos are counted separately.</param>
+/// <param name="Combos">Data messages for combo (multivariate) markets, skipped by design (D8).</param>
 /// <param name="Malformed">Data messages whose payload could not be read.</param>
 /// <param name="Ignored">Messages of other types (including the sequence-number markers).</param>
 /// <param name="Reconnects">Times the WebSocket client replaced the link.</param>
@@ -37,6 +38,7 @@ public sealed record StreamIngestorStats(
     long Tickers,
     long Trades,
     long UnknownMarkets,
+    long Combos,
     long Malformed,
     long Ignored,
     long Reconnects,
@@ -52,6 +54,9 @@ public sealed record StreamIngestorStats(
 /// </summary>
 public sealed partial class StreamIngestor
 {
+    /// <summary>The ticker prefix of combo (multivariate) markets, which are skipped (decision D8).</summary>
+    public const string ComboPrefix = "KXMVE";
+
     private readonly MarketIdMap _ids;
     private readonly IRowWriter<TickerRow> _tickers;
     private readonly IRowWriter<TradeRow> _trades;
@@ -63,6 +68,7 @@ public sealed partial class StreamIngestor
     private long _tickerRows;
     private long _tradeRows;
     private long _unknown;
+    private long _combos;
     private long _malformed;
     private long _ignored;
     private long _reconnects;
@@ -114,6 +120,7 @@ public sealed partial class StreamIngestor
         Interlocked.Read(ref _tickerRows),
         Interlocked.Read(ref _tradeRows),
         Interlocked.Read(ref _unknown),
+        Interlocked.Read(ref _combos),
         Interlocked.Read(ref _malformed),
         Interlocked.Read(ref _ignored),
         Interlocked.Read(ref _reconnects),
@@ -233,6 +240,13 @@ public sealed partial class StreamIngestor
 
     private void NoteUnknown(string ticker)
     {
+        if (ticker.StartsWith(ComboPrefix, StringComparison.Ordinal))
+        {
+            // Combos are out of scope (D8): the feed carries them for every subscription, so count them quietly.
+            Interlocked.Increment(ref _combos);
+            return;
+        }
+
         var count = Interlocked.Increment(ref _unknown);
         if (IsPowerOfTen(count))
         {

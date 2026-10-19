@@ -1030,3 +1030,19 @@ Smoke run of the executable with no database: it logged "database 'KalTerm' does
 - This workstation has a SQL Server default instance reachable at `lpc:.` after all (the host's smoke run reached it), though no LocalDB; the project still runs database tests on `kaldb`.
 
 **Not done (per the plan): a live run.** Nothing in 3.4 has talked to Kalshi's WebSocket feed yet beyond the earlier live message tests. The optional short production read-only run, and then the soak in 3.8, each need the owner's go-ahead.
+
+#### 5.5.1 Live-style run on `kaldb` (started 2026-10-18 22:22 server time; owner's go-ahead for the production read-only feed, 100 GB database cap, SQL memory cap 20 GB)
+
+**Setup (once).** The read-only key file was copied to `kaldb:C:\KalTerm\secrets\` (readable by SYSTEM and Administrators only; never read or printed), `KALSHI_ENV=production`, `KALSHI_KEY_ID` and `KALSHI_PRIVATE_KEY_PATH` set as machine variables, and the instance's `max server memory` capped at 20,480 MB.
+The ingest runs as the scheduled task `KalTerm-Ingest` (SYSTEM, at boot, restarts 3 times a minute apart on failure, no time limit) from `C:\KalTerm\ingesteleases\<name>`; `release.txt` names the release, `run.ps1` is the wrapper (settings: `lpc:.\KALTERM`, database `KalTerm`, `ProvisionMaxSizeGb=100`; console log to `logs\ingest-<time>.log`, newest 30 kept).
+Tools: `tools/kaldb/deploy-ingest.ps1` (hash-synced release, task, wrapper; `-Restart` is a hard stop and start) and `tools/kaldb/ingest-status.ps1` (read-only status: task, process, last status line, warnings, database size, approximate row counts and rates, gaps, run state).
+
+**Not a blocker.** The soak runs from a pinned release folder; builds, tests and new releases never touch it, and a new release only runs after `-Restart`. Database test suites use databases of their own on the same instance and never touch `KalTerm` (they do share CPU and disk). Monitoring is read-only and on demand, plus an hourly session check that reports only anomalies.
+
+**First findings.**
+- First start: the host created the `KalTerm` database (`MAXSIZE` 100 GB, recovery simple), applied the schema, and discovered 120,367 open non-combo markets, all within about 27 s of starting; the feed was subscribed and streaming straight away.
+- First minutes: about 25,000 ticker rows and 4,000 trade rows a minute stored, 0 dropped, nothing buffered, process about 180 MB.
+- About a third of the feed's messages are for combo markets (`KXMVE...`), which D8 skips. They were counted as "unknown markets" and tripped a warning at every power of ten; they are now counted separately (`combos_skipped`) and quietly.
+- By accident (a bug in the deploy script's `-Restart` switch, fixed) the process was hard-killed and restarted a minute and a half in. That gave the first live proof of the crash path: one `ingest_down` gap, run state back to `running`, ingest resumed.
+
+**Bugs found in the new scripts.** The status script collapsed single-row query results (PowerShell unrolls a one-element array); the deploy script passed `[bool]$Restart` in an argument list, which PowerShell reads as a non-empty string, so it always restarted.

@@ -275,4 +275,18 @@ public class StreamIngestorTests
         var gap = Assert.Single(_gaps.Stored);
         Assert.Equal(Start.AddSeconds(9).UtcDateTime, gap.StartedAt);
     }
+
+    [Fact]
+    public async Task ComboMarketsAreCountedApartFromUnknownMarkets()
+    {
+        var ingestor = Ingestor();
+
+        await ingestor.RunAsync(
+            Stream([Ticker("KXMVECROSSCATEGORY-S2026ABC-X"), Trade("KXMVESPORTSMULTIGAME-S2026DEF-Y"), Ticker("NEW-1"), Ticker("A-1")]),
+            TestContext.Current.CancellationToken);
+
+        var stats = ingestor.Stats;
+        Assert.Equal((2L, 1L, 1L), (stats.Combos, stats.UnknownMarkets, stats.Tickers));
+        Assert.Empty(_trades.Rows);
+    }
 }

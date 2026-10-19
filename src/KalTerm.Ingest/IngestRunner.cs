@@ -372,7 +372,7 @@ public sealed partial class IngestRunner
             {
                 nextStatus = now + _options.StatusInterval;
                 var status = Status;
-                LogStatus(_logger, status.StreamConnected, status.Ingest.Tickers, status.Ingest.Trades, status.Ingest.UnknownMarkets, status.Ingest.Reconnects, status.Tickers.Buffered + status.Trades.Buffered, status.Tickers.Dropped + status.Trades.Dropped, status.Ingest.GapsPending, status.StreamRestarts, status.DiscoveryFailures);
+                LogStatus(_logger, status.StreamConnected, status.Ingest.Tickers, status.Ingest.Trades, status.Ingest.UnknownMarkets, status.Ingest.Combos, status.Ingest.Reconnects, status.Tickers.Buffered + status.Trades.Buffered, status.Tickers.Dropped + status.Trades.Dropped, status.Ingest.GapsPending, status.StreamRestarts, status.DiscoveryFailures);
             }
         }
     }
@@ -438,6 +438,6 @@ public sealed partial class IngestRunner
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "status: connected={Connected} tickers={Tickers} trades={Trades} unknown_markets={Unknown} reconnects={Reconnects} buffered={Buffered} dropped={Dropped} gaps_pending={GapsPending} stream_restarts={Restarts} discovery_failures={DiscoveryFailures}")]
-    private static partial void LogStatus(ILogger logger, bool connected, long tickers, long trades, long unknown, long reconnects, int buffered, long dropped, int gapsPending, long restarts, long discoveryFailures);
+        Message = "status: connected={Connected} tickers={Tickers} trades={Trades} unknown_markets={Unknown} combos_skipped={Combos} reconnects={Reconnects} buffered={Buffered} dropped={Dropped} gaps_pending={GapsPending} stream_restarts={Restarts} discovery_failures={DiscoveryFailures}")]
+    private static partial void LogStatus(ILogger logger, bool connected, long tickers, long trades, long unknown, long combos, long reconnects, int buffered, long dropped, int gapsPending, long restarts, long discoveryFailures);
 }
