@@ -221,6 +221,17 @@ and the API contract tests.
 - Math.NET Numerics / ML.NET for modeling, if analytics deepen.
 - Importing KalshiTerm2 history (28 GB at 2026-10-15).
 - Replication / Always On; Windows containers.
+- Multiple identical servers (OptiPlex 7060 class; 6 cores, one NVMe each). Ideas, none designed or measured, ordered by fit:
+  - Redundant ingest: a second box with its own data-only key and WebSocket fills ticker and order book gaps in the first
+    (merge or dedupe by sequence number). Targets "downtime is lost data".
+  - Restore-verifying standby: a second box restores the latest backup into a new database on a schedule and compares it with
+    the row-count manifest. Doubles as a manual failover.
+  - Ingest/query split: one box writes, another serves the API and analysis from a restored copy, so heavy queries cannot starve
+    the writer or the storage governor.
+  - Power-cut test rig: a spare box for repeated S-1d-style cuts while the primary keeps ingesting.
+  - Independent verification: run the Python KalshiTerm2 reference against the same feed for ongoing differential testing.
+  - Weaker: cold-partition scale-out beyond the 500 GB budget (needs a federation layer); sharding backtests across boxes
+    (only if CPU-bound, SQL and I/O more likely limit); clustering or distributed order-book processing (not worth the cost).
 - Polly (or `Microsoft.Extensions.Http.Resilience`) for retry, circuit breaking and per-client
   policies. Revisit if M3 ingest or M6 trading needs more than the one hand-written read policy.
   The trading client must not retry writes blindly (orders are not idempotent without a client id).
