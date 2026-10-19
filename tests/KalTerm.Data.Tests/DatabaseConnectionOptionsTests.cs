@@ -25,6 +25,14 @@ public class DatabaseConnectionOptionsTests
     }
 
     [Fact]
+    public void LeavesRetriesToTheCaller()
+    {
+        var builder = new SqlConnectionStringBuilder(new DatabaseConnectionOptions().ConnectionString);
+
+        Assert.Equal(0, builder.ConnectRetryCount);
+    }
+
+    [Fact]
     public void MasterConnectionStringTargetsMasterOnTheSameServer()
     {
         var options = new DatabaseConnectionOptions { Server = @"(localdb)\Other", Database = "Mine" };
