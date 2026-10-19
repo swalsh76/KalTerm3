@@ -93,9 +93,27 @@ public sealed partial class SqlBackupDatabase : IBackupDatabase
     public static string? Quote(string? name) => name is not null && NamePattern().IsMatch(name) ? "[" + name + "]" : null;
 
     /// <inheritdoc/>
-    public async Task<string> DefaultBackupDirectoryAsync(CancellationToken cancellationToken = default) =>
-        (await ScalarAsync("SELECT CAST(SERVERPROPERTY('InstanceDefaultBackupPath') AS nvarchar(512))", null, cancellationToken).ConfigureAwait(false) as string)
-        ?? throw new InvalidOperationException("SQL Server reports no default backup path");
+    public Task<string> DefaultBackupDirectoryAsync(CancellationToken cancellationToken = default) => ServerPathAsync("InstanceDefaultBackupPath", cancellationToken);
+
+    /// <summary>
+    /// A folder SQL Server reports for itself. A full instance names its default backup, data and log folders; LocalDB names none of them, so the folder of its <c>master</c> data file
+    /// (which its own process can certainly write) stands in.
+    /// </summary>
+    private async Task<string> ServerPathAsync(string property, CancellationToken cancellationToken)
+    {
+        if (property is not ("InstanceDefaultBackupPath" or "InstanceDefaultDataPath" or "InstanceDefaultLogPath"))
+        {
+            throw new ArgumentException("not a server path property", nameof(property));
+        }
+
+        if (await ScalarAsync($"SELECT CAST(SERVERPROPERTY('{property}') AS nvarchar(512))", null, cancellationToken).ConfigureAwait(false) is string { Length: > 0 } named)
+        {
+            return named;
+        }
+
+        var master = await ScalarAsync("SELECT physical_name FROM sys.master_files WHERE database_id = 1 AND file_id = 1", null, cancellationToken).ConfigureAwait(false) as string;
+        return master is { Length: > 0 } ? System.IO.Path.GetDirectoryName(master) ?? throw new InvalidOperationException("SQL Server reports no usable folder") : throw new InvalidOperationException("SQL Server reports no usable folder");
+    }
 
     /// <inheritdoc/>
     public async Task<string> VersionAsync(CancellationToken cancellationToken = default) =>
@@ -162,8 +180,8 @@ public sealed partial class SqlBackupDatabase : IBackupDatabase
             throw new InvalidOperationException($"database {database} already exists; a restore only creates a new one");
         }
 
-        var dataDir = (await ScalarAsync("SELECT CAST(SERVERPROPERTY('InstanceDefaultDataPath') AS nvarchar(512))", null, cancellationToken).ConfigureAwait(false) as string) ?? throw new InvalidOperationException("SQL Server reports no default data path");
-        var logDir = (await ScalarAsync("SELECT CAST(SERVERPROPERTY('InstanceDefaultLogPath') AS nvarchar(512))", null, cancellationToken).ConfigureAwait(false) as string) ?? dataDir;
+        var dataDir = await ServerPathAsync("InstanceDefaultDataPath", cancellationToken).ConfigureAwait(false);
+        var logDir = await ServerPathAsync("InstanceDefaultLogPath", cancellationToken).ConfigureAwait(false);
         var moves = new List<string>();
         await using (var connection = await _source.OpenAsync(cancellationToken).ConfigureAwait(false))
         await using (var list = new SqlCommand("RESTORE FILELISTONLY FROM DISK = @path", connection) { CommandTimeout = 300 })
