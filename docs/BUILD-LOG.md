@@ -1252,5 +1252,9 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   marker file there and the others wrote 5-byte fake backups into it. It was noticed because two tests that should have failed passed; the five test-made files were checked (fake manifests) and
   deleted, nothing else on the share was touched, and the tests now use only `\\127.0.0.1\kalterm-no-such-share` (an address on this computer where nothing can be written) and neutral names.
   CLAUDE.md now says tests never use a real host, share or account name.
-- Not done yet: the rollout on kaldb needs the owner to enter the share's credential once (`admin.ps1 -SetShareCredential`) and run `admin.ps1 -- backup init-target`; then one ingest restart with
-  `-BackupTarget`. A restore drill into a new database on the real data follows.
+- **First real run on kaldb (2026-10-19, through `admin.ps1`, against the owner's share, GET/read of nothing but our own database):** the owner stored the share credential; `backup init-target`
+  wrote the marker from kaldb over SMB; a **full backup of the live 1.1 GB database took 21 s and is 564 MB** (compressed) on the share; a **differential** one 2 s and 30 MB; a **restore drill** of the
+  full backup into a new database took 13 s, the complete `DBCC CHECKDB` was clean and the per-day row counts agreed with the manifest while ingest kept writing; the same for the full + differential
+  chain (14 s); `backup verify` (the proof the host runs after each full backup) passed; no scratch database and no staging file was left behind. Two defects found by this run and fixed: `backup list`
+  did not connect to the share with the stored credential (it showed an empty folder), and `admin.ps1` bound the command words to its own `-Instance`/`-Database` parameters (now non-positional).
+- Not done yet: one ingest restart with `-BackupTarget` so the host takes the daily backup itself (the credential and the marker are in place).

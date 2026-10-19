@@ -31,6 +31,7 @@ Ask for the share's user name and password and store them on the server (checks 
 .PARAMETER Arguments
 The kalterm-admin command line.
 #>
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [string]$ComputerName = $env:KALTERM_TEST_HOST,
     [string]$CredentialPath = $env:KALTERM_TEST_CRED,
@@ -39,7 +40,7 @@ param(
     [string]$Database = 'KalTerm',
     [switch]$Publish,
     [switch]$SetShareCredential,
-    [Parameter(ValueFromRemainingArguments)][string[]]$Arguments
+    [Parameter(Position = 0, ValueFromRemainingArguments)][string[]]$Arguments
 )
 $ErrorActionPreference = 'Stop'
 if (-not $ComputerName -or -not $CredentialPath) { throw 'Pass -ComputerName and -CredentialPath, or set KALTERM_TEST_HOST and KALTERM_TEST_CRED.' }

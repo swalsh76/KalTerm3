@@ -59,7 +59,7 @@ internal static class AdminApp
             var written = await services.Target.InitAsync(ct).ConfigureAwait(false);
             env.Out.WriteLine(written ? $"marker written in {services.Target.Path}" : $"{services.Target.Path} already has its marker");
             return Ok;
-        }, services => services.Target.Path.StartsWith(@"\\", StringComparison.Ordinal) ? Connect(services) : null));
+        }, ConnectIfShare));
         backup.Subcommands.Add(initTarget);
 
         var user = new Option<string>("--user") { Description = "The account on the share, for example nas\\admin", Required = true };
@@ -142,7 +142,7 @@ internal static class AdminApp
             }
 
             return Ok;
-        }, null));
+        }, ConnectIfShare));
         backup.Subcommands.Add(list);
 
         var fullCheck = new Option<bool>("--full-check") { Description = "A complete DBCC CHECKDB instead of the physical-only check (slow on a big database)" };
@@ -183,10 +183,12 @@ internal static class AdminApp
 
             env.Out.WriteLine(result.Kept ? $"{result.Database} was kept; switching the server to it is a manual step" : $"{result.Database} was dropped again");
             return result.Comparison.Matches ? Ok : Failed;
-        }, services => services.Target.Path.StartsWith(@"\\", StringComparison.Ordinal) ? Connect(services) : null));
+        }, ConnectIfShare));
         root.Subcommands.Add(restore);
         return root;
     }
+
+    private static IDisposable? ConnectIfShare(AdminServices services) => services.Target.Path.StartsWith(@"\\", StringComparison.Ordinal) ? Connect(services) : null;
 
     private static IDisposable? Connect(AdminServices services) =>
         services.Credentials.Load() is { } credential ? services.Connector.Connect(services.Target.Path, credential) : null;

@@ -257,6 +257,19 @@ public sealed class AdminAppTests : IDisposable
     }
 
     [Fact]
+    public async Task ListOnANetworkShareConnectsWithTheStoredCredentialFirstOrItWouldSeeAnEmptyFolder()
+    {
+        _targetPath = @"\\127.0.0.1\kalterm-no-such-share\KalTerm";
+        Store.Save(new ShareCredential("nas\\admin", "pw"));
+
+        var exit = await RunAsync("backup", "list");
+
+        Assert.Equal(0, exit);
+        Assert.Equal([(@"\\127.0.0.1\kalterm-no-such-share\KalTerm", "nas\\admin")], _connector.Connections);
+        Assert.Contains("no backups on the target", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task VerifyReportsWhetherTheNewestBackupRestoresCleanlyAndFailsOtherwise()
     {
         var good = await RunAsync("backup", "verify");
