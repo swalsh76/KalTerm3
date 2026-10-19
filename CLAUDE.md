@@ -119,7 +119,7 @@ Read a KalTerm server with the CLI (`status` exits 2 when it finds problems). Lo
 
 ```powershell
 dotnet run --project src/KalTerm.Cli -c Release -- status
-.	ools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
+.\tools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
 ```
 
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in
