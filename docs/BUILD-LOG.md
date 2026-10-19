@@ -278,6 +278,94 @@ configuration file with `TCPENABLED=0` and `NPENABLED=0`); data, logs, tempdb an
 Update and download behaviour are untested. Setup ran as SYSTEM in a scheduled task, equivalent to but not identical with a real installer.
 Evaluation media (180 days), not a licensed install.
 
+### 2.6 The target server and S-1a on its drive (2026-10-18): done
+
+**The box.** A Dell **OptiPlex 7060** (not the 7080 Micro that was ordered; the owner did not take the difference up with the seller): service tag
+3YY93Y2, BIOS 1.32.0, Intel Core i7-8700 (6 cores, 12 threads, 3.2 GHz, 8th-generation desktop part), 31.8 GB RAM, one NVMe drive, an Intel
+I219-LM NIC. Windows Server 2025 **Datacenter Evaluation** (build 26100; S-4 tested Standard, same engine), installed by hand from the
+evaluation ISO, hostname `kaldb`, 192.168.1.20 on the workstation's LAN. BIOS: AHCI/NVMe mode, **AC Recovery = Power On**. The NIC first
+negotiated 10 Mbps (a cable or port problem) and was fixed to 1 Gbps.
+
+**Remote management.** WinRM on 5985 with the firewall rule limited to the workstation's address; a local administrator account `kalterm`
+whose credential is kept in a DPAPI-protected file on the workstation (the assistant uses it without ever seeing the password);
+`LocalAccountTokenFilterPolicy = 1` (without it Windows strips the administrator rights from a network logon by a local account other than
+the built-in Administrator, and WinRM answers "Access is denied"; revisit before production); this workstation's WinRM client trusts exactly
+that one address; RDP enabled for the workstation only; High-performance power plan; automatic Windows Update off for the test period
+(**re-enable before production**: a surprise reboot ruins a run).
+
+**The drive.** A generic, unbranded NVMe: `SSD 1TB`, firmware SN15108, 954 GB, wear 0%, 45 C. Windows reports `IsPowerProtected = False` and
+`IsDeviceCacheEnabled = True`: no power-loss protection and a volatile cache, the S-1a situation.
+
+**S-1a on this drive** (`diskspd` 2.x from Microsoft's GitHub release, signature verified; the same scripts as 2.2, branch
+`spike/s1d-power-cuts`; cache on / off / on, the off state set through the registry value `UserWriteCacheSetting` under the device's
+`Device Parameters\Disk` key plus a reboot, then restored):
+
+| 4K write, queue depth 1 | Workstation WD SN580, cache on | Workstation, cache off | **Server, cache on (A1 / A2)** | Server, cache off |
+|---|---|---|---|---|
+| write-through (`-Sw`) | **23 us** | 215 us | **314 / 295 us** | 573 us |
+| no-buffer + write-through (`-Sh`) | 19 us | 209 us | 302 / 372 us | 325 us |
+| random 8K write-through | 26 us | 233 us | 254 / 245 us | 452 us |
+| 4K write + `FlushFileBuffers` | 228 us | 488 us | 1.1 to 1.9 ms | 1.1 ms |
+| SQL single-thread autocommit, mean | 48 us | 234 us | **303 us** (3,299 commits/s) | not run |
+
+The workstation's drive acknowledged write-through writes 10x faster than its flash could commit them when its cache was on (the
+KalshiTerm2 failure mode). The server's drive takes about 0.3 ms either way, the order of a real flash commit: **the red-flag
+signature is absent**. An explicit flush is slow on this drive (0.8 to 1.6 ms extra); SQL's log does not use it, checkpoints do.
+
+**SQL Server on the server.** Installed with the S-4 scripts (VC++ runtime 2 s, preflight 11 of 11, unattended setup 221 s, verification
+passed: shared memory, Windows authentication only, no listener on a non-loopback address); data under `C:\KalTerm\data`; Windows
+Defender exclusions for that folder and `sqlservr.exe` only (real-time protection stays on).
+
+### 2.7 S-1d real power cuts on the target server (2026-10-18): passed
+
+Question: after a real cord pull under write load, is every commit SQL Server acknowledged still there, and is the database intact?
+Code: branch `spike/s1d-power-cuts` (local, not merged), `spikes/s1d-server`, program `S1d.PowerCut`.
+
+**Method.** The writer runs **on the server** (8 threads; a single-row autocommit or a 100-row transaction; each row is `(id, SHA-256 of
+the id)`; a checkpoint every 5 s so a cut is likely to land while data pages are being written) and talks to SQL Server over shared
+memory, as the product will, so no TCP listener was opened and "shared memory only" stayed intact. The moment SQL Server acknowledges a
+commit the writer sends it, over a no-delay TCP connection, to a **ledger on the workstation** (a machine that is not being cut), which
+appends it to a file and keeps the highest acknowledged id per thread. After the cut the verifier waits (bounded) for the instance, runs
+`DBCC CHECKDB (all errors, extended logical checks)`, and checks that every acknowledged id up to each thread's last is present with a
+valid checksum, against **every ledger of the database so far**, so older data is re-proved after each later crash. Settings:
+`DELAYED_DURABILITY = DISABLED`, `PAGE_VERIFY = CHECKSUM`, simple recovery, device cache at its default (**on**). The ledger detects a
+silent power loss by a 15 s read timeout (a powered-off machine sends no FIN or reset).
+
+**The harness was proven before any cut.** Self-test: the verifier detects a deleted acknowledged row, a corrupted payload, a fallen row
+count and a wholly zeroed data page. Two rehearsals on a separate database: a hard kill of `sqlservr.exe` under load (8.3 M acknowledged
+rows, genuine crash recovery in 3 s) and a hard kill of the writer (15.7 M rows across both cycles), both passed. A negative control
+(a forged ledger claiming a million rows SQL Server never wrote) failed with 999,900 acknowledged rows missing, exit code 1.
+
+| Real cord pull | Cycle 1 | Cycle 2 | Cycle 3 |
+|---|---|---|---|
+| Load before the cut | 26 s | 56 s | 48 s |
+| Acknowledgements in the ledger | 181,928 | 360,386 | 304,527 |
+| Server's own evidence | Kernel-Power 41, event 6008 | same | same |
+| SQL crash recovery | 8,691 rolled forward, 1 back | 19,888 forward, 4 back | 23,647 forward, 3 back |
+| Power-on to usable (the box powered itself on) | about 30 s | about 30 s | about 30 s |
+| Acknowledged rows verified (cumulative) | 9,174,395 | 27,426,457 | **42,839,572** |
+| **Missing acknowledged rows** | **0** | **0** | **0** |
+| Bad checksums; `CHECKDB` | 0; clean | 0; clean | 0; clean |
+| Rows beyond the acknowledged ones (in flight at the cut; allowed either way) | 100 | 101 | 203 |
+
+**Result: passed (3 of 3).** With the drive's write cache enabled and no power-loss protection, SQL Server's commits survived real cord pulls.
+This matches the S-1a latency result for this drive. The database always ended up ahead of the ledger, never behind. The PLAN section 6
+M3 gate ("S-1d has passed on the target server") is met on this machine.
+
+**Limits (these belong in any decision that leans on this result).**
+- Three cuts are evidence, not proof; each cut came 26 to 56 s into the load. More cuts, longer runs and a heavier data-page workload would
+  raise confidence.
+- A loss in the last few milliseconds before a cut would show only as a ledger undercount, not as a missing row; the direction of the
+  error is safe but the test is blind to it.
+- One unbranded drive in a single-drive box. A different drive may behave differently, so the product's installer `verify` must still
+  report `IsPowerProtected` and the device cache state and warn when there is no power-loss protection.
+- The OS and the data share the drive. Windows came back cleanly all three times (no repair prompts, no file-system errors seen).
+
+**Lessons.** Detect a silent power loss with a read timeout, not a connection event. PowerShell parameter names must not collide with
+common-parameter aliases (`-Db` is `-Debug`'s alias). The harness's own path guard blocks `Remove-Item` on paths under the spike folder
+(a false positive on paths with spaces or wildcards), so tools delete databases through SQL and leave files in place. Write scripts to
+files; large heredocs and backslash-heavy one-liners are fragile here.
+
 ## 3. M2 Core
 
 ### 3.1 Fixed-point money (2026-10-16): done
