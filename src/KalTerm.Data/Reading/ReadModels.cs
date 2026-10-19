@@ -78,6 +78,9 @@ public sealed record MarketFilter(string? Status = null, string? EventTicker = n
 /// <param name="MarketsByStatus">Market counts by status.</param>
 /// <param name="GapsByKind">Gaps started within the window, by kind.</param>
 /// <param name="Books">The published order books, in total; <see langword="null"/> when the database has no book table yet.</param>
+/// <param name="DataUsedBytes">Space holding data inside the file; <see langword="null"/> when not read.</param>
+/// <param name="OldestDataDay">The storage governor's last record of the oldest raw day (<c>yyyy-MM-dd</c> or <c>none</c>); <see langword="null"/> if it never ran.</param>
+/// <param name="GovernorLast">The storage governor's last check; <see langword="null"/> if it never ran.</param>
 public sealed record StatusSnapshot(
     IngestStateEntry? Run,
     DateTime? LastTickerAt,
@@ -87,7 +90,10 @@ public sealed record StatusSnapshot(
     long? DiskFreeBytes,
     IReadOnlyDictionary<string, long> MarketsByStatus,
     IReadOnlyDictionary<string, long> GapsByKind,
-    BookStatus? Books = null);
+    BookStatus? Books = null,
+    long? DataUsedBytes = null,
+    string? OldestDataDay = null,
+    IngestStateEntry? GovernorLast = null);
 
 /// <summary>One market's published order book (a row of <c>dbo.orderbook_state</c>), levels best first.</summary>
 /// <param name="Ticker">The market.</param>

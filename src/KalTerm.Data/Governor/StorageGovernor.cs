@@ -69,6 +69,9 @@ public static class GovernorStateKeys
     /// <summary>The UTC day (<c>yyyy-MM-dd</c>) on which the daily retention last completed.</summary>
     public const string RetentionDay = "governor.retention_day";
 
+    /// <summary>The UTC day (<c>yyyy-MM-dd</c>) of the oldest raw row after the last check, or <c>none</c> when there are no rows.</summary>
+    public const string OldestDay = "governor.oldest_day";
+
     /// <summary>What the last check did: <c>ok</c> or <c>error</c>, the percent of the cap in use, the days dropped; its time is the check's time.</summary>
     public const string Last = "governor.last";
 }
@@ -218,6 +221,9 @@ public sealed partial class StorageGovernor : IStorageGovernor
             {
                 problem = await ShedAsync(today, percent, dropped, cancellationToken).ConfigureAwait(false) ?? problem;
             }
+
+            var oldest = await _store.GetOldestDataDayAsync(cancellationToken).ConfigureAwait(false);
+            await _state.SetAsync(GovernorStateKeys.OldestDay, oldest?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "none", now, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {

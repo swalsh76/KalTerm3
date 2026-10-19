@@ -372,6 +372,20 @@ public class StorageGovernorTests
     }
 
     [Fact]
+    public async Task TheOldestRemainingDayIsRecordedAfterTheDropsOrNoneWhenEmpty()
+    {
+        var (governor, store, state, _) = Rig();
+
+        await governor.CheckAsync(TestContext.Current.CancellationToken);
+        var afterDrops = state.Values[GovernorStateKeys.OldestDay].Value;
+        store.Oldest = null;
+        await governor.CheckAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal("2026-10-21", afterDrops);   // the fake moves its oldest day to the next boundary after each drop
+        Assert.Equal("none", state.Values[GovernorStateKeys.OldestDay].Value);
+    }
+
+    [Fact]
     public async Task AFailureToRecordTheCheckDoesNotFailTheCheck()
     {
         var (governor, store, state, _) = Rig();

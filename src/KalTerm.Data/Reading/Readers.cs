@@ -256,13 +256,26 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
             _options,
             cancellationToken)).ConfigureAwait(false);
 
-        var file = await connection.QuerySingleAsync<(long Bytes, long? MaxBytes)>(ReaderSupport.Command(
+        var file = await connection.QuerySingleAsync<(long Bytes, long? MaxBytes, long Used)>(ReaderSupport.Command(
             """
             SELECT CAST(SUM(CAST(size AS bigint)) * 8192 AS bigint) AS Bytes,
-                   CASE WHEN MIN(max_size) = -1 THEN NULL ELSE CAST(SUM(CAST(max_size AS bigint)) * 8192 AS bigint) END AS MaxBytes
+                   CASE WHEN MIN(max_size) = -1 THEN NULL ELSE CAST(SUM(CAST(max_size AS bigint)) * 8192 AS bigint) END AS MaxBytes,
+                   CAST(SUM(CAST(FILEPROPERTY(name, 'SpaceUsed') AS bigint)) * 8192 AS bigint) AS Used
             FROM sys.database_files WHERE type = 0
             """,
             null,
+            _options,
+            cancellationToken)).ConfigureAwait(false);
+
+        var oldestDay = await connection.QuerySingleOrDefaultAsync<(string Value, DateTime UpdatedAt)?>(ReaderSupport.Command(
+            "SELECT value AS Value, updated_at AS UpdatedAt FROM dbo.ingest_state WHERE name = @name",
+            new { name = ReaderSupport.Ansi(Governor.GovernorStateKeys.OldestDay, 64) },
+            _options,
+            cancellationToken)).ConfigureAwait(false);
+
+        var governorLast = await connection.QuerySingleOrDefaultAsync<(string Value, DateTime UpdatedAt)?>(ReaderSupport.Command(
+            "SELECT value AS Value, updated_at AS UpdatedAt FROM dbo.ingest_state WHERE name = @name",
+            new { name = ReaderSupport.Ansi(Governor.GovernorStateKeys.Last, 64) },
             _options,
             cancellationToken)).ConfigureAwait(false);
 
@@ -287,7 +300,10 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
             await DiskFreeAsync(connection, cancellationToken).ConfigureAwait(false),
             markets,
             gaps,
-            await BooksAsync(connection, cancellationToken).ConfigureAwait(false));
+            await BooksAsync(connection, cancellationToken).ConfigureAwait(false),
+            file.Used,
+            oldestDay?.Value,
+            governorLast is { } last ? new IngestStateEntry(last.Value, DateTime.SpecifyKind(last.UpdatedAt, DateTimeKind.Utc)) : null);
     }
 
     private async Task<DateTime?> NewestAsync(IDbConnection connection, string table, DateTime now, CancellationToken cancellationToken)

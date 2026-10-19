@@ -41,7 +41,7 @@ param(
     [string]$Name,
     [string]$Instance = 'lpc:.\KALTERM',
     [string]$Database = 'KalTerm',
-    [int]$ProvisionMaxSizeGb = 100,
+    [int]$ProvisionMaxSizeGb = 500,
     [string]$ApiUrl = 'http://127.0.0.1:5280',
     [string[]]$WatchList = @(),
     [switch]$Restart,

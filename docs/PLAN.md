@@ -220,6 +220,9 @@ and the API contract tests.
 
 ## 9. Parking lot
 
+- Settled-market slimming and tombstones (reference decision 15): our catalog holds only open markets and stays small; revisit if it grows.
+- Merging empty old partition boundaries after retention: the 15,000 partition limit is decades away at one boundary per day.
+
 - Python or R research sidecar and out-of-process analyzers.
 - Math.NET Numerics / ML.NET for modeling, if analytics deepen.
 - Importing KalshiTerm2 history (28 GB at 2026-10-15).

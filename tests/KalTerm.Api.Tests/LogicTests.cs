@@ -181,12 +181,12 @@ public class StatusBuilderTests
         var gb = 1024L * 1024 * 1024;
 
         var nearCap = StatusBuilder.Build(Healthy() with { DataFileBytes = 93 * gb }, NowUtc);
-        var atEdge = StatusBuilder.Build(Healthy() with { DataFileBytes = 90 * gb }, NowUtc);
-        var justUnder = StatusBuilder.Build(Healthy() with { DataFileBytes = (90 * gb) - 1 }, NowUtc);
+        var atEdge = StatusBuilder.Build(Healthy() with { DataFileBytes = 80 * gb }, NowUtc);
+        var justUnder = StatusBuilder.Build(Healthy() with { DataFileBytes = (80 * gb) - 1 }, NowUtc);
         var lowDisk = StatusBuilder.Build(Healthy() with { DiskFreeBytes = 49 * gb }, NowUtc);
         var unlimited = StatusBuilder.Build(Healthy() with { MaxFileBytes = null, DataFileBytes = 500 * gb, DiskFreeBytes = null }, NowUtc);
 
-        Assert.Contains("the database file is at 93% of its size cap", nearCap.Problems);
+        Assert.Contains("the database is using 93% of its size cap: the storage governor is dropping the oldest raw days", nearCap.Problems);
         Assert.Single(atEdge.Problems);
         Assert.Empty(justUnder.Problems);
         Assert.Contains("only 49 GB free on the data disk", lowDisk.Problems);
@@ -400,5 +400,67 @@ public class ReadinessProbeTests
         var probe = new DatabaseReadinessProbe(new DataSource(new DatabaseConnectionOptions { Server = "lpc:.\\NO_SUCH_INSTANCE_FOR_THIS_TEST" }));
 
         Assert.False(await probe.IsReadyAsync(TestContext.Current.CancellationToken));
+    }
+}
+
+public class StatusBuilderStorageTests
+{
+    private const long Gb = 1024L * 1024 * 1024;
+
+    private static StatusSnapshot Healthy() => new(
+        new IngestStateEntry(IngestStateKeys.Running, NowUtc.AddSeconds(-5)),
+        NowUtc.AddSeconds(-1),
+        NowUtc.AddSeconds(-3),
+        400 * Gb,
+        500 * Gb,
+        800 * Gb,
+        new Dictionary<string, long> { ["active"] = 100 },
+        new Dictionary<string, long>(),
+        null,
+        50 * Gb,
+        "2026-10-17",
+        new IngestStateEntry("ok used=10% dropped=", NowUtc.AddMinutes(-5)));
+
+    [Fact]
+    public void TheBudgetFollowsUsedSpaceNotTheFileSoAFileLeftBigByADropIsNotAProblem()
+    {
+        var status = StatusBuilder.Build(Healthy(), NowUtc);
+
+        Assert.Empty(status.Problems);
+        Assert.Equal((400L * Gb, 50L * Gb, 10), (status.Storage.DataFileBytes, status.Storage.UsedBytes, status.Storage.UsedPercent));
+        Assert.Equal(("2026-10-17", "ok used=10% dropped=", 300L), (status.Storage.OldestDataDay, status.Storage.GovernorLast, status.Storage.GovernorAgeSeconds));
+    }
+
+    [Fact]
+    public void EightyPercentWarnsAndNinetyAlsoSaysTheGovernorIsDropping()
+    {
+        var warn = StatusBuilder.Build(Healthy() with { DataUsedBytes = 400 * Gb }, NowUtc);
+        var shed = StatusBuilder.Build(Healthy() with { DataUsedBytes = 450 * Gb }, NowUtc);
+
+        Assert.Equal("the database is using 80% of its size cap", Assert.Single(warn.Problems));
+        Assert.Contains("storage governor is dropping the oldest raw days", Assert.Single(shed.Problems), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AGovernorErrorIsAProblemAndAGovernorThatHasNotCheckedForAnHourIsToo()
+    {
+        var error = StatusBuilder.Build(Healthy() with { GovernorLast = new IngestStateEntry("error used=95% nothing more can be dropped", NowUtc.AddMinutes(-1)) }, NowUtc);
+        var stale = StatusBuilder.Build(Healthy() with { GovernorLast = new IngestStateEntry("ok used=10% dropped=", NowUtc.AddMinutes(-61)) }, NowUtc);
+        var stoppedIngest = StatusBuilder.Build(Healthy() with { Run = new IngestStateEntry(IngestStateKeys.Stopped, NowUtc.AddHours(-3)), LastTickerAt = NowUtc.AddHours(-3), LastTradeAt = NowUtc.AddHours(-3), GovernorLast = new IngestStateEntry("ok used=10% dropped=", NowUtc.AddMinutes(-61)) }, NowUtc);
+
+        Assert.Contains("the storage governor reports: error used=95%", Assert.Single(error.Problems), StringComparison.Ordinal);
+        Assert.Contains("has not checked for 61 min", Assert.Single(stale.Problems), StringComparison.Ordinal);
+        Assert.DoesNotContain(stoppedIngest.Problems, p => p.Contains("governor", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NoGovernorRecordIsNotAProblemAndAnUnlimitedFileHasNoPercent()
+    {
+        var status = StatusBuilder.Build(Healthy() with { GovernorLast = null, OldestDataDay = null, MaxFileBytes = null, DataUsedBytes = null }, NowUtc);
+
+        Assert.Empty(status.Problems);
+        Assert.Null(status.Storage.UsedPercent);
+        Assert.Null(status.Storage.GovernorLast);
+        Assert.Equal(400L * Gb, status.Storage.UsedBytes);   // without a used figure the file size stands in
     }
 }

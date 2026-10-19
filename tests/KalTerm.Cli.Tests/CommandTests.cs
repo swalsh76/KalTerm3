@@ -26,7 +26,8 @@ public sealed class CommandTests : IDisposable
         Assert.Contains("last heartbeat 3s ago", output, StringComparison.Ordinal);
         Assert.Contains("ticker 1s ago", output, StringComparison.Ordinal);
         Assert.Contains("trade 2s ago", output, StringComparison.Ordinal);
-        Assert.Contains("database file 264.0 MB of 100.0 GB (0.2%)", output, StringComparison.Ordinal);
+        Assert.Contains("database used 251.8 MB of 100.0 GB (0.2%), file 264.0 MB", output, StringComparison.Ordinal);
+        Assert.Contains("oldest raw data 2026-10-17  |  governor ok used=0% dropped= 40s ago", output, StringComparison.Ordinal);
         Assert.Contains("disk free 920.1 GB", output, StringComparison.Ordinal);
         Assert.Contains("active 120,018  |  unlisted 428  |  closed 288", output, StringComparison.Ordinal);
         Assert.Contains("2 in the last 24 h  (ingest_down 2)", output, StringComparison.Ordinal);
@@ -66,7 +67,7 @@ public sealed class CommandTests : IDisposable
         {
             Ingest = new IngestStateDto("unknown", null, null),
             Streams = new StreamsDto(new StreamDto(null, null), new StreamDto(null, null)),
-            Storage = new StorageDto(1_000, null, null),
+            Storage = new StorageDto(1_000, null, null, 900, null, null, null, null),
             Markets = new Dictionary<string, long>(),
             Gaps = new GapSummaryDto(24, 0, new Dictionary<string, long>(), "note"),
         };
@@ -552,5 +553,18 @@ public sealed class CommandTests : IDisposable
 
         Assert.Equal(CliApp.Failed, exit);
         Assert.Contains("not found", _cli.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AGovernorErrorIsShownInRedAndAGovernorThatNeverRanIsSaid()
+    {
+        _cli.Api.Status = Status() with { Storage = Status().Storage with { GovernorLast = "error used=95% nothing more can be dropped", GovernorAgeSeconds = 5 } };
+        await _cli.RunAsync("status");
+        Assert.Contains("governor error used=95% nothing more can be dropped 5s ago", _cli.Output, StringComparison.Ordinal);
+
+        using var second = new Harness();
+        second.Api.Status = Status() with { Storage = Status().Storage with { GovernorLast = null, GovernorAgeSeconds = null, OldestDataDay = null } };
+        await second.RunAsync("status");
+        Assert.Contains("oldest raw data -  |  governor has not run", second.Output, StringComparison.Ordinal);
     }
 }
