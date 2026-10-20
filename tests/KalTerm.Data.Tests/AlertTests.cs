@@ -197,7 +197,7 @@ public class UserDataStoreTests(DatabaseFixture db) : IClassFixture<DatabaseFixt
         Assert.Equal(StoreOutcome.Ok, await store.DeleteWatchlistAsync(u, "favorites", TestContext.Current.CancellationToken));
         Assert.Equal(StoreOutcome.NotFound, await store.DeleteWatchlistAsync(u, "favorites", TestContext.Current.CancellationToken));
         Assert.Null(await store.GetWatchlistAsync(u, "favorites", TestContext.Current.CancellationToken));
-        Assert.Equal(0, await db.ScalarAsync<int>("SELECT COUNT(*) FROM dbo.watchlist_market"));   // the markets went with the list
+        Assert.Equal(0, await db.ScalarAsync<int>($"SELECT COUNT(*) FROM dbo.watchlist_market wm JOIN dbo.market m ON m.market_id = wm.market_id WHERE m.ticker IN ('UD-A', 'UD-B')"));   // the markets went with the list
     }
 
     [Fact]
@@ -424,17 +424,18 @@ public class AlertEvaluationStoreTests(DatabaseFixture db) : IClassFixture<Datab
     public async Task AGapMakesOnlyTheWindowsItOverlapsPartialAndAMarketsOwnGapCountsOnlyForIt()
     {
         db.Require();
+        var gapNow = Now.AddDays(30);   // its own moment: a gap that covers the whole feed must not reach into the other tests' windows
         var gapped = await ReaderSeed.MarketAsync(db, "AE-GAPPED");
         var clear = await ReaderSeed.MarketAsync(db, "AE-CLEAR");
-        await db.ExecuteAsync($"INSERT dbo.ingest_gap (kind, market_id, started_at, ended_at) VALUES ('ws_lost', {gapped}, '{ReaderSeed.Time(Now.AddMinutes(-40))}', '{ReaderSeed.Time(Now.AddMinutes(-30))}')");
-        await db.ExecuteAsync($"INSERT dbo.ingest_gap (kind, market_id, started_at, ended_at) VALUES ('ingest_down', NULL, '{ReaderSeed.Time(Now.AddMinutes(-55))}', '{ReaderSeed.Time(Now.AddMinutes(-50))}')");
+        await db.ExecuteAsync($"INSERT dbo.ingest_gap (kind, market_id, started_at, ended_at) VALUES ('ws_lost', {gapped}, '{ReaderSeed.Time(gapNow.AddMinutes(-40))}', '{ReaderSeed.Time(gapNow.AddMinutes(-30))}')");
+        await db.ExecuteAsync($"INSERT dbo.ingest_gap (kind, market_id, started_at, ended_at) VALUES ('ingest_down', NULL, '{ReaderSeed.Time(gapNow.AddMinutes(-55))}', '{ReaderSeed.Time(gapNow.AddMinutes(-50))}')");
 
-        var seen = await Reader().ReadAsync([gapped, clear], Now, TestContext.Current.CancellationToken);
+        var seen = await Reader().ReadAsync([gapped, clear], gapNow, TestContext.Current.CancellationToken);
 
         Assert.Equal((false, false, true), (seen[gapped].PricePartial, seen[gapped].VolumePartial, seen[gapped].OiPartial));   // over before the quarter hour and the last minute, inside the hour
         Assert.Equal((false, false, true), (seen[clear].PricePartial, seen[clear].VolumePartial, seen[clear].OiPartial));     // the whole-feed gap is inside the hour too
-        await db.ExecuteAsync($"INSERT dbo.ingest_gap (kind, market_id, started_at) VALUES ('ws_lost', {gapped}, '{ReaderSeed.Time(Now.AddSeconds(-20))}')");
-        var open = await Reader().ReadAsync([gapped, clear], Now, TestContext.Current.CancellationToken);
+        await db.ExecuteAsync($"INSERT dbo.ingest_gap (kind, market_id, started_at) VALUES ('ws_lost', {gapped}, '{ReaderSeed.Time(gapNow.AddSeconds(-20))}')");
+        var open = await Reader().ReadAsync([gapped, clear], gapNow, TestContext.Current.CancellationToken);
         Assert.Equal((true, true, true), (open[gapped].PricePartial, open[gapped].VolumePartial, open[gapped].OiPartial));
         Assert.Equal((false, false, true), (open[clear].PricePartial, open[clear].VolumePartial, open[clear].OiPartial));
     }
