@@ -180,7 +180,9 @@ public sealed class SqlBackupTests(DatabaseFixture db) : IClassFixture<DatabaseF
         Assert.StartsWith("ok ", (await state.GetAsync(BackupStateKeys.LastVerify, TestContext.Current.CancellationToken))!.Value, StringComparison.Ordinal);
         Assert.Equal(second.Name, (await state.GetAsync(BackupStateKeys.LastGood, TestContext.Current.CancellationToken))!.Value);
         Assert.Equal(2, (await new BackupTarget(target).ListAsync(TestContext.Current.CancellationToken)).Count);
-        Assert.Empty(Directory.EnumerateFiles(await database.DefaultBackupDirectoryAsync(TestContext.Current.CancellationToken), "kalterm-*.partial"));
+        // The staging folder is SQL Server's default backup folder, shared with every other test (and process) on this server: look only for this test's own two backups, not for anyone's in-flight file.
+        var staging = await database.DefaultBackupDirectoryAsync(TestContext.Current.CancellationToken);
+        Assert.Empty(Directory.EnumerateFiles(staging, first.Name + "*.partial").Concat(Directory.EnumerateFiles(staging, second.Name + "*.partial")));
         Assert.Empty(Directory.EnumerateFiles(target, "*.partial"));
     }
 }
