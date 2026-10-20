@@ -297,6 +297,10 @@ public static class ApiEndpoints
         });
 
         app.MapGet("/v1/stream", MarketStreamEndpoint.HandleAsync);
+        app.MapPut("/v1/stream/{id}/ticks/{ticker}", (string id, string ticker, HttpContext context, MarketStreamHub hub) => MarketStreamEndpoint.ChangeAsync(context, hub, id, ticker, books: false, add: true));
+        app.MapDelete("/v1/stream/{id}/ticks/{ticker}", (string id, string ticker, HttpContext context, MarketStreamHub hub) => MarketStreamEndpoint.ChangeAsync(context, hub, id, ticker, books: false, add: false));
+        app.MapPut("/v1/stream/{id}/books/{ticker}", (string id, string ticker, HttpContext context, MarketStreamHub hub) => MarketStreamEndpoint.ChangeAsync(context, hub, id, ticker, books: true, add: true));
+        app.MapDelete("/v1/stream/{id}/books/{ticker}", (string id, string ticker, HttpContext context, MarketStreamHub hub) => MarketStreamEndpoint.ChangeAsync(context, hub, id, ticker, books: true, add: false));
 
         app.MapGet("/v1/orderbooks", async (HttpRequest request, IBookReader reader, TimeProvider time, CancellationToken cancellationToken) =>
         {

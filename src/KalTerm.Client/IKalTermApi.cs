@@ -154,6 +154,24 @@ public interface IKalTermApi
     /// <exception cref="ApiException">The server refused the stream (<c>unauthorized</c>, <c>too_many_streams</c>, <c>invalid_parameter</c>).</exception>
     IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>Adds a market to what an open stream watches, without reconnecting. The stream confirms it with a <see cref="SubscribedEvent"/>; use <see cref="MarketWatcher.AddAsync"/> to keep the list across drops.</summary>
+    /// <param name="streamId">The stream's id (from its <see cref="ReadyEvent"/>).</param>
+    /// <param name="kind">Ticks or books.</param>
+    /// <param name="ticker">The market.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the server has taken the change.</returns>
+    /// <exception cref="ApiException">The stream is gone (<c>not_found</c>), or would watch too many markets (<c>too_many_markets</c>).</exception>
+    Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes a market from what an open stream watches. The stream confirms it with an <see cref="UnsubscribedEvent"/>.</summary>
+    /// <param name="streamId">The stream's id.</param>
+    /// <param name="kind">Ticks or books.</param>
+    /// <param name="ticker">The market.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the server has taken the change.</returns>
+    /// <exception cref="ApiException">The stream is gone (<c>not_found</c>).</exception>
+    Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default);
+
     /// <summary>The caller's stored time zone.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The setting; its value is <see langword="null"/> when none is stored.</returns>

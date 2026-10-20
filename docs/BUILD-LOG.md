@@ -1696,3 +1696,24 @@ markets is slice 7.2b; in 7.2 a client reconnects to change what it watches.
 
 Rolled out 2026-10-20 (API release host-def745a on kaldb; ingest untouched; API and ingest tasks running, `/readyz` 200). Live check: `kterm watch` on all 50 watched markets for 60 s over the LAN address. The stream carried 236 ticks in a
 window of 57 s that ended 5 s before the end of the watch; the same window read over REST (`kterm ticks --start --end`, per market) held 236. So the 2-second margin lost no tick in this run. Arrival delay was not measured.
+
+### 9.3 Slice 7.2b: live add and remove of a stream's markets (2026-10-20)
+
+Approved by the owner 2026-10-20 with the three defaults: the 50-market cap counts ticks and books together (a market watched both ways counts once, as at the start), typed commands in `kterm watch` are in scope, and a new market's earlier
+history is the client's to load over REST.
+
+- Routes (same token and certificate): `PUT` and `DELETE` on `/v1/stream/{id}/ticks/{ticker}` and `/v1/stream/{id}/books/{ticker}`. They answer 204 at once; 404 `not_found` for a stream that is gone or belongs to another user (the id alone
+  gives no access), 422 for a bad ticker, 409 `too_many_markets` when the stream would watch more than 50 markets.
+- The stream confirms in its own queue, so the order is exact: `subscribed` or `unsubscribed` (`kind`, `ticker`, `from`, `unknown`, `no_book`). Everything queued before a confirmation still arrives and nothing for a removed market comes
+  after it. `from` is where the live ticks of a new ticks subscription begin (the end of the last poll, taken between two polls through the hub's gate like opening a stream, so no tick is missed); it is `null` for a removal, for books, and when
+  the market was already watched. A new books subscription is followed at once by the current book (the stream's sent-book memory is cleared for it, so it is never taken for a repeat). An unknown ticker is accepted and said to be `unknown`;
+  it is looked for again every 30 s as at the start. A lookup that fails changes nothing.
+- `KalTerm.Client`: `AddStreamMarketAsync` and `RemoveStreamMarketAsync`; `SubscribedEvent` and `UnsubscribedEvent`; `MarketWatcher.AddAsync` and `RemoveAsync` keep the wanted list (so a reconnect carries it) and tell the open stream. A change
+  made between building a connection's request and its `ready` event is sent as soon as `ready` arrives. A stream that is gone (`not_found`) or a server that cannot be reached leaves the list as asked (the next connection carries it); any other
+  refusal (`too_many_markets`, `invalid_parameter`) puts the list back and is thrown. With an empty list nothing is opened (the server refuses an empty stream) until a market is added.
+- `kterm watch`: while it runs, `+TICKER`, `+TICKER book`, `-TICKER` and `-TICKER book` typed at the terminal change the list (only when input is a terminal, and only once the stream is open); the confirmations are printed on stderr, or as
+  `subscribed` / `unsubscribed` lines with `--json`.
+- Tests (about 50 new): the hub (a new market begins at the last poll's end and nothing before it is sent; already watched; unknown; books; no book; removal order; the cap and double counting; another user's stream; an ended stream; a failed
+  lookup), the endpoint over a test server (every route and refusal, the confirmations, the book after its confirmation, a book subscribed again, another user's token), the client calls and events, the watcher (live, between connections,
+  before `ready`, refusals, an empty list) and `kterm watch` (typed lines, bad lines, refusals, confirmations, JSON, piped input), and one end-to-end test on a real database. Run on kaldb: API 368.
+- Rollout: the API only (no migration, ingest untouched). The live check after it adds a watched market to a running stream and compares its stream ticks with REST for the same window.

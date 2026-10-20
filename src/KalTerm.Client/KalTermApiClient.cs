@@ -221,6 +221,8 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
                     "book" => JsonSerializer.Deserialize(data, ApiJson.Wire.OrderBookDto) is { } book ? new BookEvent(book) : null,
                     "tick" when id is not null => JsonSerializer.Deserialize(data, ApiJson.Wire.MarketTickDto) is { } tick ? new TickEvent(tick, id) : null,
                     "reset" => JsonSerializer.Deserialize(data, ApiJson.Wire.StreamResetDto) is { } reset ? new ResetEvent(reset.Reason) : null,
+                    "subscribed" => JsonSerializer.Deserialize(data, ApiJson.Wire.StreamSubscriptionDto) is { } added ? new SubscribedEvent(added) : null,
+                    "unsubscribed" => JsonSerializer.Deserialize(data, ApiJson.Wire.StreamSubscriptionDto) is { } removed ? new UnsubscribedEvent(removed) : null,
                     _ => null,
                 };
                 if (item is not null)
@@ -230,6 +232,17 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
             }
         }
     }
+
+    /// <inheritdoc/>
+    public async Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Put, StreamChangePath(streamId, kind, ticker), null, cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc/>
+    public async Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Delete, StreamChangePath(streamId, kind, ticker), null, cancellationToken).ConfigureAwait(false);
+
+    private static string StreamChangePath(string streamId, StreamKind kind, string ticker) =>
+        $"v1/stream/{Segment(streamId)}/{(kind == StreamKind.Books ? "books" : "ticks")}/{Segment(ticker)}";
 
     /// <inheritdoc/>
     public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) =>

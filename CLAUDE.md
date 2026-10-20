@@ -138,6 +138,8 @@ Watch markets live from this computer (ticks, and order books with `--book`, pus
 dotnet run --project src/KalTerm.Cli -c Release -- watch <TICKER> [<TICKER>...] --book --api https://kaldb:5280
 ```
 
+While it runs, type `+TICKER`, `+TICKER book`, `-TICKER` or `-TICKER book` to add or remove a market without reconnecting.
+
 Read the server from this computer (once per server: trust its certificate, then store your token; the operator makes users and tokens on the server with `kalterm-admin user add` and `token create`):
 
 ```powershell

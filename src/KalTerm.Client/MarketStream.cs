@@ -26,6 +26,24 @@ public sealed record BookEvent(OrderBookDto Book) : MarketStreamEvent;
 /// <param name="Id">Its id: the moment of the update, usable as a resume point.</param>
 public sealed record TickEvent(MarketTickDto Tick, string Id) : MarketStreamEvent;
 
+/// <summary>What a market subscription is for.</summary>
+public enum StreamKind
+{
+    /// <summary>Ticker updates.</summary>
+    Ticks,
+
+    /// <summary>Order books.</summary>
+    Books,
+}
+
+/// <summary>A market was added to the stream's watch list (the confirmation of a live add). For ticks, <see cref="StreamSubscriptionDto.From"/> says where its live ticks begin; load earlier ones over REST.</summary>
+/// <param name="Change">The details.</param>
+public sealed record SubscribedEvent(StreamSubscriptionDto Change) : MarketStreamEvent;
+
+/// <summary>A market was removed from the stream's watch list: nothing more arrives for it.</summary>
+/// <param name="Change">The details.</param>
+public sealed record UnsubscribedEvent(StreamSubscriptionDto Change) : MarketStreamEvent;
+
 /// <summary>The server cannot continue from where the client was: reload over REST, then carry on.</summary>
 /// <param name="Reason">Why.</param>
 public sealed record ResetEvent(string Reason) : MarketStreamEvent;
@@ -37,12 +55,99 @@ public sealed record ResetEvent(string Reason) : MarketStreamEvent;
 /// </summary>
 /// <param name="open">Opens one stream.</param>
 /// <param name="time">The clock the waits use.</param>
-public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, IAsyncEnumerable<MarketStreamEvent>> open, TimeProvider? time = null)
+/// <param name="change">Adds (true) or removes (false) one market of an open stream: the stream's id, what for, the ticker. Without it a change waits for the next connection.</param>
+public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, IAsyncEnumerable<MarketStreamEvent>> open, TimeProvider? time = null, Func<string, StreamKind, string, bool, CancellationToken, Task>? change = null)
 {
     private static readonly TimeSpan FirstWait = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan LongestWait = TimeSpan.FromSeconds(30);
 
     private readonly TimeProvider _time = time ?? TimeProvider.System;
+    private readonly Lock _sync = new();
+    private readonly HashSet<string> _ticks = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _books = new(StringComparer.Ordinal);
+    private string? _streamId;
+
+    /// <summary>Starts watching a market on the open stream, or on the next connection when there is none. A market already on the list is left as it is.</summary>
+    /// <param name="kind">Ticks or books.</param>
+    /// <param name="ticker">The market.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the server has taken the change (or there is no open stream to tell).</returns>
+    /// <exception cref="ApiException">The server would not take it (<c>too_many_markets</c>, <c>invalid_parameter</c>); the list is left as it was.</exception>
+    public async Task AddAsync(StreamKind kind, string ticker, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ticker);
+        string? id;
+        lock (_sync)
+        {
+            if (!Set(kind).Add(ticker))
+            {
+                return;
+            }
+
+            id = _streamId;
+        }
+
+        if (id is null || change is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await change(id, kind, ticker, true, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (Gone(ex))
+        {
+            // The stream is gone: the next connection carries the list.
+        }
+        catch (ApiException)
+        {
+            lock (_sync)
+            {
+                Set(kind).Remove(ticker);
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>Stops watching a market on the open stream, or on the next connection when there is none.</summary>
+    /// <param name="kind">Ticks or books.</param>
+    /// <param name="ticker">The market.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the server has taken the change (or there is no open stream to tell).</returns>
+    public async Task RemoveAsync(StreamKind kind, string ticker, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ticker);
+        string? id;
+        lock (_sync)
+        {
+            if (!Set(kind).Remove(ticker))
+            {
+                return;
+            }
+
+            id = _streamId;
+        }
+
+        if (id is null || change is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await change(id, kind, ticker, false, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (Gone(ex))
+        {
+            // The stream is gone: the next connection carries the list.
+        }
+    }
+
+    private static bool Gone(Exception ex) => ex is ApiUnavailableException || ex is ApiException { Code: "not_found" };
+
+    private HashSet<string> Set(StreamKind kind) => kind == StreamKind.Books ? _books : _ticks;
 
     /// <summary>Watches until cancelled.</summary>
     /// <param name="ticks">The markets whose ticks are wanted.</param>
@@ -57,21 +162,51 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
     {
         ArgumentNullException.ThrowIfNull(onEvent);
         ArgumentNullException.ThrowIfNull(onNotice);
+        lock (_sync)
+        {
+            _ticks.UnionWith(ticks);
+            _books.UnionWith(books);
+        }
+
         string? resume = null;
         var atResume = new HashSet<string>(StringComparer.Ordinal);   // ticks already delivered at the resume moment, which the server sends again (it resumes inclusively)
         var wait = FirstWait;
         while (!cancellationToken.IsCancellationRequested)
         {
+            string[] askedTicks;
+            string[] askedBooks;
+            lock (_sync)
+            {
+                askedTicks = [.. _ticks];
+                askedBooks = [.. _books];
+            }
+
+            if (askedTicks.Length == 0 && askedBooks.Length == 0)
+            {
+                // Nothing is watched (every market was removed): the server refuses an empty stream, so wait for a market to be added.
+                try
+                {
+                    await Task.Delay(FirstWait, _time, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+
+                continue;
+            }
+
             var reset = false;
             try
             {
-                await foreach (var item in open(new MarketStreamRequest(ticks, books, depth, resume), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (var item in open(new MarketStreamRequest(askedTicks, askedBooks, depth, resume), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
                     wait = FirstWait;
                     switch (item)
                     {
                         case ReadyEvent ready:
                             resume ??= ready.Ready.ResumeFrom;
+                            await ReconcileAsync(ready.Ready.StreamId, askedTicks, askedBooks, onNotice, cancellationToken).ConfigureAwait(false);
                             break;
                         case TickEvent tick:
                             var key = JsonSerializer.Serialize(tick.Tick, ApiJson.Wire.MarketTickDto);
@@ -131,6 +266,13 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
             {
                 onNotice("the server sent something unreadable; reconnecting");
             }
+            finally
+            {
+                lock (_sync)
+                {
+                    _streamId = null;
+                }
+            }
 
             if (reset)
             {
@@ -147,6 +289,38 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
             }
 
             wait = TimeSpan.FromSeconds(Math.Min(LongestWait.TotalSeconds, wait.TotalSeconds * 2));
+        }
+    }
+
+    /// <summary>Records the new stream's id and tells it about any change made to the list after the request was built (it would otherwise be missed).</summary>
+    private async Task ReconcileAsync(string streamId, string[] askedTicks, string[] askedBooks, Action<string> onNotice, CancellationToken cancellationToken)
+    {
+        List<(StreamKind Kind, string Ticker, bool Add)> changes = [];
+        lock (_sync)
+        {
+            _streamId = streamId;
+            foreach (var (kind, asked, now) in new[] { (StreamKind.Ticks, askedTicks, _ticks), (StreamKind.Books, askedBooks, _books) })
+            {
+                changes.AddRange(now.Except(asked, StringComparer.Ordinal).Select(t => (kind, t, true)));
+                changes.AddRange(asked.Except(now, StringComparer.Ordinal).Select(t => (kind, t, false)));
+            }
+        }
+
+        if (change is null)
+        {
+            return;
+        }
+
+        foreach (var (kind, ticker, add) in changes)
+        {
+            try
+            {
+                await change(streamId, kind, ticker, add, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is ApiException or ApiUnavailableException)
+            {
+                onNotice($"could not change the watch list ({ticker}): {ex.Message}");
+            }
         }
     }
 }

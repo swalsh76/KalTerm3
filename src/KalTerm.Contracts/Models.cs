@@ -466,3 +466,11 @@ public sealed record StreamReadyDto(string StreamId, string ResumeFrom, IReadOnl
 /// <summary>The stream cannot continue from where the client was: reload over REST, then connect again without a resume point.</summary>
 /// <param name="Reason">Why, for example <c>too_far_behind</c> or <c>slow_consumer</c>.</param>
 public sealed record StreamResetDto(string Reason);
+
+/// <summary>An open market stream changed what it watches (the confirmation of a live add or remove).</summary>
+/// <param name="Kind"><c>ticks</c> or <c>books</c>.</param>
+/// <param name="Ticker">The market.</param>
+/// <param name="From">For a new ticks subscription, where its live ticks begin (UTC, milliseconds): earlier ticks are the client's to load over REST. <see langword="null"/> for a removal, for a books subscription, and when the market was already watched.</param>
+/// <param name="Unknown">The ticker is not a market here (nothing is pushed until it appears).</param>
+/// <param name="NoBook">For a books subscription, the market has no published book (only watched markets have one).</param>
+public sealed record StreamSubscriptionDto(string Kind, string Ticker, string? From, bool Unknown, bool NoBook);

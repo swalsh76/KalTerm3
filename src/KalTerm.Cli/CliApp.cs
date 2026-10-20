@@ -305,8 +305,12 @@ internal static partial class CliApp
         watchCommand.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
         {
             var tickers = (IReadOnlyList<string>)[.. parsed.GetRequiredValue(watchTickers)];
-            env.Error.MarkupLine("[grey]watching; Ctrl+C stops[/]");
-            var watcher = new MarketWatcher((request, token) => client.StreamMarketsAsync(request, token), env.Time);
+            env.Error.MarkupLine(env.InteractiveInput ? "[grey]watching; type +TICKER, +TICKER book, -TICKER or -TICKER book to change the list; Ctrl+C stops[/]" : "[grey]watching; Ctrl+C stops[/]");
+            var watcher = new MarketWatcher(
+                (request, token) => client.StreamMarketsAsync(request, token),
+                env.Time,
+                (streamId, kind, ticker, add, token) => add ? client.AddStreamMarketAsync(streamId, kind, ticker, token) : client.RemoveStreamMarketAsync(streamId, kind, ticker, token));
+            var typing = 0;
             await watcher.RunAsync(
                 tickers,
                 parsed.GetValue(watchBook) ? tickers : [],
@@ -314,6 +318,12 @@ internal static partial class CliApp
                 item =>
                 {
                     WatchEvent(env, asJson, item);
+                    if (item is ReadyEvent && env.InteractiveInput && Interlocked.Exchange(ref typing, 1) == 0)
+                    {
+                        // The list can be changed once a stream is open. A blocking read cannot be cancelled, so it is left to end with the process.
+                        _ = Task.Run(() => WatchCommands(env, watcher, ct), CancellationToken.None);
+                    }
+
                     return Task.CompletedTask;
                 },
                 notice => env.Error.MarkupLine($"[yellow]{Escape(notice)}[/]"),
@@ -632,6 +642,41 @@ internal static partial class CliApp
         }
     }
 
+    /// <summary>Reads lines typed while <c>watch</c> runs: <c>+TICKER</c> or <c>-TICKER</c>, with <c>book</c> after the ticker for the order book, add or remove a market.</summary>
+    private static async Task WatchCommands(CliEnvironment env, MarketWatcher watcher, CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested && env.ReadLine() is { } line)
+        {
+            var words = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (words.Length == 0)
+            {
+                continue;
+            }
+
+            var add = words[0][0] == '+';
+            var ticker = words[0][1..];
+            var kind = words.Length == 2 && string.Equals(words[1], "book", StringComparison.OrdinalIgnoreCase) ? StreamKind.Books : StreamKind.Ticks;
+            if ((words[0][0] is not ('+' or '-')) || ticker.Length == 0 || words.Length > 2 || (words.Length == 2 && kind != StreamKind.Books))
+            {
+                env.Error.MarkupLine("[yellow]type +TICKER, +TICKER book, -TICKER or -TICKER book[/]");
+                continue;
+            }
+
+            try
+            {
+                await (add ? watcher.AddAsync(kind, ticker, cancellationToken) : watcher.RemoveAsync(kind, ticker, cancellationToken)).ConfigureAwait(false);
+            }
+            catch (ApiException ex)
+            {
+                env.Error.MarkupLine($"[yellow]{Escape(ex.Code == "too_many_markets" ? "the stream already watches as many markets as it can" : ex.Message)}[/]");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+        }
+    }
+
     /// <summary>Prints one event of a market stream: a line, or with <c>--json</c> one line of JSON naming the event.</summary>
     private static void WatchEvent(CliEnvironment env, bool asJson, MarketStreamEvent item)
     {
@@ -643,6 +688,8 @@ internal static partial class CliApp
                 BookEvent book => ("book", ApiJson.Serialize(book.Book)),
                 TickEvent tick => ("tick", ApiJson.Serialize(tick.Tick)),
                 ResetEvent reset => ("reset", ApiJson.Serialize(new StreamResetDto(reset.Reason))),
+                SubscribedEvent added => ("subscribed", ApiJson.Serialize(added.Change)),
+                UnsubscribedEvent removed => ("unsubscribed", ApiJson.Serialize(removed.Change)),
                 _ => ("unknown", "null"),
             };
             env.Out.Profile.Out.Writer.WriteLine($"{{\"event\":\"{name}\",\"data\":{json}}}");
@@ -672,6 +719,19 @@ internal static partial class CliApp
                 break;
             case ResetEvent reset:
                 env.Error.MarkupLine($"[yellow]the server asked for a reload ({Escape(reset.Reason)}); data before this point may be missing[/]");
+                break;
+            case SubscribedEvent added:
+                env.Error.MarkupLine(added.Change.Unknown
+                    ? $"[yellow]{Escape(added.Change.Ticker)} is not a market here; nothing arrives until it is[/]"
+                    : $"[grey]now watching {Escape(added.Change.Ticker)} ({Escape(added.Change.Kind)}){(added.Change.From is { } from ? ", live ticks from " + Escape(from) : string.Empty)}[/]");
+                if (added.Change.NoBook)
+                {
+                    env.Error.MarkupLine($"[yellow]no book published for {Escape(added.Change.Ticker)}[/]");
+                }
+
+                break;
+            case UnsubscribedEvent removed:
+                env.Error.MarkupLine($"[grey]stopped watching {Escape(removed.Change.Ticker)} ({Escape(removed.Change.Kind)})[/]");
                 break;
         }
     }
