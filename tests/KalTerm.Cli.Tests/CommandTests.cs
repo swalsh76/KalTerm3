@@ -255,6 +255,81 @@ public sealed class CommandTests : IDisposable
         Assert.NotEqual(CliApp.Ok, exit);
     }
 
+    // ---- time zone ------------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task TimesAreShownInTheZoneGivenWithTzAndNameItsOffset()
+    {
+        var exit = await _cli.RunAsync("status", "--tz", "America/Denver");
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Contains("Server status 2026-10-18 17:00:00 -06:00", _cli.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("UTC", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ATableHeaderNamesTheZoneItsTimesAreIn()
+    {
+        await _cli.RunAsync("ticks", "A-1", "--tz", "America/Denver");
+
+        Assert.Contains("Time (America/Denver)", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("2026-10-18 16:59:59.250", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithoutAnyChoiceTimesAreInTheComputersZone()
+    {
+        _cli.SystemZone = TimeZoneInfo.FindSystemTimeZoneById("America/Denver");
+
+        await _cli.RunAsync("status");
+
+        Assert.Contains("Server status 2026-10-18 17:00:00 -06:00", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheVariableBeatsTheComputersZoneAndTheOptionBeatsTheVariable()
+    {
+        using var viaVariable = new Harness(new Dictionary<string, string> { [CliEnvironment.TimeZoneVariable] = "Asia/Tokyo" }) { SystemZone = TimeZoneInfo.FindSystemTimeZoneById("America/Denver") };
+        await viaVariable.RunAsync("status");
+        using var viaOption = new Harness(new Dictionary<string, string> { [CliEnvironment.TimeZoneVariable] = "Asia/Tokyo" });
+        await viaOption.RunAsync("status", "--tz", "Europe/London");
+
+        Assert.Contains("Server status 2026-10-19 08:00:00 +09:00", viaVariable.Output, StringComparison.Ordinal);
+        Assert.Contains("Server status 2026-10-19 00:00:00 +01:00", viaOption.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task UtcBeatsEverythingElse()
+    {
+        using var cli = new Harness(new Dictionary<string, string> { [CliEnvironment.TimeZoneVariable] = "Asia/Tokyo" }) { SystemZone = TimeZoneInfo.FindSystemTimeZoneById("America/Denver") };
+
+        await cli.RunAsync("status", "--tz", "Europe/London", "--utc");
+
+        Assert.Contains("Server status 2026-10-18 23:00:00 UTC", cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AZoneNobodyKnowsIsRefusedBeforeAnyCallAndTheMessageSaysWhereItCameFrom()
+    {
+        var exit = await _cli.RunAsync("status", "--tz", "Mars/Olympus");
+        using var fromVariable = new Harness(new Dictionary<string, string> { [CliEnvironment.TimeZoneVariable] = "Nowhere" });
+        var exitVariable = await fromVariable.RunAsync("status");
+
+        Assert.Equal(CliApp.Failed, exit);
+        Assert.Equal(CliApp.Failed, exitVariable);
+        Assert.Equal(0, _cli.ClientsCreated);
+        Assert.Contains("not a time zone this computer knows", _cli.Error, StringComparison.Ordinal);
+        Assert.Contains("KALTERM_TZ", fromVariable.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task JsonIsNeverShiftedIntoAZone()
+    {
+        await _cli.RunAsync("status", "--json", "--tz", "Asia/Tokyo");
+
+        Assert.Contains("\"time\":\"2026-10-18T23:00:00.000000+00:00\"", _cli.Output, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task TradesShowBothPricesTheTakerAndBlocks()
     {

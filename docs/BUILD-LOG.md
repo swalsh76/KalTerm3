@@ -1311,3 +1311,10 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   selectable client time zone (`--tz`/`--utc`) is a separate item not yet done.
 - Tests: rules and roll-up (pure); the builder on real tables on kaldb (OHLC, sparse buckets, idempotent rebuild, gap flags with and without a finished backfill, slicing, compute equals stored); the job
   against fakes; the host building the candles of rows already in the database; the service (stored, rolled up, computed, paging, scope); the endpoint, contract pins and the CLI view.
+
+### 5.15 The client time zone (2026-10-20)
+
+- The database and API stay UTC and `--json` prints the API's own text. Every time `kterm` prints is shown in a chosen zone: `--utc`, else `--tz <zone>` (for example `America/Denver`), else `KALTERM_TZ`,
+  else this computer's zone. There are no short aliases. A zone the computer does not know is refused before any call, and the message says whether it came from the variable.
+- Tables name the zone in the column header (`Time (America/Denver)`); a time in a sentence carries the offset that applied at that moment (`2026-10-18 17:00:00 -06:00`, or `UTC`).
+- The choice flows with the running command (an async-local), so nothing is shared between commands. A stored per-user setting waits for the per-user features (M5/M7).

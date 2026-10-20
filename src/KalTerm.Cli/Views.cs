@@ -11,7 +11,7 @@ internal static class Views
 {
     public static IRenderable Status(StatusDto status)
     {
-        var rows = new List<IRenderable> { new Markup($"[bold]Server status[/] {Moment(status.Time)} UTC"), new Text(string.Empty) };
+        var rows = new List<IRenderable> { new Markup($"[bold]Server status[/] {MomentWithZone(status.Time)}"), new Text(string.Empty) };
         if (status.Problems.Count > 0)
         {
             rows.Add(new Markup($"[bold red]NEEDS ATTENTION ({status.Problems.Count})[/]"));
@@ -24,7 +24,7 @@ internal static class Views
 
         rows.Add(new Text(string.Empty));
         var state = status.Ingest.State switch { "running" => "[green]running[/]", "stopped" => "[red]stopped[/]", var other => $"[yellow]{Escape(other)}[/]" };
-        rows.Add(new Markup($"[bold]Ingest[/]    {state}  last heartbeat {Age(status.Ingest.HeartbeatAgeSeconds)} ({Moment(status.Ingest.LastHeartbeat)} UTC)"));
+        rows.Add(new Markup($"[bold]Ingest[/]    {state}  last heartbeat {Age(status.Ingest.HeartbeatAgeSeconds)} ({MomentWithZone(status.Ingest.LastHeartbeat)})"));
         rows.Add(new Markup($"[bold]Streams[/]   ticker {Stream(status.Streams.Ticker)}  |  trade {Stream(status.Streams.Trade)}"));
         var storage = status.Storage;
         var cap = storage.MaxBytes is { } max ? $"{Size(max)} ({Percent(storage.UsedBytes, max)})" : "no cap";
@@ -78,7 +78,7 @@ internal static class Views
         var rows = new List<IRenderable>
         {
             new Markup($"[bold]{Escape(book.Ticker)}[/]  {ConditionMarkup(book)}"),
-            new Markup($"[grey]published {Age(book.AgeSeconds)}; last change {Moment(book.UpdatedAt, true)} UTC[/]"),
+            new Markup($"[grey]published {Age(book.AgeSeconds)}; last change {MomentWithZone(book.UpdatedAt, true)}[/]"),
             new Text(string.Empty),
         };
         if (book.Stale)
@@ -127,7 +127,7 @@ internal static class Views
 
     public static IRenderable Markets(MarketPage page, int width)
     {
-        var table = new TextTable().Column("Ticker").Column("Status").Column("Closes (UTC)").Column("Event");
+        var table = new TextTable().Column("Ticker").Column("Status").Column($"Closes ({ZoneName})").Column("Event");
         foreach (var market in page.Markets)
         {
             table.Row(market.Ticker, new Cell(market.Status, StatusStyle(market.Status)), Moment(market.CloseTime), market.EventTicker);
@@ -143,13 +143,13 @@ internal static class Views
         Field("Event", market.EventTicker);
         Field("Type", market.Type);
         Field("Yes / No", $"{market.YesLabel} / {market.NoLabel}");
-        Field("Opens", market.OpenTime is null ? None : $"{Moment(market.OpenTime)} UTC");
-        Field("Closes", market.CloseTime is null ? None : $"{Moment(market.CloseTime)} UTC");
-        Field("Expires", market.ExpirationTime is null ? None : $"{Moment(market.ExpirationTime)} UTC");
+        Field("Opens", market.OpenTime is null ? None : $"{MomentWithZone(market.OpenTime)}");
+        Field("Closes", market.CloseTime is null ? None : $"{MomentWithZone(market.CloseTime)}");
+        Field("Expires", market.ExpirationTime is null ? None : $"{MomentWithZone(market.ExpirationTime)}");
         Field("Result", market.Result.Length == 0 ? None : market.Result);
-        Field("Settlement", market.SettlementValue is null ? None : $"{Dollars(market.SettlementValue)} at {Moment(market.SettlementTime)} UTC");
-        Field("First seen", $"{Moment(market.FirstSeenAt)} UTC");
-        Field("Last seen", $"{Moment(market.LastSeenAt)} UTC");
+        Field("Settlement", market.SettlementValue is null ? None : $"{Dollars(market.SettlementValue)} at {MomentWithZone(market.SettlementTime)}");
+        Field("First seen", $"{MomentWithZone(market.FirstSeenAt)}");
+        Field("Last seen", $"{MomentWithZone(market.LastSeenAt)}");
         rows.Add(new Text(string.Empty));
         if (tick is null)
         {
@@ -157,7 +157,7 @@ internal static class Views
         }
         else
         {
-            rows.Add(new Markup($"[bold]Latest tick[/]  {Moment(tick.Time, true)} UTC"));
+            rows.Add(new Markup($"[bold]Latest tick[/]  {MomentWithZone(tick.Time, true)}"));
             rows.Add(new Markup($"  price {Dollars(tick.Price)}  bid {Dollars(tick.YesBid)} x {Count(tick.YesBidSize)}  ask {Dollars(tick.YesAsk)} x {Count(tick.YesAskSize)}"));
             rows.Add(new Markup($"  volume {Count(tick.Volume)}  open interest {Count(tick.OpenInterest)}"));
         }
@@ -171,7 +171,7 @@ internal static class Views
     public static IRenderable Ticks(TickPage page, int width)
     {
         var table = new TextTable()
-            .Column("Time (UTC)").Column("Price", right: true).Column("Bid", right: true).Column("Ask", right: true)
+            .Column($"Time ({ZoneName})").Column("Price", right: true).Column("Bid", right: true).Column("Ask", right: true)
             .Column("Bid size", right: true).Column("Ask size", right: true).Column("Volume", right: true).Column("Open interest", right: true);
         foreach (var tick in page.Ticks)
         {
@@ -184,7 +184,7 @@ internal static class Views
     public static IRenderable Candles(CandlePage page, int width)
     {
         var table = new TextTable()
-            .Column("Time (UTC)").Column("Open", right: true).Column("High", right: true).Column("Low", right: true).Column("Close", right: true)
+            .Column($"Time ({ZoneName})").Column("Open", right: true).Column("High", right: true).Column("Low", right: true).Column("Close", right: true)
             .Column("Volume", right: true).Column("Trades", right: true).Column("Bid", right: true).Column("Ask", right: true).Column("Open interest", right: true).Column("Note");
         foreach (var candle in page.Candles)
         {
@@ -217,7 +217,7 @@ internal static class Views
 
     public static IRenderable Gaps(GapPage page, DateTime now, int width)
     {
-        var table = new TextTable().Column("Id", right: true).Column("Kind").Column("From (UTC)").Column("To (UTC)").Column("Length", right: true).Column("Trades").Column("Detail");
+        var table = new TextTable().Column("Id", right: true).Column("Kind").Column($"From ({ZoneName})").Column($"To ({ZoneName})").Column("Length", right: true).Column("Trades").Column("Detail");
         foreach (var gap in page.Gaps)
         {
             table.Row(
@@ -261,7 +261,7 @@ internal static class Views
 
     private static IRenderable TradesTable(IReadOnlyList<TradeDto> trades, int width)
     {
-        var table = new TextTable().Column("Time (UTC)").Column("Yes", right: true).Column("No", right: true).Column("Count", right: true).Column("Taker").Column("Block");
+        var table = new TextTable().Column($"Time ({ZoneName})").Column("Yes", right: true).Column("No", right: true).Column("Count", right: true).Column("Taker").Column("Block");
         foreach (var trade in trades)
         {
             table.Row(

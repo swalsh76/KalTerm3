@@ -13,6 +13,9 @@ internal sealed class CliEnvironment
     /// <summary>The name of the variable that supplies the API token when none is stored (for scripts).</summary>
     public const string TokenVariable = "KALTERM_API_TOKEN";
 
+    /// <summary>The name of the variable that sets the time zone when neither <c>--utc</c> nor <c>--tz</c> is given.</summary>
+    public const string TimeZoneVariable = "KALTERM_TZ";
+
     /// <summary>The width used when the output is redirected (for example through PowerShell remoting) and no width is known.</summary>
     public const int RedirectedWidth = 120;
 
@@ -44,6 +47,9 @@ internal sealed class CliEnvironment
     public Func<string> ReadSecret { get; init; } = () => string.Empty;
 
     public required TimeProvider Time { get; init; }
+
+    /// <summary>The computer's own time zone: where times are shown when nothing else is chosen.</summary>
+    public TimeZoneInfo SystemZone { get; init; } = TimeZoneInfo.Utc;
 
     public required Func<string, string?> GetVariable { get; init; }
 
@@ -77,6 +83,7 @@ internal sealed class CliEnvironment
             ReadLine = Console.In.ReadLine,
             ReadSecret = ReadHidden,
             Time = TimeProvider.System,
+            SystemZone = TimeZoneInfo.Local,
             GetVariable = Environment.GetEnvironmentVariable,
         };
     }
