@@ -1,6 +1,7 @@
 using System.Globalization;
 using KalTerm.Contracts;
 using KalTerm.Data;
+using KalTerm.Data.Alerts;
 using KalTerm.Data.Auth;
 using KalTerm.Data.Candles;
 using KalTerm.Data.Metrics;
@@ -78,6 +79,9 @@ public static class ApiEndpoints
         services.AddSingleton<IMetricsReader>(new MetricsReader(source));
         services.AddSingleton<IScreenerReader>(new ScreenerReader(source));
         services.AddSingleton<IUserDataStore>(new UserDataStore(source));
+        services.AddSingleton<IAlertVersionReader>(new AlertVersionReader(source));
+        services.AddSingleton<AlertStreamHub>();
+        services.AddHostedService<AlertStreamWatcher>();
         services.AddSingleton<ICandleReader>(new CandleReader(source));
         services.AddSingleton<ICandleComputer>(new CandleBuilder(source));
         services.AddSingleton<ICandleService>(provider => new CandleService(

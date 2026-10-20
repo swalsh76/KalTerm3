@@ -131,6 +131,53 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
         GetAsync("v1/alerts/fires", [("after", after?.ToString(System.Globalization.CultureInfo.InvariantCulture)), ("limit", Number(limit))], ApiJson.Wire.AlertFiresPage, cancellationToken);
 
     /// <inheritdoc/>
+    public async IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(Url("v1/alerts/stream", [("after", after?.ToString(System.Globalization.CultureInfo.InvariantCulture))]), UriKind.Relative));
+        request.Headers.Accept.ParseAdd("text/event-stream");
+        HttpResponseMessage response;
+        try
+        {
+            response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ApiUnavailableException($"could not reach the API at {_http.BaseAddress}: {ex.Message}", ex);
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ApiUnavailableException($"the API at {_http.BaseAddress} did not answer in time", ex);
+        }
+
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                throw Refusal(response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            await foreach (var (type, id, data) in ServerSentEvents.ReadAsync(reader, cancellationToken).ConfigureAwait(false))
+            {
+                if (!long.TryParse(id, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number))
+                {
+                    continue;
+                }
+
+                if (type == "ready")
+                {
+                    yield return new AlertStreamEvent(number, null);
+                }
+                else if (type == "fire" && JsonSerializer.Deserialize(data, ApiJson.Wire.AlertFireDto) is { } fire)
+                {
+                    yield return new AlertStreamEvent(number, fire);
+                }
+            }
+        }
+    }
+
+    /// <inheritdoc/>
     public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) =>
         GetAsync("v1/me/settings/time_zone", [], ApiJson.Wire.SettingDto, cancellationToken);
 

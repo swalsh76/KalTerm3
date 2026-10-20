@@ -265,6 +265,33 @@ internal static partial class CliApp
             return Ok;
         }));
         alert.Subcommands.Add(alertFires);
+        var watchAfter = new Option<long?>("--after") { Description = "Replay the alerts that fired after this fire id first (default: only new ones)" };
+        var alertWatch = new Command("watch", "Print alerts as they fire, until Ctrl+C (reconnects by itself and misses nothing)");
+        alertWatch.Options.Add(watchAfter);
+        alertWatch.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            env.Error.MarkupLine("[grey]watching your alerts; Ctrl+C stops[/]");
+            var watcher = new AlertWatcher((from, token) => client.StreamAlertFiresAsync(from, token), env.Time);
+            await watcher.RunAsync(
+                parsed.GetValue(watchAfter),
+                fire =>
+                {
+                    if (asJson)
+                    {
+                        env.Out.Profile.Out.Writer.WriteLine(ApiJson.Serialize(fire));
+                    }
+                    else
+                    {
+                        env.Out.MarkupLine(Views.FireLine(fire));
+                    }
+
+                    return Task.CompletedTask;
+                },
+                notice => env.Error.MarkupLine($"[yellow]{Escape(notice)}[/]"),
+                ct).ConfigureAwait(false);
+            return Ok;
+        }));
+        alert.Subcommands.Add(alertWatch);
         root.Subcommands.Add(alert);
 
         // ---- settings ----

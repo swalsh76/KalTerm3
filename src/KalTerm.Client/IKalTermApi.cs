@@ -134,6 +134,16 @@ public interface IKalTermApi
     /// <returns>The fires, oldest first.</returns>
     Task<AlertFiresPage> GetAlertFiresAsync(long? after = null, int? limit = null, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Opens the stream of the caller's alert fires and yields what it says until the server closes it. The first event says where the stream starts; after that come the fires. A dropped connection
+    /// ends the sequence with an exception or normally: use <see cref="AlertWatcher"/> to reopen it without missing a fire.
+    /// </summary>
+    /// <param name="after">Replay fires after this id first; <see langword="null"/> for new fires only.</param>
+    /// <param name="cancellationToken">Closes the stream.</param>
+    /// <returns>The events.</returns>
+    /// <exception cref="ApiException">The server refused the stream (<c>unauthorized</c>, <c>too_many_streams</c>).</exception>
+    IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, CancellationToken cancellationToken = default);
+
     /// <summary>The caller's stored time zone.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The setting; its value is <see langword="null"/> when none is stored.</returns>

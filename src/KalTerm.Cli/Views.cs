@@ -241,6 +241,10 @@ internal static class Views
         return new Rows(table.Render(width), new Markup($"[grey]{alerts.Alerts.Count} alert(s).[/]"));
     }
 
+    /// <summary>One fire as a line: when, which market, what, and the value that crossed the threshold.</summary>
+    public static string FireLine(AlertFireDto fire) =>
+        $"{Moment(fire.FiredAt, true)} {ZoneName}  [bold]{Escape(fire.Ticker)}[/]  {Escape(fire.Kind)} {Escape(fire.Threshold)}  [green]{Escape(fire.Value)}[/]  (alert {fire.AlertId.ToString(CultureInfo.InvariantCulture)}, fire {fire.Id.ToString(CultureInfo.InvariantCulture)})";
+
     public static IRenderable Fires(AlertFiresPage page, int width)
     {
         var table = new TextTable().Column("Fire", right: true).Column($"Time ({ZoneName})").Column("Market").Column("Kind").Column("Threshold", right: true).Column("Value", right: true).Column("Alert", right: true);

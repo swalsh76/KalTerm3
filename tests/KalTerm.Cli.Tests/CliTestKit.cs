@@ -71,6 +71,13 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public string? StoredTimeZone { get; set; }
 
+    /// <summary>What each opening of the alert stream gives: a list of events, or an exception. When the script has run out the stream cancels the run (the way a person would press Ctrl+C).</summary>
+    public Queue<object> StreamScript { get; } = new();
+
+    public List<long?> StreamOpens { get; } = [];
+
+    public CancellationTokenSource? StopWhenScriptEnds { get; set; }
+
     public List<string> Changes { get; } = [];
 
     public GapPage Gaps { get; set; } = new([]);
@@ -186,6 +193,27 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Answer(Fires);
     }
 
+    public async IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        StreamOpens.Add(after);
+        if (!StreamScript.TryDequeue(out var step))
+        {
+            StopWhenScriptEnds?.Cancel();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            yield break;
+        }
+
+        if (step is Exception failure)
+        {
+            throw failure;
+        }
+
+        foreach (var item in (IReadOnlyList<AlertStreamEvent>)step)
+        {
+            yield return item;
+        }
+    }
+
     public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) => Task.FromResult(new SettingDto("time_zone", StoredTimeZone));
 
     public Task SetTimeZoneSettingAsync(string? zone, CancellationToken cancellationToken = default)
@@ -233,6 +261,9 @@ internal sealed class Harness : IDisposable
 
     public bool HasStoredToken { get; set; } = true;
 
+    /// <summary>Whether waits (a reconnect pause) end at once instead of waiting for the test to fire them.</summary>
+    public bool AutoFireTimers { get; set; }
+
     public Harness(Dictionary<string, string>? variables = null)
     {
         Variables = variables ?? [];
@@ -279,7 +310,9 @@ internal sealed class Harness : IDisposable
 
     public int Width => _out.Profile.Width;
 
-    public async Task<int> RunAsync(params string[] args)
+    public Task<int> RunAsync(params string[] args) => RunAsync(TestContext.Current.CancellationToken, args);
+
+    public async Task<int> RunAsync(CancellationToken cancellationToken, params string[] args)
     {
         var env = new CliEnvironment
         {
@@ -306,12 +339,12 @@ internal sealed class Harness : IDisposable
             InteractiveInput = Interactive,
             ReadLine = () => _typed.Count > 0 ? _typed.Dequeue() : null,
             ReadSecret = () => Secret,
-            Time = new AutoAdvanceTimeProvider(autoFire: false, utcStart: Samples.Now),
+            Time = new AutoAdvanceTimeProvider(autoFire: AutoFireTimers, utcStart: Samples.Now),
             HasToken = _ => HasStoredToken,
             GetVariable = name => Variables.GetValueOrDefault(name),
             SystemZone = SystemZone,
         };
-        return await CliApp.RunAsync(args, env, TestContext.Current.CancellationToken);
+        return await CliApp.RunAsync(args, env, cancellationToken);
     }
 
     public void Dispose()
