@@ -454,11 +454,14 @@ public class KalshiRestClientTests
         Assert.Empty(stub.Requests);
     }
 
+    // Reads only. The account reads (balance, positions, orders, fills, settlements, queue positions; M6 slice 6.3) are GETs and need a signer. Placing, amending and cancelling orders stays the trading
+    // client's job: nothing here sends anything but a GET.
     private static readonly string[] ApprovedPublicMethods =
     [
-        "ClockSkewAsync", "Dispose", "EventAsync", "EventsPageAsync", "ExchangeStatusAsync", "IterateEventsAsync",
-        "IterateMarketsAsync", "IterateMarketsUpdatedSinceAsync", "IterateMultivariateEventsAsync", "IterateOpenMarketsAsync", "IterateTradesAsync", "MarketAsync", "MarketsPageAsync",
-        "MultivariateEventsPageAsync", "OrderBookAsync", "SeriesAsync", "SeriesListAsync",
+        "BalanceAsync", "ClockSkewAsync", "Dispose", "EventAsync", "EventsPageAsync", "ExchangeStatusAsync", "FillsPageAsync", "IterateEventsAsync", "IterateFillsAsync",
+        "IterateMarketsAsync", "IterateMarketsUpdatedSinceAsync", "IterateMultivariateEventsAsync", "IterateOpenMarketsAsync", "IterateOrdersAsync", "IteratePositionsAsync", "IterateSettlementsAsync",
+        "IterateTradesAsync", "MarketAsync", "MarketsPageAsync", "MultivariateEventsPageAsync", "OrderAsync", "OrderBookAsync", "OrdersPageAsync", "PositionsPageAsync", "QueuePositionsAsync",
+        "SeriesAsync", "SeriesListAsync", "SettlementsPageAsync",
     ];
 
     [Fact]

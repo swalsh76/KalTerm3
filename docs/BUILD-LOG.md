@@ -1510,3 +1510,25 @@ Measured with the read-only production key, GET only, names and kinds of fields 
   and **1,544 differential scenarios** (`tools/vectors/generate_risk.py` runs the Python `check` on hand-made and seeded random cases) where the port agrees on approval, every refusal code and message in order, fee,
   cost, funding and kill trip. The one deliberate difference is the file name in the production message.
 - Still open for later slices (BUILD-LOG 8.1): whether Kalshi deducts resting-order collateral from a shard balance, and whether auto-routing makes the transfers unnecessary (both asked of the real account in 6.7).
+
+### 8.3 Slice 6.3: the account read side and the trading key (2026-10-20)
+
+- `KalTerm.Kalshi` gains the portfolio models (`AccountBalance`, `ShardBalance`, `MarketPosition`, `EventPosition`, `PositionsPage`, `Order`, `OrdersPage`, `Fill`, `FillsPage`, `Settlement`,
+  `SettlementsPage`, `QueuePosition`) and the reads on `KalshiRestClient`: `BalanceAsync` (optional shard and subaccount), `PositionsPageAsync` / `IteratePositionsAsync`, `OrdersPageAsync` /
+  `IterateOrdersAsync` / `OrderAsync`, `FillsPageAsync` / `IterateFillsAsync`, `SettlementsPageAsync` / `IterateSettlementsAsync`, `QueuePositionsAsync`. They are plain GETs through the same guarded path
+  (signed, paced, retried only as before); the client still cannot send anything but a GET. Without a signer an account read is refused up front with a message, spending no request.
+- Money and counts are parsed exactly (`Dollars`, `Contracts`); a field with more decimals than the scale is refused, never rounded. The `balance` field is `balance_dollars` cut to whole cents (so it loses up
+  to 99 hundredths of a cent): the dollar value and the per-shard rows are the ones to use. Kalshi keeps every order on the YES book (`side` is always `yes`); the person's intent is `action` with
+  `outcome_side`. Unknown fields are ignored; the shape tests fail if a payload (the reference's fixtures, whose field sets were measured on a live account) has a field the model lacks.
+- The trading key (new `KalTerm.Trading/Keys`): `CredentialManagerKeyVault` keeps one Ed25519 key per environment (`demo`, `production`) as a generic credential in the signed-in user's Windows
+  Credential Manager (`KalTerm/trading-key/<environment>`; the user name holds the Kalshi key id, the secret the PEM), through `advapi32` (`CredWriteW`, `CredReadW`, `CredDeleteW`). It is the user's own vault:
+  not a file, not in the repository, not on the server, unreadable by the server's service accounts. `TradingKeyLoader.Store` refuses anything that is not an unencrypted Ed25519 PKCS#8 PEM, or an unusable key
+  id or environment, before it is stored; `Load` builds a `TradingSigner` (the signer plus the key it owns, disposed together). The data key keeps its own path (environment variables and a file), so the two
+  keys cannot be mixed up. An entry's text never contains the key.
+- Tests: the models and the reads against a scripted handler (balance per shard and narrowed, positions with a negative long-NO, empty accounts, cursors, one order, queue positions, signing, no signer), the
+  Credential Manager vault against the real Windows API under a name of the test's own (round trip, replace, case, too large, never leaves a credential behind), the loader (store, sign and verify, refusals).
+- Live (read-only key, GET only, counts and yes or no only): the typed reads parsed the real account. Four shards; their rows add up to the total and the cents field is the dollars cut to whole cents; one shard
+  asked for alone equals its row; positions (settled included, 6 market and 4 event positions on the first page) parsed, so the populated shape is confirmed; 2 orders, all executed, each with a yes price plus a
+  no price of a dollar and ordered = filled + remaining; 20 fills on the first page, each with prices adding to a dollar, a positive count and a fee of zero or more; one order read by its id equals the same
+  order in the list; 6 settlements; no resting orders. That closes open question 3 of 8.1 for the fields seen.
+- Still open: the keyless questions of 8.1 (list route, private WebSocket shapes) belong to 6.4 and 6.5; no trading key exists yet (the owner creates one at Kalshi before 6.7).
