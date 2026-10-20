@@ -121,6 +121,7 @@ public sealed class DatabaseEndpointTests(DatabaseFixture db) : IClassFixture<Da
     public async Task PublishedBooksComeBackThroughTheEndpointsAndTheStatusCountsThem()
     {
         db.Require();
+        await db.ExecuteAsync("DELETE dbo.orderbook_state");   // the status counts every published book, and the stream tests publish their own: this test owns the exact totals
         var now = DateTime.UtcNow;
         var live = await MarketAsync("DB-BOOK-A");
         var stale = await MarketAsync("DB-BOOK-B");
@@ -174,6 +175,55 @@ public sealed class DatabaseEndpointTests(DatabaseFixture db) : IClassFixture<Da
         Assert.Equal(("DB-STREAM", "0.560000", "0.570000"), (book1.Ticker, book1.YesBids[0].Price, book1.NoBids.Count == 1 ? "0.570000" : "x"));
         var dto = ApiJson.Deserialize<MarketTickDto>(tick.Single(l => l.StartsWith("data: ", StringComparison.Ordinal))["data: ".Length..])!;
         Assert.Equal(("DB-STREAM", "0.570000", "0.560000", "0.580000", "50.00"), (dto.Ticker, dto.Tick.Price, dto.Tick.YesBid, dto.Tick.YesAsk, dto.Tick.Volume));
+    }
+
+    [Fact]
+    public async Task AMarketAddedToAnOpenStreamDeliversItsBookAndItsTicksThroughTheRealReadersAndRemovingItStopsThem()
+    {
+        db.Require();
+        var now = DateTime.UtcNow;
+        await DaysAsync(now.Date.AddDays(-1), 3);
+        await MarketAsync("DB-LIVE-A");
+        var added = await MarketAsync("DB-LIVE-B");
+        await new BookStateStore(new DataSource(db.Options)).SaveAsync([new BookState(added, now.AddSeconds(-5), now.AddSeconds(-1), false, false, [new(410_000, 150)], [new(550_000, 200)])], TestContext.Current.CancellationToken);
+        await using var api = await ApiTestHost.StartWithDatabaseAsUserAsync(new DataSource(db.Options));
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/v1/stream?ticks=DB-LIVE-A", UriKind.Relative));
+        using var response = await api.Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, TestContext.Current.CancellationToken);
+        using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken));
+        var streamId = ApiJson.Deserialize<StreamReadyDto>((await NextEventAsync(reader))[^1]["data: ".Length..])!.StreamId;
+
+        var putTicks = await api.Client.PutAsync(new Uri($"/v1/stream/{streamId}/ticks/DB-LIVE-B", UriKind.Relative), null, TestContext.Current.CancellationToken);
+        var putBooks = await api.Client.PutAsync(new Uri($"/v1/stream/{streamId}/books/DB-LIVE-B", UriKind.Relative), null, TestContext.Current.CancellationToken);
+        var subscribedTicks = await NextEventWithAsync(reader, "event: subscribed");
+        var subscribedBooks = await NextEventWithAsync(reader, "event: subscribed");
+        var book = await NextEventWithAsync(reader, "event: book");
+        await db.ExecuteAsync($"INSERT dbo.ticker (ts, market_id, price_e6, yes_bid_e6, yes_ask_e6, volume_e2) VALUES ('{Time(DateTime.UtcNow)}', {added}, 570000, 560000, 580000, 5000)");
+        var tick = await NextEventWithAsync(reader, "event: tick");
+        var delete = await api.Client.DeleteAsync(new Uri($"/v1/stream/{streamId}/ticks/DB-LIVE-B", UriKind.Relative), TestContext.Current.CancellationToken);
+        var unsubscribed = await NextEventWithAsync(reader, "event: unsubscribed");
+
+        Assert.Equal((HttpStatusCode.NoContent, HttpStatusCode.NoContent, HttpStatusCode.NoContent), (putTicks.StatusCode, putBooks.StatusCode, delete.StatusCode));
+        var first = ApiJson.Deserialize<StreamSubscriptionDto>(subscribedTicks[^1]["data: ".Length..])!;
+        Assert.Equal(("ticks", "DB-LIVE-B", false), (first.Kind, first.Ticker, first.Unknown));
+        Assert.NotNull(first.From);
+        Assert.Equal("books", ApiJson.Deserialize<StreamSubscriptionDto>(subscribedBooks[^1]["data: ".Length..])!.Kind);
+        Assert.Equal("DB-LIVE-B", ApiJson.Deserialize<OrderBookDto>(book[^1]["data: ".Length..])!.Ticker);
+        var dto = ApiJson.Deserialize<MarketTickDto>(tick[^1]["data: ".Length..])!;
+        Assert.Equal(("DB-LIVE-B", "0.570000"), (dto.Ticker, dto.Tick.Price));
+        Assert.Equal("ticks", ApiJson.Deserialize<StreamSubscriptionDto>(unsubscribed[^1]["data: ".Length..])!.Kind);
+    }
+
+    /// <summary>The next event with the given line, skipping keep-alives and other events.</summary>
+    private static async Task<List<string>> NextEventWithAsync(StreamReader reader, string line)
+    {
+        while (true)
+        {
+            var next = await NextEventAsync(reader);
+            if (next.Contains(line))
+            {
+                return next;
+            }
+        }
     }
 
     private static async Task<List<string>> NextEventAsync(StreamReader reader)

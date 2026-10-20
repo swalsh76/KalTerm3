@@ -195,6 +195,10 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
+    public Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+    public Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
     public Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
     public Task<TickPage> GetTicksAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();

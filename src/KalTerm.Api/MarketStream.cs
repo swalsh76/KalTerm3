@@ -75,6 +75,28 @@ public sealed record TickItem(string Ticker, StoredTick Tick) : StreamItem;
 /// <param name="Book">The book.</param>
 public sealed record BookItem(StoredBook Book) : StreamItem;
 
+/// <summary>The stream's watch list changed (the confirmation, in order with the ticks and books).</summary>
+/// <param name="Added">Whether the market was added (otherwise removed).</param>
+/// <param name="Books">Whether it is the book subscription (otherwise the ticks).</param>
+/// <param name="Ticker">The market.</param>
+/// <param name="From">For a new ticks subscription, where its live ticks begin.</param>
+/// <param name="Unknown">The ticker is not a market here.</param>
+/// <param name="NoBook">The market has no published book.</param>
+public sealed record SubscriptionItem(bool Added, bool Books, string Ticker, DateTime? From, bool Unknown, bool NoBook) : StreamItem;
+
+/// <summary>What a live change of a stream's watch list came to.</summary>
+public enum StreamChange
+{
+    /// <summary>It was applied (or nothing needed changing) and the stream will confirm it.</summary>
+    Done,
+
+    /// <summary>The stream is gone or is not the caller's.</summary>
+    Gone,
+
+    /// <summary>The stream would watch more markets than allowed.</summary>
+    TooManyMarkets,
+}
+
 /// <summary>One open market stream: what it watches and the queue the watcher fills.</summary>
 public sealed class MarketStreamSession : IDisposable
 {
@@ -86,8 +108,8 @@ public sealed class MarketStreamSession : IDisposable
     {
         _hub = hub;
         UserId = userId;
-        Ticks = ticks;
-        Books = books;
+        TickSet = new HashSet<string>(ticks, StringComparer.Ordinal);
+        BookSet = new HashSet<string>(books, StringComparer.Ordinal);
         JoinCursor = joinCursor;
         Id = Guid.NewGuid().ToString("N")[..16];
         _queue = Channel.CreateBounded<StreamItem>(new BoundedChannelOptions(capacity) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
@@ -99,11 +121,18 @@ public sealed class MarketStreamSession : IDisposable
     /// <summary>The user.</summary>
     public int UserId { get; }
 
-    /// <summary>The markets whose ticks are pushed.</summary>
-    public IReadOnlySet<string> Ticks { get; }
+    /// <summary>The markets whose ticks are pushed. Changed only through <see cref="MarketStreamHub.ChangeAsync"/>, between two polls.</summary>
+    public IReadOnlySet<string> Ticks => TickSet;
 
-    /// <summary>The markets whose books are pushed.</summary>
-    public IReadOnlySet<string> Books { get; }
+    /// <summary>The markets whose books are pushed. Changed only through <see cref="MarketStreamHub.ChangeAsync"/>, between two polls.</summary>
+    public IReadOnlySet<string> Books => BookSet;
+
+    internal HashSet<string> TickSet { get; }
+
+    internal HashSet<string> BookSet { get; }
+
+    /// <summary>How many markets the stream watches (a market watched for both ticks and books counts once).</summary>
+    internal int MarketCount => TickSet.Count + BookSet.Count(b => !TickSet.Contains(b));
 
     /// <summary>Live ticks begin here: everything from this moment on arrives through <see cref="Reader"/>; anything earlier is the client's to replay.</summary>
     public DateTime JoinCursor { get; }
@@ -259,6 +288,90 @@ public sealed partial class MarketStreamHub : IDisposable
             {
                 LogReadFailed(_logger, ex.Message);
             }
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Adds a market to, or removes it from, what an open stream watches, between two polls. The stream confirms it in order with its ticks and books: everything queued before the confirmation still arrives, and nothing for a removed
+    /// market after it. A new ticks subscription gets every tick from the confirmation's <c>From</c> on; a new books subscription gets the current book at once.
+    /// </summary>
+    /// <param name="userId">The caller; only the stream's own user can change it.</param>
+    /// <param name="streamId">The stream.</param>
+    /// <param name="books">The book subscription (otherwise the ticks).</param>
+    /// <param name="ticker">The market.</param>
+    /// <param name="add">Add (otherwise remove).</param>
+    /// <param name="cancellationToken">Cancels the wait for the gap between polls.</param>
+    /// <returns>What came of it.</returns>
+    public async Task<StreamChange> ChangeAsync(int userId, string streamId, bool books, string ticker, bool add, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(streamId);
+        ArgumentNullException.ThrowIfNull(ticker);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            MarketStreamSession? session;
+            bool already;
+            lock (_sync)
+            {
+                session = _sessions.Find(s => s.UserId == userId && string.Equals(s.Id, streamId, StringComparison.Ordinal));
+                if (session is null)
+                {
+                    return StreamChange.Gone;
+                }
+
+                var set = books ? session.BookSet : session.TickSet;
+                already = set.Contains(ticker);
+                if (add && !already && session.MarketCount >= Options.MaxMarkets && !(books ? session.TickSet : session.BookSet).Contains(ticker))
+                {
+                    return StreamChange.TooManyMarkets;
+                }
+            }
+
+            if (!add)
+            {
+                lock (_sync)
+                {
+                    (books ? session.BookSet : session.TickSet).Remove(ticker);
+                }
+
+                session.Push(new SubscriptionItem(false, books, ticker, null, false, false));
+                return StreamChange.Done;
+            }
+
+            var unknown = !(await _reader.ResolveAsync([ticker], cancellationToken).ConfigureAwait(false)).ContainsKey(ticker);
+            StoredBook? book = null;
+            if (books && !already && !unknown)
+            {
+                var found = await _books.GetManyAsync([ticker], cancellationToken).ConfigureAwait(false);
+                book = found.Count > 0 ? found[0] : null;
+            }
+
+            DateTime? from = null;
+            lock (_sync)
+            {
+                if (!_sessions.Contains(session))
+                {
+                    return StreamChange.Gone;
+                }
+
+                if (!already)
+                {
+                    (books ? session.BookSet : session.TickSet).Add(ticker);
+                    from = books ? null : _cursor ?? Floor(_time.GetUtcNow().UtcDateTime - Options.TickLag);
+                }
+            }
+
+            session.Push(new SubscriptionItem(true, books, ticker, from, unknown, books && !unknown && !already && book is null));
+            if (book is not null)
+            {
+                session.Push(new BookItem(book));
+            }
+
+            return StreamChange.Done;
         }
         finally
         {
@@ -530,6 +643,27 @@ internal static class MarketStreamEndpoint
         return Results.Empty;
     }
 
+    /// <summary>Adds a market to, or removes it from, an open stream of the caller's. The stream confirms it.</summary>
+    public static async Task<IResult> ChangeAsync(HttpContext context, MarketStreamHub hub, string streamId, string ticker, bool books, bool add)
+    {
+        if (context.Items[ApiAuthentication.UserItem] is not AuthenticatedUser user)
+        {
+            return ApiEndpoints.Json(new ErrorDto("unauthorized"), ApiJson.Wire.ErrorDto, StatusCodes.Status401Unauthorized);
+        }
+
+        if (!RequestParameters.IsTicker(ticker))
+        {
+            return ApiEndpoints.Invalid("ticker");
+        }
+
+        return await hub.ChangeAsync(user.UserId, streamId, books, ticker, add, context.RequestAborted).ConfigureAwait(false) switch
+        {
+            StreamChange.Done => Results.NoContent(),
+            StreamChange.TooManyMarkets => ApiEndpoints.Json(new ErrorDto("too_many_markets"), ApiJson.Wire.ErrorDto, StatusCodes.Status409Conflict),
+            _ => ApiEndpoints.NotFound(),
+        };
+    }
+
     private static async Task RunAsync(HttpContext context, MarketStreamSession session, Dictionary<string, (DateTime Updated, bool Stale, bool Approximate)> sent, int depth, AuthenticatedUser user, TimeProvider time, CancellationToken aborted)
     {
         var options = context.RequestServices.GetRequiredService<MarketStreamHub>().Options;
@@ -597,6 +731,17 @@ internal static class MarketStreamEndpoint
             case BookItem book when !sent.TryGetValue(book.Book.Ticker, out var last) || (book.Book.UpdatedAt >= last.Updated && (book.Book.UpdatedAt, book.Book.Stale, book.Book.Approximate) != last):
                 sent[book.Book.Ticker] = (book.Book.UpdatedAt, book.Book.Stale, book.Book.Approximate);
                 text.Append(BookEvent(book.Book, now, depth));
+                break;
+            case SubscriptionItem change:
+                if (change.Books)
+                {
+                    sent.Remove(change.Ticker);   // a book subscribed again is sent afresh, whatever was sent before
+                }
+
+                text.Append(Event(
+                    change.Added ? "subscribed" : "unsubscribed",
+                    null,
+                    ApiJson.Serialize(new StreamSubscriptionDto(change.Books ? "books" : "ticks", change.Ticker, change.From?.ToString(MomentFormat, CultureInfo.InvariantCulture), change.Unknown, change.NoBook))));
                 break;
         }
     }

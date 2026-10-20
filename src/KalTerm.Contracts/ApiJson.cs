@@ -52,6 +52,7 @@ namespace KalTerm.Contracts;
 [JsonSerializable(typeof(MarketTickDto))]
 [JsonSerializable(typeof(StreamReadyDto))]
 [JsonSerializable(typeof(StreamResetDto))]
+[JsonSerializable(typeof(StreamSubscriptionDto))]
 [JsonSerializable(typeof(StatusDto))]
 [JsonSerializable(typeof(HealthDto))]
 [JsonSerializable(typeof(ErrorDto))]

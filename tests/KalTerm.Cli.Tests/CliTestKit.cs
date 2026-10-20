@@ -217,6 +217,30 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         {
             yield return item;
         }
+
+        if (HoldStreamOpen)
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        }
+    }
+
+    /// <summary>Keeps a scripted market stream open after its events, as a live stream is, so a test can change the list while it runs.</summary>
+    public bool HoldStreamOpen { get; set; }
+
+    /// <summary>The live changes asked for, as <c>add|remove ticks|books TICKER</c> (the stream id is checked to be the one the script announced).</summary>
+    public List<string> MarketChanges { get; } = [];
+
+    /// <summary>Thrown by the next live change, when set.</summary>
+    public Exception? MarketChangeFailure { get; set; }
+
+    public Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("add", streamId, kind, ticker);
+
+    public Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("remove", streamId, kind, ticker);
+
+    private Task Change(string verb, string streamId, StreamKind kind, string ticker)
+    {
+        MarketChanges.Add($"{verb} {streamId} {kind.ToString().ToLowerInvariant()} {ticker}");
+        return MarketChangeFailure is { } failure ? Task.FromException(failure) : Task.CompletedTask;
     }
 
     public async IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
