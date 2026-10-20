@@ -48,6 +48,15 @@ public interface IKalTermApi
     /// <returns>The page.</returns>
     Task<TickPage> GetTicksAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default);
 
+    /// <summary>Candles of one market, oldest first (or the latest ones when no start is given).</summary>
+    /// <param name="ticker">The ticker.</param>
+    /// <param name="interval">The bucket length, for example <c>15m</c>, <c>4h</c>, <c>1d</c> or <c>1w</c>.</param>
+    /// <param name="query">Window and paging.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The page.</returns>
+    /// <exception cref="ApiException">The API refused the interval or range (<c>invalid_parameter</c>) or has no such market (<c>not_found</c>).</exception>
+    Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default);
+
     /// <summary>Trades of one market, oldest first (or the latest ones when no start is given).</summary>
     /// <param name="ticker">The ticker.</param>
     /// <param name="query">Window and paging.</param>

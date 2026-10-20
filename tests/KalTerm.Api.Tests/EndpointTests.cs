@@ -1,5 +1,6 @@
 using System.Net;
 using KalTerm.Contracts;
+using KalTerm.Data.Candles;
 using KalTerm.Data.Reading;
 using static KalTerm.Api.Tests.Samples;
 
@@ -252,6 +253,83 @@ public sealed class EndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         await AssertInvalidAsync("/v1/markets/KX-1/trades?start=2026-10-19T00:00:00Z&end=2026-10-18T00:00:00Z", "start", "end");
         await AssertInvalidAsync("/v1/markets/bad%20ticker/trades", "ticker");
+    }
+
+    // ---- candles --------------------------------------------------------------------------------------------------------------------
+
+    private static StoredCandle Candle(DateTime start, bool partial = false) =>
+        new(start, 3600, 400_000, 550_000, 390_000, 450_000, 40_000, 3, 440_000, 460_000, 12_300, partial, false, partial ? "ws_lost" : null, partial ? 45 : null, 7);
+
+    [Fact]
+    public async Task CandlesAreMappedAndTheQueryDefaultsToTheLatestHourlyOnes()
+    {
+        Fakes.Candles.Result = new CandleResult([Candle(NowUtc.AddHours(-2)), Candle(NowUtc.AddHours(-1), partial: true)], "stored 1h", null);
+
+        var page = await _api.GetAsync<CandlePage>("/v1/markets/KX-1/candles");
+
+        Assert.Equal(("1h", "stored 1h", null), (page.Interval, page.Source, page.NextCursor));
+        var first = page.Candles[0];
+        Assert.Equal(("0.400000", "0.550000", "0.390000", "0.450000", "400.00", 3), (first.Open, first.High, first.Low, first.Close, first.Volume, first.TradeCount));
+        Assert.Equal(("0.440000", "0.460000", "123.00", false, null), (first.YesBid, first.YesAsk, first.OpenInterest, first.Partial, first.GapKind));
+        Assert.Equal((true, true, false, "ws_lost", 45), (page.Candles[1].Partial, page.Candles[1].TradesPartial, page.Candles[1].BookPartial, page.Candles[1].GapKind, page.Candles[1].GapSeconds));
+        Assert.Equal(new CandleQuery("KX-1", 3600, null, NowUtc.AddSeconds(1), 200), Fakes.Candles.Queries.Single());
+    }
+
+    [Theory]
+    [InlineData("15m", 900)]
+    [InlineData("4h", 14400)]
+    [InlineData("1d", 86400)]
+    [InlineData("1w", 604800)]
+    [InlineData("90", 5400)]
+    public async Task TheIntervalIsParsedInUnitsOrBareMinutes(string interval, int seconds)
+    {
+        await _api.GetAsync<CandlePage>("/v1/markets/KX-1/candles?interval=" + interval);
+
+        Assert.Equal(seconds, Fakes.Candles.Queries.Single().IntervalSeconds);
+    }
+
+    [Theory]
+    [InlineData("0m")]
+    [InlineData("30s")]
+    [InlineData("2d")]
+    [InlineData("1500")]
+    [InlineData("abc")]
+    public async Task AnIntervalThatCannotBeServedIsRefused(string interval)
+    {
+        await AssertInvalidAsync("/v1/markets/KX-1/candles?interval=" + interval, "interval");
+    }
+
+    [Fact]
+    public async Task ACandleCursorIsTheNextBucketAndASecondPageStartsThere()
+    {
+        Fakes.Candles.Result = new CandleResult([Candle(NowUtc.AddHours(-5))], "stored 1h", NowUtc.AddHours(-4));
+
+        var page = await _api.GetAsync<CandlePage>("/v1/markets/KX-1/candles?start=2026-10-18T00:00:00Z&limit=1");
+        await _api.GetAsync<CandlePage>("/v1/markets/KX-1/candles?cursor=" + page.NextCursor);
+
+        Assert.Equal(ApiFormat.Moment(NowUtc.AddHours(-4)), ApiFormat.DecodeCursor(page.NextCursor!));
+        Assert.Equal(NowUtc.AddHours(-4), Fakes.Candles.Queries[1].Start);
+    }
+
+    [Fact]
+    public async Task CandlesOfAnUnknownMarketAreNotFoundAndBadParametersAreRefused()
+    {
+        Fakes.Candles.Result = null;
+
+        var (response, _) = await _api.GetAsync("/v1/markets/KX-NOPE/candles");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await AssertInvalidAsync("/v1/markets/KX-1/candles?start=2026-10-19T00:00:00Z&end=2026-10-18T00:00:00Z", "start", "end");
+        await AssertInvalidAsync("/v1/markets/bad%20ticker/candles", "ticker");
+        await AssertInvalidAsync("/v1/markets/KX-1/candles?cursor=" + ApiFormat.EncodeCursor("nope"), "cursor");
+    }
+
+    [Fact]
+    public async Task ARangeTooLongToComputeIsRefusedNamingTheParametersToChange()
+    {
+        Fakes.Candles.Throw = new CandleRangeException();
+
+        await AssertInvalidAsync("/v1/markets/KX-1/candles?interval=7m", "start", "end", "interval");
     }
 
     // ---- gaps -----------------------------------------------------------------------------------------------------------------------

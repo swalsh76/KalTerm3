@@ -227,6 +227,35 @@ public sealed class CommandTests : IDisposable
     }
 
     [Fact]
+    public async Task CandlesShowThePricesTheVolumeAndMarkBucketsThatOverlapAGap()
+    {
+        _cli.Api.Candles = new CandlePage("15m", "rolled up from stored 1m", [
+            new CandleDto("2026-10-18T22:00:00.000000+00:00", "0.400000", "0.550000", "0.390000", "0.450000", "1,234.00", 3, "0.440000", "0.460000", "123.00", false, false, false, null, null),
+            new CandleDto("2026-10-18T22:15:00.000000+00:00", null, null, null, null, "0.00", 0, "0.440000", "0.460000", "123.00", true, true, false, "ingest_down", 90)], "NEXT");
+
+        var exit = await _cli.RunAsync("candles", "A-1", "--interval", "15m", "--since", "6h", "--limit", "2");
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Equal(("A-1", "15m", new WindowQuery(Now.UtcDateTime.AddHours(-6), null, 2, null)), _cli.Api.CandleQueries.Single());
+        Assert.Contains("0.55", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("partial: trades, ingest_down 90s", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("2 shown, 15m candles (rolled up from stored 1m)", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("More available: --cursor NEXT", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CandlesDefaultToHourlyAndTheLatestAndAnApiRefusalIsReported()
+    {
+        await _cli.RunAsync("candles", "A-1");
+        Assert.Equal(("A-1", "1h", new WindowQuery(null, null, 30, null)), _cli.Api.CandleQueries.Single());
+
+        _cli.Api.Throw = new ApiException(HttpStatusCode.UnprocessableEntity, "invalid_parameter", ["interval"]);
+        var exit = await _cli.RunAsync("candles", "A-1", "--interval", "7s");
+
+        Assert.NotEqual(CliApp.Ok, exit);
+    }
+
+    [Fact]
     public async Task TradesShowBothPricesTheTakerAndBlocks()
     {
         _cli.Api.Trades = new TradePage([Trade("t-1", "yes"), Trade("t-2", "no", true)], null);

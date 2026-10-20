@@ -211,6 +211,7 @@ with ticks and 30 k with trades, and the raw ticker table grows about 2.2 GB a d
   closes the gap; ticker-derived fields (bid, ask, open interest) stay partial for good. The CLI shows partial candles in yellow; alerts (M5) can ignore them on purpose.
 - Surfaces: `GET /v1/markets/{ticker}/candles?interval=&start=&end=&limit=` (paged like ticks) and `kterm candles TICKER --interval 15m --since 1d`.
   The candle job runs in the ingest host about once a minute for closed buckets.
+  Built on `m4/4.4-candles` (BUILD-LOG 5.14); the client time-zone option is still to do.
 
 **Backup and restore (slice 4.3), approved 2026-10-19.** The target is a network share (a mapped drive on kaldb, `\\host\share`). kaldb is in a workgroup and SQL Server runs as a virtual service
 account that cannot authenticate to it, so SQL Server backs up to a local **staging** folder and the ingest host verifies and copies the file to the share with a credential kept on the server (DPAPI, machine

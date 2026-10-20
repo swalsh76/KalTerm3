@@ -83,6 +83,13 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
     }
 
     /// <inheritdoc/>
+    public Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return GetAsync($"v1/markets/{Segment(ticker)}/candles", [("interval", interval), .. Window(query)], ApiJson.Wire.CandlePage, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public Task<TradePage> GetTradesAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);

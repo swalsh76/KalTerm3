@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using KalTerm.Contracts;
+using KalTerm.Data.Candles;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Http;
 
@@ -173,6 +174,40 @@ internal sealed partial class RequestParameters(IQueryCollection query)
         if (split > 0 && TryParseMoment(text[..split], out var ts) && TradeId().IsMatch(text[(split + 1)..]))
         {
             return new TradePosition(ts, text[(split + 1)..]);
+        }
+
+        _invalid.Add("cursor");
+        return null;
+    }
+
+    /// <summary>The candle interval in seconds (<c>5m</c>, <c>4h</c>, <c>1d</c>, <c>1w</c> or whole minutes); the default is one hour. An interval that cannot be served is invalid.</summary>
+    public int Interval()
+    {
+        if (Single("interval") is not { } text)
+        {
+            return 3600;
+        }
+
+        if (!CandleRules.TryParseInterval(text, out var seconds) || !CandleRules.IsRequestable(seconds))
+        {
+            _invalid.Add("interval");
+            return 3600;
+        }
+
+        return seconds;
+    }
+
+    /// <summary>The bucket start a candle page continues from, or <see langword="null"/> when there is no cursor.</summary>
+    public DateTime? CandleCursor()
+    {
+        if (Cursor() is not { } text)
+        {
+            return null;
+        }
+
+        if (TryParseMoment(text, out var ts))
+        {
+            return ts;
         }
 
         _invalid.Add("cursor");

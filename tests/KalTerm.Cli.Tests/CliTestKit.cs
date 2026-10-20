@@ -53,6 +53,8 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public TradePage Trades { get; set; } = new([Samples.Trade()], null);
 
+    public CandlePage Candles { get; set; } = new("1h", "stored 1h", [], null);
+
     public GapPage Gaps { get; set; } = new([]);
 
     public OrderBookPage Books { get; set; } = new([Samples.Book("A-1")]);
@@ -72,6 +74,8 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
     public List<(string Ticker, WindowQuery Query)> TickQueries { get; } = [];
 
     public List<(string Ticker, WindowQuery Query)> TradeQueries { get; } = [];
+
+    public List<(string Ticker, string Interval, WindowQuery Query)> CandleQueries { get; } = [];
 
     public WindowQuery? GapQuery { get; private set; }
 
@@ -96,6 +100,12 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
     {
         TradeQueries.Add((ticker, query));
         return Answer(Trades);
+    }
+
+    public Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default)
+    {
+        CandleQueries.Add((ticker, interval, query));
+        return Answer(Candles);
     }
 
     public Task<GapPage> GetGapsAsync(WindowQuery query, CancellationToken cancellationToken = default)

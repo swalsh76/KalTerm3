@@ -27,6 +27,27 @@ public sealed partial class IngestHostOptions
     /// <summary>How many days of raw ticker and trade data are kept (<c>Ingest:RetentionDays</c>); older days are dropped whole once a day. Default 30; at least 4.</summary>
     public int RetentionDays { get; set; } = 30;
 
+    /// <summary>
+    /// The candle intervals that are stored and for which markets (<c>Ingest:Candles</c>), for example <c>1d=all;1h=all;1m=watched</c>. Empty stores none. Intervals: 1m, 5m, 15m, 1h, 4h, 1d;
+    /// scopes: all, watched (the watch list). Adding one builds it from the raw rows still held; removing one stops new rows and leaves the old ones to retention.
+    /// </summary>
+    public string Candles { get; set; } = Data.Candles.CandleRules.DefaultText;
+
+    /// <summary>The stored candle rules these settings describe.</summary>
+    /// <returns>The rules.</returns>
+    /// <exception cref="InvalidOperationException">The text is not a valid list of rules.</exception>
+    public IReadOnlyList<Data.Candles.CandleRule> ToCandleRules()
+    {
+        try
+        {
+            return Data.Candles.CandleRules.Parse(Candles);
+        }
+        catch (FormatException ex)
+        {
+            throw new InvalidOperationException("Ingest:Candles is not valid: " + ex.Message, ex);
+        }
+    }
+
     /// <summary>Whether the trades of closed gaps are recovered from REST (<c>Ingest:BackfillEnabled</c>). Default true.</summary>
     public bool BackfillEnabled { get; set; } = true;
 
@@ -89,7 +110,8 @@ public sealed partial class IngestHostOptions
             throw new InvalidOperationException($"Ingest:RetentionDays must be more than {Data.Governor.StorageBudget.MinKeepDays}");
         }
 
-        _ = ToBackupOptions();   // throws InvalidOperationException when the backup settings cannot work
+        _ = ToBackupOptions();
+        _ = ToCandleRules();   // throws InvalidOperationException when the backup settings cannot work
 
         if (PartitionDaysAhead < 1)
         {

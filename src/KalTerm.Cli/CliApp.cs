@@ -101,6 +101,35 @@ internal static partial class CliApp
         root.Subcommands.Add(WindowCommand("trades", "Trades of a market, oldest first (the latest ones unless --since or --start is given)", env, Run,
             (client, ticker, query, asJson, ct) => ReadTrades(env, client, ticker, query, asJson, ct)));
 
+        // ---- candles ----
+        var candleTicker = new Argument<string>("ticker") { Description = "The market ticker" };
+        var candleInterval = new Option<string>("--interval") { Description = "Bucket length: whole minutes up to a day, or a week, for example 5m, 15m, 4h, 1d or 1w", DefaultValueFactory = _ => "1h" };
+        var candleSince = new Option<string?>("--since") { Description = "From this long ago, for example 6h or 7d" };
+        var candleStart = new Option<string?>("--start") { Description = "From this moment, with its offset, for example 2026-10-18T22:00:00Z" };
+        var candleEnd = new Option<string?>("--end") { Description = "Until this moment (exclusive), with its offset" };
+        var candleLimit = new Option<int>("--limit") { Description = "How many to show", DefaultValueFactory = _ => 30 };
+        var candleCursor = new Option<string?>("--cursor") { Description = "Continue after the previous page (the cursor it printed)" };
+        var candles = new Command("candles", "Candles of a market: open, high, low, close, volume and the last bid and ask of each bucket (the latest ones unless --since or --start is given)");
+        candles.Arguments.Add(candleTicker);
+        foreach (var option in new Option[] { candleInterval, candleSince, candleStart, candleEnd, candleLimit, candleCursor })
+        {
+            candles.Options.Add(option);
+        }
+
+        candles.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var query = Window(env, parsed.GetValue(candleSince), parsed.GetValue(candleStart), parsed.GetValue(candleEnd), parsed.GetValue(candleLimit), parsed.GetValue(candleCursor), out var problem);
+            if (query is null)
+            {
+                return Fail(env, problem!);
+            }
+
+            var page = await client.GetCandlesAsync(parsed.GetRequiredValue(candleTicker), parsed.GetRequiredValue(candleInterval), query, ct).ConfigureAwait(false);
+            Print(env, asJson, page, Views.Candles(page, env.Out.Profile.Width));
+            return Ok;
+        }));
+        root.Subcommands.Add(candles);
+
         // ---- book ----
         var bookTicker = new Argument<string?>("ticker") { Description = "The market ticker; without it, a summary of every watched market", Arity = ArgumentArity.ZeroOrOne };
         var bookDepth = new Option<int>("--depth") { Description = "How many price levels to show on each side (1 to 100)", DefaultValueFactory = _ => 10 };
