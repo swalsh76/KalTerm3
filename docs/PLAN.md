@@ -71,7 +71,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** (**met 2026-10-18**, BUILD-LOG 2.7). **Done 2026-10-19** (BUILD-LOG 5.9: production feed ingesting on `kaldb`, CLI reading ticks, trades, gaps and order books) |
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green (**met 2026-10-20**, BUILD-LOG §6) |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire (**met 2026-10-20**, BUILD-LOG §7) |
-| **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead |
+| **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead (plan: section 6.7) |
 | **M7 UI** | WPF terminal | decided later |
 | **M8 Host layer and verification** | Installer, services, reboot and power-cut tests, 48 h soak | all pass |
 
@@ -256,6 +256,66 @@ Approved by the owner 2026-10-20. Gate: per-user alerts fire. **All done 2026-10
 Decisions: per-user watchlists only filter views; **the ingest watch list stays configuration** (live add/remove of watched markets stays in the parking lot). WebSocket push stays parked until a UI
 needs two-way traffic.
 
+### 6.7 M6 Trading: decisions and slices
+
+Approved by the owner 2026-10-20 (all seven recommendations). Gate: verified under tiny limits, with the owner's go-ahead. The reference implementation (KalshiTerm2 `kalshi_core/trading.py`, `kalshiterm-client`
+risk and order service, BUILD-LOG 10.7) is the specification and its tests are the oracle. **No real order, cancel, amend or transfer is sent without the owner's go-ahead, order by order** (CLAUDE.md).
+Each slice gets its own plan for approval before code; 6.1 sends nothing.
+
+**Principles.** Trades go from the workstation straight to Kalshi, never through the server; the server never sees the trading key and no server project references the trading code. The trading client is
+separate from the read client (which stays GET-only, guard and test). Demo is the default in code and config; production writes need `KALSHI_ENV=production` **and** `production_enabled` in the risk file **and**
+a typed per-order confirmation (ticker, side, count, price). Money is fixed-point `long` end to end (dollars 10^-6, counts 10^-2), never a float.
+
+**Layers that keep a stray write from happening.**
+1. The trading client exists only with a signer made from the trading key, which is a different key from the data key.
+2. It refuses production unless the risk file enables it.
+3. A route allowlist at the transport (create, cancel, batch cancel, amend, decrease, transfer, and a GET to find an order after an unclear answer): nothing else can be sent, however the code changes later.
+4. Only an `ApprovedOrder`, which only the risk layer can construct, reaches `create`.
+5. Every order carries a client order id. A write is never retried after an unclear answer (timeout, dropped connection, 5xx): the client looks the order up by its id and, if it cannot tell, reports "outcome unknown"
+   and stops; the id is never reused. A 429 is the one case retried (the request was not processed). Cancels are idempotent and are retried.
+6. A transfer is **never** resent: Kalshi does not de-duplicate on `client_transfer_id` (measured live in the reference, 2026-10-13: the identical request sent twice moved the money twice). After an unclear
+   answer it stays recorded as pending and the balance is read before anything else.
+
+**Risk layer** (pure function, no I/O, tested before any order code exists). Limits live in a local `risk.json` in the owner's profile and can only be loosened by editing it, never by a command-line flag:
+contracts per order, contracts per market, notional per order (price times count plus the worst-case fee), open exposure, daily loss, open orders, transfer cap per order and per day. Shipped defaults are tiny:
+order notional at most $1, open exposure at most $3, daily loss at most $2, at most 3 open orders; the live checks never loosen them. It **fails closed**: a missing or stale (over 10 s) account snapshot, or a down
+private WebSocket, refuses orders (cancels and the kill switch are never refused). Balances, exposure and open orders are tracked **per exchange shard**; daily loss and the kill switch are account-wide. Fees come
+from `KalTerm.Core`'s fee model for the worst case. Risk checks use Kalshi's own data, with no dependency on the server.
+
+**Automatic shard funding** (owner: include). Kalshi's web app moves collateral between exchange shards itself; the API does not. The risk layer's `check` returns, besides approve or refuse, a funding plan: the
+smallest transfer(s) from shards with surplus (largest free balance first, never from a shard whose resting orders need it) so the order's shard covers its worst-case cost plus fee; no plan means no order. The plan
+is shown in the verdict and covered by the same typed confirmation, counts as a write (risk layer, write bucket, audit log), is bounded by the per-order and per-day transfer caps, and is dry-run printed without a
+request. Money never leaves the account. Cross-shard transfers are non-atomic ("completed steps are not undone"); if the order then fails the funds simply stay on that shard.
+
+**Kill switch** (`kterm kill`): cancel all, then verify by listing resting orders and cancel again until none remain through the minute Kalshi warns about (newly placed orders may be cancelled during the minute
+after the request); tripped automatically when the daily-loss limit is hit. **Dry-run** (`--dry-run`) runs the whole pipeline and prints what would be sent; it makes no request.
+
+**Trading key.** A separate Ed25519 key, stored in the Windows **Credential Manager** of the owner's account (not a file in the repo, not on the server, unreadable by the server's service accounts). The data key
+and the trading key are never mixed up: different loaders, different signer factories.
+
+**Audit log.** Every write attempt (order, cancel, amend, decrease, transfer, kill), with its risk verdict and Kalshi's answer or "outcome unknown", is appended as a line of JSON to a local file in the owner's
+profile. Secrets never go in it.
+
+**Order kinds in v1.** Limit orders (good-till-cancelled, immediate-or-cancel), post-only, amend, decrease, cancel, batch cancel. Fill-or-kill, order groups, subaccounts, RFQ and scripted non-interactive production
+orders are parked (section 9).
+
+**Where it lives.** A new project `KalTerm.Trading` (risk, account tracker, order service, audit log) referenced by `kterm` and by tests, and by nothing on the server side.
+
+**Verification.** A scripted fake Kalshi (REST and private WebSocket) with four exchange shards, one of them not trading, for the logic and for a server-offline test (no server process: place, amend, cancel on the
+fake). Differential vectors from the Python reference for fees and risk math. The live checks run on the owner's real account (about $10) under the tiny limits, because the demo behaves differently; each live write is
+run only after the exact order is shown and the owner says go.
+
+| # | Slice |
+|---|---|
+| 6.1 | Measure first: a read-only look (GET only, the read-only key, names and kinds of fields, no account values) at balance, positions, orders, fills, settlements, exchange status per shard and the endpoint costs; re-check each Kalshi docs fact above; write the as-built shapes and open questions into BUILD-LOG. No write code |
+| 6.2 (built, BUILD-LOG 8.2) | Risk layer: `RiskPolicy`, `risk.json` loading and validation, `check` as a pure function with the funding plan and worst-case fee math, `ApprovedOrder`, fail-closed rules; exhaustive and property tests (no order that exceeds a limit is ever approved); the reference's cases as the oracle |
+| 6.3 | Account read side: portfolio models and GET methods, the Credential Manager key store, trading-key loading |
+| 6.4 | Write transport: `KalshiTradingClient` (separate, route-allowlisted), write token bucket, create / cancel / batch cancel / amend / decrease with idempotent `client_order_id` recovery, the shard transfer with its never-resend rule; a test fails any write made without the trading capability |
+| 6.5 | Private WebSocket channels (fill, user orders, market positions) feeding an account tracker (seeded from REST, reconciled on every reconnect, exactly once by id), and the order service tying risk, snapshot, transport and audit log together |
+| 6.6 | CLI: `buy`, `sell`, `cancel`, `amend`, `orders`, `positions`, `balance`, `fills`, `kill`, `--dry-run`, the risk verdict before sending, the typed production confirmation |
+| 6.7 | Live end to end on the real account under the tiny limits, each write after the owner's go: far-from-market resting orders, amend, cancel, the kill switch; then one deliberate minimal fill to check fills, positions and fees; the server-offline test; as-built notes |
+| 6.8 | Close-out: what the live checks showed, risk defaults revisited with the owner, docs |
+
 ## 7. Risks
 
 - **Durability is unproven.** The premise of SQL Server is a hypothesis; M1 S-1 tests it first.
@@ -284,6 +344,8 @@ and the API contract tests.
 
 ## 9. Parking lot
 
+- Trading, parked from M6 (owner 2026-10-20): fill-or-kill orders, order groups, subaccounts, the RFQ and communications channels, encrypted trading keys, a manual `kterm transfer` command, scripted
+  non-interactive production orders, a daily-loss day that is not the UTC day.
 - Settled-market slimming and tombstones (reference decision 15): our catalog holds only open markets and stays small; revisit if it grows.
 - Merging empty old partition boundaries after retention: the 15,000 partition limit is decades away at one boundary per day.
 

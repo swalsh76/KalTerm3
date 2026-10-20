@@ -103,6 +103,7 @@ python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm
 python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
 python tools/vectors/generate_ws_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
 python tools/vectors/generate_api_format.py --reference C:/Users/stebe/dev/KalshiTerm2
+python tools/vectors/generate_risk.py --reference C:/Users/stebe/dev/KalshiTerm2   # the risk layer: loads kalshiterm_client/risk.py by path, needs only kalshi_core
 python tools/vectors/generate_orderbook.py --reference C:/Users/stebe/dev/KalshiTerm2   # needs: pip install pydantic pydantic-settings cryptography httpx websockets
 ```
 
