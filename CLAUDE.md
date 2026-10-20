@@ -119,6 +119,12 @@ Run the read-only API (loopback only until TLS and tokens exist; default `http:/
 dotnet run --project src/KalTerm.Api.Host -c Release
 ```
 
+Run the desktop terminal (WPF; the first start opens the connect dialog: trust the certificate, then paste a token; it shares the pin and token files with `kterm`):
+
+```powershell
+dotnet run --project src/KalTerm.Terminal -c Release
+```
+
 Read a KalTerm server with the CLI (`status` exits 2 when it finds problems). Locally against a running API, or on the server through remoting (the API listens on loopback only until M4; pass the host and a credential file, or set `KALTERM_TEST_HOST` and `KALTERM_TEST_CRED`):
 
 ```powershell

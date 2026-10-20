@@ -1650,3 +1650,25 @@ server-offline test.
 - Measured by the live run and now fact: shard funding is required (Kalshi rejects an unfunded order with `insufficient_balance`); a resting order does not reduce a shard's balance; the order list can lag a cancel by seconds; the real
   fee is the modelled fee rounded up to $0.0001; a pasted command at the confirmation prompt is refused.
 - Small items were parked in PLAN section 9. Next milestones: M7 (UI) is decided later; M8 (host layer and verification) is the remaining required one.
+
+## 9. M7 UI (started 2026-10-20)
+
+Plan: PLAN.md section 6.8 (approved 2026-10-20: WPF, server push streams, read-only first, the 90% gate for the whole app). Each slice gets its own plan for approval before code.
+
+### 9.1 Slice 7.1: the shell (2026-10-20)
+
+- New project `KalTerm.Terminal` (WPF, `net10.0-windows`, per-monitor DPI, WPF's built-in Windows 11 theme via `ThemeMode="System"`) and `KalTerm.Terminal.Tests`. No new package: a tiny `ObservableObject`, `RelayCommand` and `AsyncCommand`
+  (one run at a time; a failure goes to a handler instead of ending the program; a cancellation is not a failure) are hand-written. It references only `KalTerm.Client`.
+- Layout: logic in view-models and services, views thin. `MainViewModel` (the server, whether it answers, the page, the time zone), `StatusViewModel` (the status page, refreshed every 10 s, greyed and explained when a refresh fails, never passing
+  a stale page for a live one), `ConnectViewModel` (the connect dialog), `StatusPresenter` (the server's report as text lines with a severity; the same content as `kterm status`), `Formatting` (times in the chosen zone, sizes, ages),
+  `TerminalSettingsStore` (the server used last, in `terminal.json` next to `known-hosts.json` and `credentials.bin`), `Composition` (puts the pieces together).
+- Connecting works as `kterm trust` and `kterm login` do, in one dialog, with the same pin and token files, so one program's trust and login serve the other: address, then (for https) the certificate with its fingerprint, trusted only
+  after the first 8 characters are typed, then a masked token box, validated by a live call before it is stored. A server whose token is refused reopens the dialog at the login step; a certificate not trusted or changed reopens it at the
+  trust step (a change with a warning). The time zone is chosen in the top bar, stored on the server like `kterm settings tz`, and a zone `kterm` stored under an IANA name is recognised.
+- Coverage: the gate holds for WPF honestly. A first spike showed generated XAML code does not count against the gate; the views are covered by tests that build each window and control on an STA thread, lay them out without showing them,
+  and fail on any WPF binding error (a wrong property name is otherwise silent). `KalTerm.Terminal` is at 97.4% lines; the only uncovered code is the application's start-up handler.
+- Tests (108): formatting, the presenter, the status page's refresh, failure, staleness and polling, the connect dialog's every step and refusal, the main view-model's start, dialogs, unreachable, token and certificate cases and zones, the
+  commands and the settings file, and the views.
+- Run it: `dotnet run --project src/KalTerm.Terminal -c Release`. Needs a token (`kalterm-admin token create` on the server); the first start opens the connect dialog. Started once to check that it launches and its theme loads.
+- No rollout is needed (the server is unchanged). Some tests of other projects (certificate storage, admin, share credentials) need an elevated shell on a development machine because the code limits those folders to SYSTEM and
+  Administrators; CI runs elevated.
