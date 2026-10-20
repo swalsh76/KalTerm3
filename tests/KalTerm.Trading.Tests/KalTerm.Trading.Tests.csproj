@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>KalTerm.Trading.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.MTP" Condition="'$(NoCoverage)' != 'true'">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KalTerm.Trading\KalTerm.Trading.csproj" />
+    <ProjectReference Include="..\KalTerm.TestSupport\KalTerm.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Vectors\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="System.Globalization" />
+    <Using Include="KalTerm.TestSupport" />
+  </ItemGroup>
+</Project>

@@ -1468,3 +1468,22 @@ Measured with the read-only production key, GET only, names and kinds of fields 
 2. 6.2 and 6.7: whether auto-routing by ticker makes the shard transfers unnecessary, or whether an unfunded shard rejects the order (and how the rejection looks).
 3. 6.3: the populated positions shape is taken from the docs; the first real position (slice 6.7) confirms it.
 4. 6.5: the private WebSocket channel names and message shapes are not measured yet (they need a signed WebSocket and, to see data, activity on the account); 6.5 reads them from the docs and checks them in 6.7.
+
+### 8.2 Slice 6.2: the risk layer (2026-10-20)
+
+- New project `KalTerm.Trading` (references only `KalTerm.Core`; nothing on the server references it) with `Risk/`: `RiskChecker.Check(intent, snapshot, policy, now, production)`, a pure function, and the types around it
+  (`OrderIntent`, `AccountSnapshot`, `ShardState`, `MarketState`, `RiskPolicy`, `Verdict`, `Refusal`, `Transfer`). Money is `long` millionths and counts `long` hundredths; the fee is `KalTerm.Core`'s exact quadratic
+  model. Nothing in it does I/O, so nothing in it can touch the account.
+- Rules, in the reference's order, all of them run so the person sees every reason: production switch, fee, snapshot (halted, stale or future-dated beyond 5 s, stream down), shard (unknown, not trading), per-order size
+  and worst-case cost, per-market position (resting orders counted as if filled), capacity (open orders, exposure), daily loss (also trips the kill switch), funding. A missing snapshot stops after the production switch
+  and the fee. The worst-case fee is taken at the worst price the limit allows (the fee peaks at 0.50) and rounded up to a cent; a sell locks only what it does not already hold; the fee of an amount so large it does not
+  fit is an unknown fee, which refuses, never a crash. A refusal never hands out the transfer plan that broke a cap.
+- Funding: the smallest transfers from the richest shards that can transfer, whole centicents, never more than a source holds, bounded by the per-order and per-day caps.
+- `ApprovedOrder` has no public constructor and its internal one is called only by the checker; a test scans the sources to keep it so and another asserts no assembly is given `InternalsVisibleTo`.
+- `risk.json` (`%APPDATA%\KalTerm`, via `RiskPolicyLoader`): the only way to change a limit. A missing file means the tiny defaults (order count 5, position 10, order notional $1, exposure $3, daily loss $2, 3 open
+  orders, transfers $2 an order and $5 a day, snapshot 10 s, production off). Money and counts are strings (or whole numbers), never JSON fractions; an unknown or duplicate key, a negative value, too many
+  decimals or a comment is an error naming the key. Differences from the reference: JSON instead of TOML (no new dependency), and no browser-UI timers.
+- Tests (1,630): the reference's own cases and the rules one by one; a property test with the limits re-derived independently, 45,000 random scenarios over three seeds, that no approved order ever exceeds one;
+  and **1,544 differential scenarios** (`tools/vectors/generate_risk.py` runs the Python `check` on hand-made and seeded random cases) where the port agrees on approval, every refusal code and message in order, fee,
+  cost, funding and kill trip. The one deliberate difference is the file name in the production message.
+- Still open for later slices (BUILD-LOG 8.1): whether Kalshi deducts resting-order collateral from a shard balance, and whether auto-routing makes the transfers unnecessary (both asked of the real account in 6.7).
