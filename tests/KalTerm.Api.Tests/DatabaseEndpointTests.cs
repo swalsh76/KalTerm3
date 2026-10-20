@@ -121,6 +121,7 @@ public sealed class DatabaseEndpointTests(DatabaseFixture db) : IClassFixture<Da
     public async Task PublishedBooksComeBackThroughTheEndpointsAndTheStatusCountsThem()
     {
         db.Require();
+        await db.ExecuteAsync("DELETE dbo.orderbook_state");   // the status counts every published book, and the stream tests publish their own: this test owns the exact totals
         var now = DateTime.UtcNow;
         var live = await MarketAsync("DB-BOOK-A");
         var stale = await MarketAsync("DB-BOOK-B");
