@@ -151,6 +151,107 @@ public sealed record OrderbookDeltaMsg(
     long? TsMs = null,
     string? ClientOrderId = null) : IWsPayload;
 
+/// <summary>A <c>fill</c> message from the private <c>fill</c> channel: one fill of one of the account's orders.</summary>
+/// <param name="TradeId">The trade; the key that makes a fill count once.</param>
+/// <param name="OrderId">Kalshi's order id.</param>
+/// <param name="MarketTicker">The market.</param>
+/// <param name="YesPriceDollars">The fill price as a YES price.</param>
+/// <param name="CountFp">Contracts filled.</param>
+/// <param name="ClientOrderId">Our order id.</param>
+/// <param name="ExchangeIndex">The shard.</param>
+/// <param name="IsTaker">Whether the order took liquidity.</param>
+/// <param name="Side">Kalshi's side label.</param>
+/// <param name="OutcomeSide">Kalshi's outcome label.</param>
+/// <param name="PurchasedSide">The side bought.</param>
+/// <param name="BookSide">bid or ask on the YES book.</param>
+/// <param name="Action">buy or sell (a display label, not dependable).</param>
+/// <param name="FeeCost">The fee in dollars.</param>
+/// <param name="PostPositionFp">The position after the fill, when sent.</param>
+/// <param name="TsMs">When it happened, in epoch milliseconds.</param>
+/// <param name="Subaccount">The subaccount, when sent.</param>
+public sealed record FillMsg(
+    string TradeId,
+    string OrderId,
+    string MarketTicker,
+    Dollars YesPriceDollars,
+    Contracts CountFp,
+    string ClientOrderId = "",
+    int ExchangeIndex = 0,
+    bool IsTaker = false,
+    string Side = "",
+    string OutcomeSide = "",
+    string PurchasedSide = "",
+    string BookSide = "",
+    string Action = "",
+    Dollars FeeCost = default,
+    Contracts? PostPositionFp = null,
+    long? TsMs = null,
+    int? Subaccount = null) : IWsPayload;
+
+/// <summary>A <c>user_order</c> message from the private <c>user_orders</c> channel: the full state of one order.</summary>
+/// <param name="OrderId">Kalshi's order id.</param>
+/// <param name="Ticker">The market.</param>
+/// <param name="Status">resting, canceled, executed or unknown.</param>
+/// <param name="YesPriceDollars">The YES price.</param>
+/// <param name="InitialCountFp">Contracts when placed.</param>
+/// <param name="FillCountFp">Contracts filled.</param>
+/// <param name="RemainingCountFp">Contracts still resting.</param>
+/// <param name="ClientOrderId">Our order id.</param>
+/// <param name="UserId">The user.</param>
+/// <param name="ExchangeIndex">The shard.</param>
+/// <param name="Side">Kalshi's side label.</param>
+/// <param name="OutcomeSide">Kalshi's outcome label.</param>
+/// <param name="BookSide">bid or ask on the YES book.</param>
+/// <param name="TakerFillCostDollars">Cost of the taker fills.</param>
+/// <param name="MakerFillCostDollars">Cost of the maker fills.</param>
+/// <param name="TakerFeesDollars">Taker fees.</param>
+/// <param name="MakerFeesDollars">Maker fees.</param>
+/// <param name="CreatedTsMs">When created, in epoch milliseconds.</param>
+/// <param name="LastUpdatedTsMs">When last changed, in epoch milliseconds.</param>
+/// <param name="LastUpdateReason">Why it last changed.</param>
+public sealed record UserOrderMsg(
+    string OrderId,
+    string Ticker,
+    string Status,
+    Dollars YesPriceDollars,
+    Contracts InitialCountFp,
+    Contracts FillCountFp,
+    Contracts RemainingCountFp,
+    string ClientOrderId = "",
+    string UserId = "",
+    int ExchangeIndex = 0,
+    string Side = "",
+    string OutcomeSide = "",
+    string BookSide = "",
+    Dollars TakerFillCostDollars = default,
+    Dollars MakerFillCostDollars = default,
+    Dollars TakerFeesDollars = default,
+    Dollars MakerFeesDollars = default,
+    long? CreatedTsMs = null,
+    long? LastUpdatedTsMs = null,
+    string LastUpdateReason = "") : IWsPayload;
+
+/// <summary>A <c>market_position</c> message from the private <c>market_positions</c> channel: a market's new position.</summary>
+/// <param name="MarketTicker">The market.</param>
+/// <param name="PositionFp">The net YES contracts; negative is long NO.</param>
+/// <param name="UserId">The user.</param>
+/// <param name="PositionCostDollars">What the position cost, when sent.</param>
+/// <param name="RealizedPnlDollars">Realized profit, when sent.</param>
+/// <param name="FeesPaidDollars">Fees paid, when sent.</param>
+/// <param name="PositionFeeCostDollars">Fees on the position, when sent.</param>
+/// <param name="VolumeFp">Volume, when sent.</param>
+/// <param name="Subaccount">The subaccount, when sent.</param>
+public sealed record MarketPositionMsg(
+    string MarketTicker,
+    Contracts PositionFp,
+    string UserId = "",
+    Dollars? PositionCostDollars = null,
+    Dollars? RealizedPnlDollars = null,
+    Dollars? FeesPaidDollars = null,
+    Dollars? PositionFeeCostDollars = null,
+    Contracts? VolumeFp = null,
+    int? Subaccount = null) : IWsPayload;
+
 /// <summary>One subscription that was restored after a reconnect.</summary>
 /// <param name="Channel">The channel.</param>
 /// <param name="Sid">Its subscription id on the new connection.</param>
@@ -214,6 +315,9 @@ public sealed record WsMessage(
             "orderbook_snapshot" => Read(ctx.OrderbookSnapshotMsg),
             "orderbook_delta" => Read(ctx.OrderbookDeltaMsg),
             "reconnected" => Read(ctx.ReconnectedMsg),
+            "fill" => Read(ctx.FillMsg),
+            "user_order" => Read(ctx.UserOrderMsg),
+            "market_position" => Read(ctx.MarketPositionMsg),
             _ => null,
         };
     }

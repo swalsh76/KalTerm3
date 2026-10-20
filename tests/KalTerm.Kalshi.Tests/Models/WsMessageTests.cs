@@ -5,7 +5,7 @@ using KalTerm.Kalshi.Models.Json;
 
 namespace KalTerm.Kalshi.Tests.Models;
 
-/// <summary>What the vectors cannot say: typed access, the private channels left for M6, and the snapshot's wire shape.</summary>
+/// <summary>What the vectors cannot say: typed access,  the snapshot's wire shape.</summary>
 public class WsMessageTests
 {
     private static WsMessage Envelope(string json) => KalshiJson.Parse(json, KalshiJsonContext.Default.WsMessage, nameof(WsMessage));
@@ -24,9 +24,6 @@ public class WsMessageTests
     }
 
     [Theory]
-    [InlineData("fill")]
-    [InlineData("user_order")]
-    [InlineData("market_position")]
     [InlineData("subscribed")]
     [InlineData("brand_new_type")]
     public void TypesWithoutAModelHaveNoTypedPayloadButKeepTheRawMessage(string type)
@@ -35,6 +32,54 @@ public class WsMessageTests
 
         Assert.Null(message.Payload());
         Assert.Equal(1, message.Msg!.Value.GetProperty("a").GetInt32());
+    }
+
+    [Fact]
+    public void AFillGivesATypedExactPayload()
+    {
+        var message = Envelope("""{"type":"fill","sid":1,"msg":{"trade_id":"t-1","order_id":"o-1","client_order_id":"c-1","market_ticker":"KXA-1","exchange_index":3,"is_taker":true,"book_side":"bid","yes_price_dollars":"0.4000","count_fp":"1.50","fee_cost":"0.0200","post_position_fp":"2.50","ts_ms":5,"extra":1}}""");
+
+        var fill = Assert.IsType<FillMsg>(message.Payload());
+
+        Assert.Equal(("t-1", "o-1", "c-1", "KXA-1", 3, true, "bid"), (fill.TradeId, fill.OrderId, fill.ClientOrderId, fill.MarketTicker, fill.ExchangeIndex, fill.IsTaker, fill.BookSide));
+        Assert.Equal((400_000L, 150L, 20_000L, 250L), (fill.YesPriceDollars.Micros, fill.CountFp.Hundredths, fill.FeeCost.Micros, fill.PostPositionFp!.Value.Hundredths));
+    }
+
+    [Fact]
+    public void AFillWithoutOptionalFieldsUsesDefaults()
+    {
+        var fill = Assert.IsType<FillMsg>(Envelope("""{"type":"fill","msg":{"trade_id":"t","order_id":"o","market_ticker":"K","yes_price_dollars":"0.4","count_fp":"1"}}""").Payload());
+
+        Assert.Equal((0L, "", 0, null), (fill.FeeCost.Micros, fill.ClientOrderId, fill.ExchangeIndex, fill.PostPositionFp));
+    }
+
+    [Fact]
+    public void AUserOrderGivesATypedExactPayload()
+    {
+        var order = Assert.IsType<UserOrderMsg>(Envelope("""{"type":"user_order","msg":{"order_id":"o-1","ticker":"KXA-1","status":"resting","book_side":"ask","yes_price_dollars":"0.3000","initial_count_fp":"2.00","fill_count_fp":"0.50","remaining_count_fp":"1.50","last_updated_ts_ms":1000}}""").Payload());
+
+        Assert.Equal(("o-1", "resting", "ask", 300_000L, 200L, 50L, 150L, 1000L), (order.OrderId, order.Status, order.BookSide, order.YesPriceDollars.Micros, order.InitialCountFp.Hundredths, order.FillCountFp.Hundredths, order.RemainingCountFp.Hundredths, order.LastUpdatedTsMs));
+    }
+
+    [Fact]
+    public void AMarketPositionGivesATypedExactPayloadWithOptionalFiguresAbsent()
+    {
+        var full = Assert.IsType<MarketPositionMsg>(Envelope("""{"type":"market_position","msg":{"market_ticker":"K","position_fp":"-4.00","position_cost_dollars":"1.9","realized_pnl_dollars":"-0.5"}}""").Payload());
+        var bare = Assert.IsType<MarketPositionMsg>(Envelope("""{"type":"market_position","msg":{"market_ticker":"K","position_fp":"2.00"}}""").Payload());
+
+        Assert.Equal((-400L, 1_900_000L, -500_000L), (full.PositionFp.Hundredths, full.PositionCostDollars!.Value.Micros, full.RealizedPnlDollars!.Value.Micros));
+        Assert.Equal((null, null), (bare.PositionCostDollars, bare.RealizedPnlDollars));
+    }
+
+    [Theory]
+    [InlineData("""{"type":"fill","msg":{"trade_id":"t","order_id":"o","market_ticker":"K","yes_price_dollars":"0.0000001","count_fp":"1"}}""")]
+    [InlineData("""{"type":"fill","msg":{"trade_id":"t","order_id":"o","market_ticker":"K","yes_price_dollars":"0.4","count_fp":"1.001"}}""")]
+    [InlineData("""{"type":"user_order","msg":{"order_id":"o","ticker":"K","status":"resting","yes_price_dollars":"0.4","initial_count_fp":"1","fill_count_fp":"0","remaining_count_fp":"0.001"}}""")]
+    [InlineData("""{"type":"market_position","msg":{"market_ticker":"K","position_fp":"1.234"}}""")]
+    [InlineData("""{"type":"fill","msg":{"order_id":"o","market_ticker":"K","yes_price_dollars":"0.4","count_fp":"1"}}""")]
+    public void APrivateMessageWithTooMuchPrecisionOrAMissingKeyIsRefusedNotRounded(string json)
+    {
+        Assert.Throws<KalshiResponseException>(() => Envelope(json).Payload());
     }
 
     [Fact]
