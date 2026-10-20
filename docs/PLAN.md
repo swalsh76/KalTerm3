@@ -308,7 +308,7 @@ run only after the exact order is shown and the owner says go.
 | # | Slice |
 |---|---|
 | 6.1 | Measure first: a read-only look (GET only, the read-only key, names and kinds of fields, no account values) at balance, positions, orders, fills, settlements, exchange status per shard and the endpoint costs; re-check each Kalshi docs fact above; write the as-built shapes and open questions into BUILD-LOG. No write code |
-| 6.2 | Risk layer: `RiskPolicy`, `risk.json` loading and validation, `check` as a pure function with the funding plan and worst-case fee math, `ApprovedOrder`, fail-closed rules; exhaustive and property tests (no order that exceeds a limit is ever approved); the reference's cases as the oracle |
+| 6.2 (built, BUILD-LOG 8.2) | Risk layer: `RiskPolicy`, `risk.json` loading and validation, `check` as a pure function with the funding plan and worst-case fee math, `ApprovedOrder`, fail-closed rules; exhaustive and property tests (no order that exceeds a limit is ever approved); the reference's cases as the oracle |
 | 6.3 | Account read side: portfolio models and GET methods, the Credential Manager key store, trading-key loading |
 | 6.4 | Write transport: `KalshiTradingClient` (separate, route-allowlisted), write token bucket, create / cancel / batch cancel / amend / decrease with idempotent `client_order_id` recovery, the shard transfer with its never-resend rule; a test fails any write made without the trading capability |
 | 6.5 | Private WebSocket channels (fill, user orders, market positions) feeding an account tracker (seeded from REST, reconciled on every reconnect, exactly once by id), and the order service tying risk, snapshot, transport and audit log together |
