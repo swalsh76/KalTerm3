@@ -1590,3 +1590,25 @@ Slice 6.5 is split in two so each PR stays reviewable: 6.5a is what the order se
 - Tests (about 70 new): the reference's order-service cases (mapping, fees, funding, plan change, transfer outcomes, lagging balance, halts, kill switch passes and errors, guard, amend rules, cancel by id, typed phrase), against a
   scripted exchange that moves money and orders; the budget against the real response shape. `KalTerm.Trading` is at 95.0% lines.
 - No rollout is needed (the server does not run trading code). Still nothing has been sent to Kalshi by this code.
+
+### 8.7 Slice 6.6: the CLI (2026-10-20)
+
+- `kterm` gains the trading commands (new `TradingCommands`, `TradingViews`): `buy`, `sell` (`--side yes|no`, `--ioc`, `--post-only`, `--dry-run`, `--yes`), `amend` (`--price` as the YES price, `--count` as the new total), `cancel`,
+  `kill`, `resume`, `balance`, `positions [--all]`, `orders [--status resting|canceled|executed|all] [--limit]`, `fills`, and `trading-key set|show|delete`. They talk to Kalshi directly and never to the KalTerm server; `kterm` now references
+  `KalTerm.Trading` (the server's projects still do not).
+- What a command does: it opens a session for the mode it needs (`TradingSessions.OpenAsync`: Read, Preview, Exit, Trade, as in the reference), prepares the order, prints exactly what would happen (the worst-case cost, any shard transfer,
+  every reason for a refusal), and stops there for `--dry-run`, which opens the Preview mode whose trading client refuses every write, so a dry run cannot send. A demo order asks `y/N` (`--yes` skips it). A production order is only sent after
+  the order is typed out (`TICKER buy|sell yes|no COUNT PRICE`); `--yes` does not skip that; with no input available nothing is sent. Cancels, `kill` and `resume` are never risk-checked and use Exit mode: the real trading client with no
+  account stream, allowed in production without the risk file's say-so (getting out is always allowed). Orders and amends in production need `production_enabled` in `risk.json`.
+- Exit codes: 0 done, 1 refused or failed (nothing happened that you did not see), 2 a write whose outcome is unknown (`UNKNOWN:`, naming the id to look for in `kterm orders --status all` and `kterm fills`). Failures a person can act on are one
+  line each (refusal reasons, plan changed while deciding, a refused or unknown transfer, funding that has not arrived, a Kalshi error status, no connection, a missing key).
+- Session wiring: the write bucket and costs come from the account (`TradingBudget`), falling back to the settings' tier budget and the default costs if Kalshi cannot be asked; every write goes to `audit.jsonl` next to `risk.json`; a failure
+  while opening closes what was already opened.
+- `trading-key set --env demo|production --key-id ID --pem-file FILE` checks and stores the key in this Windows account's Credential Manager and prints only the last four characters of the id; `show` never prints the key. This is how the
+  owner stores the trading key before 6.7.
+- Tests (about 110 new): the commands against the real order service on a scripted exchange (dry run, demo and production confirmation, refusals, funding, unknown outcome, amend, cancel, kill, resume, every view and its JSON, the key commands),
+  and the session factory with the real Kalshi clients against scripted HTTP (budget from the account, an order placed end to end with the audit written, preview cannot send, production refused unless enabled, Exit allowed). The shared fakes
+  moved to `KalTerm.TestSupport`. `KalTerm.Trading` is at 94.8% lines and `kterm` at 96.8%.
+- Live (read-only key, GET only; shapes and exit codes only, no values): `balance`, `positions` (and `--all`), `orders` (and `--status all`) and `fills` ran against the real account, exit 0 each, with the expected tables; the balance JSON has
+  `balance`, `portfolio_value`, `shards` (each `shard`, `available`) and `halted`. Nothing was sent.
+- No rollout is needed (the server does not run trading code). Still nothing has been sent to Kalshi.

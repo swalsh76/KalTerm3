@@ -280,6 +280,12 @@ internal sealed class Harness : IDisposable
 
     public Exception? ProbeFails { get; set; }
 
+    public Func<KalTerm.Trading.Session.TradingMode, CancellationToken, Task<KalTerm.Trading.Session.TradingSession>>? OpenTrading { get; set; }
+
+    public KalTerm.Trading.Keys.ITradingKeyVault? Vault { get; set; }
+
+    public KalTerm.Trading.Account.TradingState? TradingState { get; set; }
+
     public bool Interactive { get; set; }
 
     public string Secret { get; set; } = string.Empty;
@@ -343,6 +349,9 @@ internal sealed class Harness : IDisposable
             HasToken = _ => HasStoredToken,
             GetVariable = name => Variables.GetValueOrDefault(name),
             SystemZone = SystemZone,
+            OpenTrading = OpenTrading ?? ((_, _) => throw new InvalidOperationException("trading is not available here")),
+            OpenVault = () => Vault ?? throw new InvalidOperationException("no vault"),
+            LoadTradingState = () => TradingState ?? throw new InvalidOperationException("no state"),
         };
         return await CliApp.RunAsync(args, env, cancellationToken);
     }
