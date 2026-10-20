@@ -5,6 +5,7 @@ using KalTerm.Data.Auth;
 using KalTerm.Data.Candles;
 using KalTerm.Data.Metrics;
 using KalTerm.Data.Reading;
+using KalTerm.Data.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -76,6 +77,7 @@ public static class ApiEndpoints
         services.AddSingleton<IBookReader>(new BookReader(source, options));
         services.AddSingleton<IMetricsReader>(new MetricsReader(source));
         services.AddSingleton<IScreenerReader>(new ScreenerReader(source));
+        services.AddSingleton<IUserDataStore>(new UserDataStore(source));
         services.AddSingleton<ICandleReader>(new CandleReader(source));
         services.AddSingleton<ICandleComputer>(new CandleBuilder(source));
         services.AddSingleton<ICandleService>(provider => new CandleService(
@@ -107,6 +109,8 @@ public static class ApiEndpoints
 
     private static void Map(IEndpointRouteBuilder app)
     {
+        UserEndpoints.Map(app);
+
         app.MapGet("/healthz", () => Json(new HealthDto("ok"), ApiJson.Wire.HealthDto));
         app.MapGet("/readyz", async (IReadinessProbe probe, CancellationToken cancellationToken) =>
             await probe.IsReadyAsync(cancellationToken).ConfigureAwait(false)
@@ -237,8 +241,9 @@ public static class ApiEndpoints
                 : Json(new TradePage([.. page.Rows.Select(Mapping.ToDto)], page.Next is null ? null : ApiFormat.EncodeCursor($"{ApiFormat.Moment(page.Next.Ts)}|{page.Next.TradeId}")), ApiJson.Wire.TradePage);
         });
 
-        app.MapGet("/v1/screener", async (HttpRequest request, IScreenerReader reader, TimeProvider time, CancellationToken cancellationToken) =>
+        app.MapGet("/v1/screener", async (HttpContext context, IScreenerReader reader, IUserDataStore userData, TimeProvider time, CancellationToken cancellationToken) =>
         {
+            var request = context.Request;
             var query = new RequestParameters(request.Query);
             var limit = query.Limit(50, RowsMax);
             var sort = query.Sort();
@@ -246,12 +251,28 @@ public static class ApiEndpoints
             var status = query.Status();
             var minVolume = query.MinVolume();
             var after = query.ScreenerCursor();
+            var watchlist = query.Watchlist();
             if (!query.IsValid)
             {
                 return Invalid(query);
             }
 
-            var page = await reader.ReadAsync(new ScreenerQuery(sort, descending, status, minVolume, after, limit), cancellationToken).ConfigureAwait(false);
+            IReadOnlyCollection<int>? only = null;
+            if (watchlist is not null)
+            {
+                if (context.Items[ApiAuthentication.UserItem] is not AuthenticatedUser user)
+                {
+                    return Json(new ErrorDto("unauthorized"), ApiJson.Wire.ErrorDto, StatusCodes.Status401Unauthorized);
+                }
+
+                only = await userData.WatchlistMarketIdsAsync(user.UserId, watchlist, cancellationToken).ConfigureAwait(false);
+                if (only is null)
+                {
+                    return NotFound();
+                }
+            }
+
+            var page = await reader.ReadAsync(new ScreenerQuery(sort, descending, status, minVolume, after, limit, only), cancellationToken).ConfigureAwait(false);
             var now = time.GetUtcNow().UtcDateTime;
             return Json(
                 new ScreenerPage(
@@ -332,13 +353,13 @@ public static class ApiEndpoints
         return (start, end);
     }
 
-    private static IResult Json<T>(T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> info, int status = StatusCodes.Status200OK) =>
+    internal static IResult Json<T>(T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> info, int status = StatusCodes.Status200OK) =>
         Results.Json(value, info, statusCode: status);
 
-    private static IResult Invalid(RequestParameters query) => Invalid([.. query.Invalid]);
+    internal static IResult Invalid(RequestParameters query) => Invalid([.. query.Invalid]);
 
-    private static IResult Invalid(params string[] fields) =>
+    internal static IResult Invalid(params string[] fields) =>
         Json(new ErrorDto("invalid_parameter", fields), ApiJson.Wire.ErrorDto, StatusCodes.Status422UnprocessableEntity);
 
-    private static IResult NotFound() => Json(new ErrorDto("not_found"), ApiJson.Wire.ErrorDto, StatusCodes.Status404NotFound);
+    internal static IResult NotFound() => Json(new ErrorDto("not_found"), ApiJson.Wire.ErrorDto, StatusCodes.Status404NotFound);
 }

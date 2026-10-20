@@ -252,6 +252,40 @@ internal sealed partial class RequestParameters(IQueryCollection query)
         return (long.Parse(match.Groups["w"].Value, NumberStyles.None, CultureInfo.InvariantCulture) * 100) + long.Parse(cents, NumberStyles.None, CultureInfo.InvariantCulture);
     }
 
+    /// <summary>The name of one of the caller's watchlists to restrict the screener to.</summary>
+    public string? Watchlist()
+    {
+        if (Single("watchlist") is not { } text)
+        {
+            return null;
+        }
+
+        if (!UserEndpoints.WatchlistName().IsMatch(text))
+        {
+            _invalid.Add("watchlist");
+            return null;
+        }
+
+        return text;
+    }
+
+    /// <summary>The id of the last fire a client has seen (<c>after</c>), or <see langword="null"/> for the newest.</summary>
+    public long? FireCursor()
+    {
+        if (Single("after") is not { } text)
+        {
+            return null;
+        }
+
+        if (!long.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var id))
+        {
+            _invalid.Add("after");
+            return null;
+        }
+
+        return id;
+    }
+
     /// <summary>The position a screener page continues from (<c>key|market id</c>), or <see langword="null"/> when there is no cursor.</summary>
     public ScreenerPosition? ScreenerCursor()
     {

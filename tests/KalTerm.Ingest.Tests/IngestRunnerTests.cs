@@ -68,7 +68,7 @@ public class IngestRunnerTests
                 backfiller,
                 backup,
                 candles,
-                analyzers);
+                analyzers is null ? null : [analyzers]);
         }
 
         public FakeMarketStore Store { get; } = new();

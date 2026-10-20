@@ -29,8 +29,8 @@ public sealed record IngestRunnerOptions
     /// <summary>How often the boundaries are topped up while running. Default 1 hour.</summary>
     public TimeSpan PartitionCheckInterval { get; init; } = TimeSpan.FromHours(1);
 
-    /// <summary>How often the analyzer runner looks for analyzers that are due. Default 30 seconds.</summary>
-    public TimeSpan AnalyzerCheckInterval { get; init; } = TimeSpan.FromSeconds(30);
+    /// <summary>How often an analyzer runner looks for analyzers that are due. Default 5 seconds (the alerts analyzer runs every 10).</summary>
+    public TimeSpan AnalyzerCheckInterval { get; init; } = TimeSpan.FromSeconds(5);
 
     /// <summary>How often the candle job looks for buckets that have closed. Default 1 minute.</summary>
     public TimeSpan CandleInterval { get; init; } = TimeSpan.FromMinutes(1);
@@ -128,7 +128,7 @@ public sealed partial class IngestRunner
     private readonly ITradeBackfiller? _backfill;
     private readonly IBackupJob? _backup;
     private readonly ICandleJob? _candles;
-    private readonly IAnalyzerRunner? _analyzers;
+    private readonly IReadOnlyList<IAnalyzerRunner> _analyzers;
     private long _restarts;
     private long _discoveryFailures;
     private DateTimeOffset _startedAt;
@@ -155,7 +155,7 @@ public sealed partial class IngestRunner
     /// <param name="backfiller">Recovers the trades of closed gaps from REST; <see langword="null"/> when none is kept.</param>
     /// <param name="backup">Takes the daily backup; <see langword="null"/> when backups are off.</param>
     /// <param name="candles">Builds the stored candles; <see langword="null"/> when none are stored.</param>
-    /// <param name="analyzers">Runs the analyzers that are due; <see langword="null"/> when analytics are off.</param>
+    /// <param name="analyzers">The analyzer runners, each in a loop of its own so a slow analysis never delays a quick one; <see langword="null"/> or empty when analytics are off.</param>
     public IngestRunner(
         IMarketStore store,
         MarketIdMap ids,
@@ -175,7 +175,7 @@ public sealed partial class IngestRunner
         ITradeBackfiller? backfiller = null,
         IBackupJob? backup = null,
         ICandleJob? candles = null,
-        IAnalyzerRunner? analyzers = null)
+        IReadOnlyList<IAnalyzerRunner>? analyzers = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(ids);
@@ -204,7 +204,7 @@ public sealed partial class IngestRunner
         _backfill = backfiller;
         _backup = backup;
         _candles = candles;
-        _analyzers = analyzers;
+        _analyzers = analyzers ?? [];
         _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger, books);
     }
 
@@ -270,9 +270,9 @@ public sealed partial class IngestRunner
             loops.Add(Guard(CandleLoopAsync, linked));
         }
 
-        if (_analyzers is not null)
+        foreach (var analyzers in _analyzers)
         {
-            loops.Add(Guard(AnalyzerLoopAsync, linked));
+            loops.Add(Guard(token => AnalyzerLoopAsync(analyzers, token), linked));
         }
 
         try
@@ -481,11 +481,11 @@ public sealed partial class IngestRunner
     }
 
     /// <summary>Runs the analyzers that are due. Its own loop: an analysis that takes a minute must not hold up the heartbeat.</summary>
-    private async Task AnalyzerLoopAsync(CancellationToken cancellationToken)
+    private async Task AnalyzerLoopAsync(IAnalyzerRunner analyzers, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            await TryAsync("analyzers", () => _analyzers!.RunOnceAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+            await TryAsync("analyzers", () => analyzers.RunOnceAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
             await Task.Delay(_options.AnalyzerCheckInterval, _time, cancellationToken).ConfigureAwait(false);
         }
     }

@@ -38,7 +38,7 @@ internal sealed record IngestOverrides(
     BackfillOptions? Backfill = null,
     IBackupJob? Backup = null,
     ICandleJob? Candles = null,
-    IAnalyzerRunner? Analyzers = null);
+    IReadOnlyList<IAnalyzerRunner>? Analyzers = null);
 
 /// <summary>Builds the real ingest process from its settings and runs it: database ready, then the <see cref="IngestRunner"/> over real storage and the Kalshi feed.</summary>
 public static class IngestComposition
@@ -107,7 +107,12 @@ public static class IngestComposition
                 ? null
                 : new CandleJob(new Data.Candles.CandleBuilder(data), new Data.Candles.CandleJobStore(data), candleRules, CandleJob.WatchedIds(options.WatchList, ids), null, time, loggerFactory.CreateLogger<CandleJob>()));
             var analyzers = overrides?.Analyzers ?? (options.Analytics
-                ? new AnalyzerRunner([new MarketMetricsAnalyzer(new Data.Metrics.MetricsBatchReader(data), new Data.Metrics.MarketMetricsStore(data))], new AnalyzerStore(data), null, time, loggerFactory.CreateLogger<AnalyzerRunner>())
+                ? new IAnalyzerRunner[]
+                {
+                    // Two runners, each in a loop of its own: the alerts must not wait for the minutes-long refresh of the metrics table.
+                    new AnalyzerRunner([new AlertAnalyzer(new Data.Alerts.AlertEngineStore(data), new Data.Alerts.AlertDataReader(data))], new AnalyzerStore(data), null, time, loggerFactory.CreateLogger<AnalyzerRunner>()),
+                    new AnalyzerRunner([new MarketMetricsAnalyzer(new Data.Metrics.MetricsBatchReader(data), new Data.Metrics.MarketMetricsStore(data))], new AnalyzerStore(data), null, time, loggerFactory.CreateLogger<AnalyzerRunner>()),
+                }
                 : null);
             var runner = new IngestRunner(
                 store,

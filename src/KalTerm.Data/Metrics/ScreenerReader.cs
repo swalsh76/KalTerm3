@@ -40,7 +40,8 @@ public sealed record ScreenerPosition(long Key, int MarketId);
 /// <param name="MinVolumeE2">Only markets with at least this volume (10^-2 contracts), or <see langword="null"/>.</param>
 /// <param name="After">Continue after this position, or <see langword="null"/> for the first page.</param>
 /// <param name="Limit">Rows per page, 1 to 1,000.</param>
-public sealed record ScreenerQuery(ScreenerSort Sort, bool Descending, string? Status, long? MinVolumeE2, ScreenerPosition? After, int Limit);
+/// <param name="OnlyMarkets">Only these markets (the ids of a watchlist), or <see langword="null"/> for every market.</param>
+public sealed record ScreenerQuery(ScreenerSort Sort, bool Descending, string? Status, long? MinVolumeE2, ScreenerPosition? After, int Limit, IReadOnlyCollection<int>? OnlyMarkets = null);
 
 /// <summary>One market in the screener: its catalog identity and its stored metrics.</summary>
 /// <param name="MarketId">The market id.</param>
@@ -102,6 +103,7 @@ public sealed class ScreenerReader(DataSource source) : IScreenerReader
             CROSS APPLY (SELECT ISNULL(t.{column}, @nullKey) AS v) k
             WHERE (@status IS NULL OR m.status = @status)
               AND (@minVolume IS NULL OR t.volume_e2 >= @minVolume)
+              AND (@onlyIds IS NULL OR t.market_id IN (SELECT CAST([value] AS int) FROM OPENJSON(@onlyIds)))
               AND (@afterId IS NULL OR k.v {past} @afterKey OR (k.v = @afterKey AND t.market_id > @afterId))
             ORDER BY k.v {direction}, t.market_id
             """,
@@ -111,6 +113,7 @@ public sealed class ScreenerReader(DataSource source) : IScreenerReader
                 nullKey,
                 status = ReaderSupport.Ansi(query.Status, 32),
                 minVolume = query.MinVolumeE2,
+                onlyIds = query.OnlyMarkets is null ? null : "[" + string.Join(',', query.OnlyMarkets) + "]",
                 afterKey = query.After?.Key,
                 afterId = query.After?.MarketId,
             },

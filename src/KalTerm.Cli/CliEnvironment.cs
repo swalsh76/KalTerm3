@@ -48,6 +48,9 @@ internal sealed class CliEnvironment
 
     public required TimeProvider Time { get; init; }
 
+    /// <summary>Whether a token is known for a server, so the caller's stored settings can be asked for without a pointless refused request.</summary>
+    public Func<Uri, bool> HasToken { get; init; } = _ => false;
+
     /// <summary>The computer's own time zone: where times are shown when nothing else is chosen.</summary>
     public TimeZoneInfo SystemZone { get; init; } = TimeZoneInfo.Utc;
 
@@ -78,6 +81,7 @@ internal sealed class CliEnvironment
             CreateApiWithToken = (address, token) => PinnedTransport.CreateClient(address, pins, token),
             Pins = pins,
             Tokens = tokens,
+            HasToken = address => Environment.GetEnvironmentVariable(TokenVariable) is { Length: > 0 } || tokens.Get(EndpointKey.Of(address)) is not null,
             Probe = TrustProbe.FetchAsync,
             InteractiveInput = !Console.IsInputRedirected,
             ReadLine = Console.In.ReadLine,

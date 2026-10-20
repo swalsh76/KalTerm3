@@ -110,19 +110,192 @@ internal static partial class CliApp
         var screenMinVolume = new Option<string?>("--min-volume") { Description = "Only markets with at least this many contracts traded in 24 hours, for example 1000" };
         var screenTop = new Option<int>("--top") { Description = "How many to show", DefaultValueFactory = _ => 20 };
         var screenCursor = new Option<string?>("--cursor") { Description = "Continue after the previous page (the cursor it printed)" };
+        var screenWatchlist = new Option<string?>("--watchlist") { Description = "Only the markets of one of your watchlists" };
         var screen = new Command("screen", "Markets ranked by their metrics (24-hour volume by default)");
-        foreach (var option in new Option[] { screenSort, screenAscending, screenStatus, screenMinVolume, screenTop, screenCursor })
+        foreach (var option in new Option[] { screenSort, screenAscending, screenStatus, screenMinVolume, screenTop, screenCursor, screenWatchlist })
         {
             screen.Options.Add(option);
         }
 
         screen.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
         {
-            var page = await client.GetScreenerAsync(new ScreenQuery(parsed.GetValue(screenSort), parsed.GetValue(screenAscending) ? "asc" : "desc", parsed.GetValue(screenStatus), parsed.GetValue(screenMinVolume), parsed.GetValue(screenTop), parsed.GetValue(screenCursor)), ct).ConfigureAwait(false);
+            var page = await client.GetScreenerAsync(new ScreenQuery(parsed.GetValue(screenSort), parsed.GetValue(screenAscending) ? "asc" : "desc", parsed.GetValue(screenStatus), parsed.GetValue(screenMinVolume), parsed.GetValue(screenTop), parsed.GetValue(screenCursor), parsed.GetValue(screenWatchlist)), ct).ConfigureAwait(false);
             Print(env, asJson, page, Views.Screener(page, env.Out.Profile.Width));
             return Ok;
         }));
         root.Subcommands.Add(screen);
+
+        // ---- watchlist ----
+        var watchlist = new Command("watchlist", "Your watchlists: lists of markets that only you see (filter the screener with screen --watchlist)");
+        var listName = new Argument<string>("name") { Description = "The watchlist's name: lower-case letters, digits, dots, dashes and underscores" };
+        var listTickers = new Argument<string[]>("tickers") { Description = "Market tickers", Arity = ArgumentArity.OneOrMore };
+
+        var watchlistList = new Command("list", "Your watchlists");
+        watchlistList.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var lists = await client.GetWatchlistsAsync(ct).ConfigureAwait(false);
+            Print(env, asJson, lists, Views.Watchlists(lists, env.Out.Profile.Width));
+            return Ok;
+        }));
+        watchlist.Subcommands.Add(watchlistList);
+
+        var watchlistShow = new Command("show", "The markets of a watchlist");
+        watchlistShow.Arguments.Add(listName);
+        watchlistShow.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var found = await client.GetWatchlistAsync(parsed.GetRequiredValue(listName), ct).ConfigureAwait(false);
+            Print(env, asJson, found, Views.Watchlist(found));
+            return Ok;
+        }));
+        watchlist.Subcommands.Add(watchlistShow);
+
+        var watchlistCreate = new Command("create", "Make an empty watchlist");
+        watchlistCreate.Arguments.Add(listName);
+        watchlistCreate.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var made = await client.CreateWatchlistAsync(parsed.GetRequiredValue(listName), ct).ConfigureAwait(false);
+            Print(env, asJson, made, new Markup($"created watchlist [bold]{Escape(made.Name)}[/]"));
+            return Ok;
+        }));
+        watchlist.Subcommands.Add(watchlistCreate);
+
+        var watchlistDelete = new Command("delete", "Delete a watchlist");
+        watchlistDelete.Arguments.Add(listName);
+        watchlistDelete.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            await client.DeleteWatchlistAsync(parsed.GetRequiredValue(listName), ct).ConfigureAwait(false);
+            Done(env, asJson, $"deleted watchlist [bold]{Escape(parsed.GetRequiredValue(listName))}[/]");
+            return Ok;
+        }));
+        watchlist.Subcommands.Add(watchlistDelete);
+
+        var watchlistAdd = new Command("add", "Add markets to a watchlist");
+        watchlistAdd.Arguments.Add(listName);
+        watchlistAdd.Arguments.Add(listTickers);
+        watchlistAdd.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            foreach (var ticker in parsed.GetRequiredValue(listTickers))
+            {
+                await client.AddToWatchlistAsync(parsed.GetRequiredValue(listName), ticker, ct).ConfigureAwait(false);
+            }
+
+            Done(env, asJson, $"added {parsed.GetRequiredValue(listTickers).Length} market(s) to [bold]{Escape(parsed.GetRequiredValue(listName))}[/]");
+            return Ok;
+        }));
+        watchlist.Subcommands.Add(watchlistAdd);
+
+        var watchlistRemove = new Command("remove", "Take markets off a watchlist");
+        watchlistRemove.Arguments.Add(listName);
+        watchlistRemove.Arguments.Add(listTickers);
+        watchlistRemove.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            foreach (var ticker in parsed.GetRequiredValue(listTickers))
+            {
+                await client.RemoveFromWatchlistAsync(parsed.GetRequiredValue(listName), ticker, ct).ConfigureAwait(false);
+            }
+
+            Done(env, asJson, $"removed {parsed.GetRequiredValue(listTickers).Length} market(s) from [bold]{Escape(parsed.GetRequiredValue(listName))}[/]");
+            return Ok;
+        }));
+        watchlist.Subcommands.Add(watchlistRemove);
+        root.Subcommands.Add(watchlist);
+
+        // ---- alert ----
+        var alert = new Command("alert", "Your alerts: tell me when a market's price, spread, volume or open interest does something");
+        var alertId = new Argument<int>("id") { Description = "The alert's id (see alert list)" };
+
+        var alertList = new Command("list", "Your alerts");
+        alertList.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var alerts = await client.GetAlertsAsync(ct).ConfigureAwait(false);
+            Print(env, asJson, alerts, Views.Alerts(alerts, env.Out.Profile.Width));
+            return Ok;
+        }));
+        alert.Subcommands.Add(alertList);
+
+        var alertTicker = new Argument<string>("ticker") { Description = "The market" };
+        var alertKind = new Argument<string>("kind") { Description = "price_above, price_below, spread_above, volume_spike or oi_change" };
+        var alertThreshold = new Argument<string>("threshold") { Description = "Dollars (0.60) for price and spread, a whole factor (5) for volume_spike, contracts (500) for oi_change" };
+        var alertCooldown = new Option<int?>("--cooldown") { Description = "Least seconds between two alerts (10 to 86400; default 60)" };
+        var alertAdd = new Command("add", "Make an alert. It fires when the condition becomes true, not for what is already true when you make it");
+        alertAdd.Arguments.Add(alertTicker);
+        alertAdd.Arguments.Add(alertKind);
+        alertAdd.Arguments.Add(alertThreshold);
+        alertAdd.Options.Add(alertCooldown);
+        alertAdd.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var made = await client.CreateAlertAsync(new CreateAlertRequest(parsed.GetRequiredValue(alertTicker), parsed.GetRequiredValue(alertKind), parsed.GetRequiredValue(alertThreshold), parsed.GetValue(alertCooldown)), ct).ConfigureAwait(false);
+            Print(env, asJson, made, new Markup($"alert [bold]{made.Id}[/]: {Escape(made.Ticker)} {Escape(made.Kind)} {Escape(made.Threshold)}"));
+            return Ok;
+        }));
+        alert.Subcommands.Add(alertAdd);
+
+        foreach (var (word, pause, verb) in new[] { ("pause", true, "paused"), ("resume", false, "resumed") })
+        {
+            var command = new Command(word, pause ? "Pause an alert" : "Resume an alert (it judges its condition afresh, so it does not fire for what became true meanwhile)");
+            command.Arguments.Add(alertId);
+            command.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+            {
+                await client.SetAlertPausedAsync(parsed.GetRequiredValue(alertId), pause, ct).ConfigureAwait(false);
+                Done(env, asJson, $"{verb} alert [bold]{parsed.GetRequiredValue(alertId)}[/]");
+                return Ok;
+            }));
+            alert.Subcommands.Add(command);
+        }
+
+        var alertRemove = new Command("remove", "Delete an alert and its history");
+        alertRemove.Arguments.Add(alertId);
+        alertRemove.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            await client.DeleteAlertAsync(parsed.GetRequiredValue(alertId), ct).ConfigureAwait(false);
+            Done(env, asJson, $"deleted alert [bold]{parsed.GetRequiredValue(alertId)}[/]");
+            return Ok;
+        }));
+        alert.Subcommands.Add(alertRemove);
+
+        var firesAfter = new Option<long?>("--after") { Description = "Only alerts that fired after this fire id (the last id a previous call printed)" };
+        var firesTop = new Option<int>("--top") { Description = "How many to show", DefaultValueFactory = _ => 20 };
+        var alertFires = new Command("fires", "The alerts that fired, oldest first (the newest ones unless --after is given)");
+        alertFires.Options.Add(firesAfter);
+        alertFires.Options.Add(firesTop);
+        alertFires.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var page = await client.GetAlertFiresAsync(parsed.GetValue(firesAfter), parsed.GetValue(firesTop), ct).ConfigureAwait(false);
+            Print(env, asJson, page, Views.Fires(page, env.Out.Profile.Width));
+            return Ok;
+        }));
+        alert.Subcommands.Add(alertFires);
+        root.Subcommands.Add(alert);
+
+        // ---- settings ----
+        var settings = new Command("settings", "Your settings on the server");
+        var zoneValue = new Argument<string?>("zone") { Description = "A time zone such as America/Denver or UTC; without it, show the stored one", Arity = ArgumentArity.ZeroOrOne };
+        var zoneClear = new Option<bool>("--clear") { Description = "Forget the stored zone (times then follow this computer)" };
+        var settingsTz = new Command("tz", "The time zone times are shown in when you do not choose one with --utc, --tz or KALTERM_TZ");
+        settingsTz.Arguments.Add(zoneValue);
+        settingsTz.Options.Add(zoneClear);
+        settingsTz.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            if (parsed.GetValue(zoneClear))
+            {
+                await client.SetTimeZoneSettingAsync(null, ct).ConfigureAwait(false);
+                Done(env, asJson, "stored time zone cleared");
+                return Ok;
+            }
+
+            if (parsed.GetValue(zoneValue) is { } zone)
+            {
+                await client.SetTimeZoneSettingAsync(zone, ct).ConfigureAwait(false);
+                Done(env, asJson, $"stored time zone is now [bold]{Escape(zone)}[/]");
+                return Ok;
+            }
+
+            var current = await client.GetTimeZoneSettingAsync(ct).ConfigureAwait(false);
+            Print(env, asJson, current, new Markup(current.Value is null ? "no time zone stored: times follow this computer" : $"stored time zone: [bold]{Escape(current.Value)}[/]"));
+            return Ok;
+        }));
+        settings.Subcommands.Add(settingsTz);
+        root.Subcommands.Add(settings);
 
         // ---- metrics ----
         var metricsTicker = new Argument<string>("ticker") { Description = "The market ticker" };
@@ -352,7 +525,7 @@ internal static partial class CliApp
     private static async Task<int> Execute(CliEnvironment env, Choices choices, bool asJson, Func<IKalTermApi, bool, Task<int>> body, CancellationToken cancellationToken)
     {
         var (apiOption, width, noColor) = (choices.Api, choices.Width, choices.NoColor);
-        if (!TryResolveZone(env, choices.Utc, choices.Zone, out var shown, out var zoneProblem))
+        if (!TryResolveZone(env, choices.Utc, choices.Zone, out var shown, out var zoneChosen, out var zoneProblem))
         {
             return Fail(env, zoneProblem!);
         }
@@ -377,6 +550,11 @@ internal static partial class CliApp
         var client = env.CreateApi(uri);
         try
         {
+            if (!zoneChosen && env.HasToken(uri))
+            {
+                Zone = await StoredZoneAsync(client, shown, cancellationToken).ConfigureAwait(false);
+            }
+
             return await body(client, asJson).ConfigureAwait(false);
         }
         catch (TlsTrustException ex)
@@ -397,6 +575,33 @@ internal static partial class CliApp
         }
     }
 
+    /// <summary>Confirms a change that has nothing to print back: a line of text, or <c>{"ok":true}</c> for <c>--json</c>.</summary>
+    private static void Done(CliEnvironment env, bool asJson, string markup)
+    {
+        if (asJson)
+        {
+            env.Out.Profile.Out.Writer.WriteLine("{\"ok\":true}");
+        }
+        else
+        {
+            env.Out.MarkupLine(markup);
+        }
+    }
+
+    /// <summary>The time zone stored for the caller on the server, or <paramref name="fallback"/> when none is stored, the server cannot be asked or it names a zone this computer does not know.</summary>
+    private static async Task<TimeZoneInfo> StoredZoneAsync(IKalTermApi client, TimeZoneInfo fallback, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var stored = await client.GetTimeZoneSettingAsync(cancellationToken).ConfigureAwait(false);
+            return stored.Value is { } name ? TimeZoneInfo.FindSystemTimeZoneById(name) : fallback;
+        }
+        catch (Exception ex) when (ex is ApiException or ApiUnavailableException or TlsTrustException or TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return fallback;
+        }
+    }
+
     /// <summary>Prints the API's own JSON for <c>--json</c>, else the rendered view. The JSON goes straight to the writer so it is never wrapped or restyled.</summary>
     private static void Print<T>(CliEnvironment env, bool asJson, T model, Spectre.Console.Rendering.IRenderable view)
         where T : class
@@ -412,10 +617,11 @@ internal static partial class CliApp
     }
 
     /// <summary>The time zone to show times in: <c>--utc</c>, else <c>--tz</c>, else <c>KALTERM_TZ</c>, else the computer's zone.</summary>
-    internal static bool TryResolveZone(CliEnvironment env, bool utc, string? option, out TimeZoneInfo zone, out string? problem)
+    internal static bool TryResolveZone(CliEnvironment env, bool utc, string? option, out TimeZoneInfo zone, out bool chosen, out string? problem)
     {
         problem = null;
         zone = TimeZoneInfo.Utc;
+        chosen = true;
         if (utc)
         {
             return true;
@@ -425,6 +631,7 @@ internal static partial class CliApp
         if (string.IsNullOrWhiteSpace(name))
         {
             zone = env.SystemZone;
+            chosen = false;
             return true;
         }
 

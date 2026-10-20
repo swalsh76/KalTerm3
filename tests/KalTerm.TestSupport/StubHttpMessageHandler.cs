@@ -7,7 +7,8 @@ namespace KalTerm.TestSupport;
 /// <param name="Method">The HTTP method.</param>
 /// <param name="Uri">The full URL including the query.</param>
 /// <param name="Headers">Request headers, name to joined values.</param>
-public sealed record RecordedRequest(HttpMethod Method, Uri Uri, IReadOnlyDictionary<string, string> Headers);
+/// <param name="Body">The request body as text; <see langword="null"/> when there was none.</param>
+public sealed record RecordedRequest(HttpMethod Method, Uri Uri, IReadOnlyDictionary<string, string> Headers, string? Body = null);
 
 /// <summary>
 /// A scripted <see cref="HttpMessageHandler"/> for tests: each call answers with the next scripted response or throws the
@@ -59,7 +60,8 @@ public sealed class StubHttpMessageHandler : HttpMessageHandler
             _requests.Add(new RecordedRequest(
                 request.Method,
                 request.RequestUri!,
-                request.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value), StringComparer.OrdinalIgnoreCase)));
+                request.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value), StringComparer.OrdinalIgnoreCase),
+                request.Content?.ReadAsStringAsync(CancellationToken.None).GetAwaiter().GetResult()));
             if (!_script.TryDequeue(out next!))
             {
                 throw new InvalidOperationException($"no scripted response for {request.Method} {request.RequestUri}");

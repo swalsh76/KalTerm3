@@ -131,7 +131,7 @@ Read the server from this computer (once per server: trust its certificate, then
 dotnet run --project src/KalTerm.Cli -c Release -- trust kaldb:5280          # compare the fingerprint with `kalterm-admin cert show`
 dotnet run --project src/KalTerm.Cli -c Release -- login --api https://kaldb:5280
 dotnet run --project src/KalTerm.Cli -c Release -- status --api https://kaldb:5280     # or set KALTERM_API_URL
-# times show in this computer's zone; choose with --utc, --tz America/Denver or KALTERM_TZ
+# times show in the zone stored with `kterm settings tz`, else this computer's zone; choose with --utc, --tz America/Denver or KALTERM_TZ
 ```
 
 Back up, restore and prove backups on the server (`kalterm-admin`, run on the server through remoting; the share credential is entered once with `-SetShareCredential`):
