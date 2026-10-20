@@ -69,7 +69,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M1 Spikes** (throwaway, measured) | **S-1 durability:** `diskspd` write-through benchmark on the target volume, then SQL Server commit latency, then 3 hard power cuts under load with `DBCC CHECKDB` after each. **S-2 time-series layout:** daily partitioned columnstore vs hot rowstore plus cold columnstore; insert rate, storage per million rows, query latency. **S-3 Ed25519:** signing library choice, verified against the Python signing vectors. **S-4 install:** unattended instance install on a clean VM | go/no-go; S-1 failing ends the SQL Server path. S-1 runs in stages (§6.1) |
 | **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green; may start once S-1a and S-1b have passed (M2 never touches SQL). **Met 2026-10-17** (BUILD-LOG §4) |
 | **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** (**met 2026-10-18**, BUILD-LOG 2.7). **Done 2026-10-19** (BUILD-LOG 5.9: production feed ingesting on `kaldb`, CLI reading ticks, trades, gaps and order books) |
-| **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green |
+| **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green (**met 2026-10-20**, BUILD-LOG §6) |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire |
 | **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead |
 | **M7 UI** | WPF terminal | decided later |
@@ -195,7 +195,7 @@ analytics (M5 onward), combo markets.
 ### 6.5 M4 Server: decisions and slices
 
 Order (owner, 2026-10-19): 4.1 storage governor and retention, 4.2 trade backfill, 4.3 backup and restore, 4.4 candles, 4.5 auth, TLS and pinning.
-Each slice gets its own plan for approval before code.
+Each slice gets its own plan for approval before code. **All done 2026-10-20** (BUILD-LOG §6).
 
 **Candles (slice 4.4), approved 2026-10-19.** Measured on `kaldb` (last hour): 2.27 M ticker rows over 45 k markets collapse to about 465 k market-minutes
 with ticks and 30 k with trades, and the raw ticker table grows about 2.2 GB a day, so 1-minute candles for every market are not stored.
