@@ -1318,3 +1318,22 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   else this computer's zone. There are no short aliases. A zone the computer does not know is refused before any call, and the message says whether it came from the variable.
 - Tables name the zone in the column header (`Time (America/Denver)`); a time in a sentence carries the offset that applied at that moment (`2026-10-18 17:00:00 -06:00`, or `UTC`).
 - The choice flows with the running command (an async-local), so nothing is shared between commands. A stored per-user setting waits for the per-user features (M5/M7).
+
+## 6. M4 Server summary (2026-10-20): done
+
+Gate "API contract tests green": met. The contract pin tests (`KalTerm.Contracts.Tests`, 27) cover every model that crosses the API, including the candle and page models; the
+API, client and CLI tests, and the database suites on `kaldb`, pass; CI is green on `main` (PR #45 and #46 merged 2026-10-20).
+
+| Slice | What | Notes |
+|---|---|---|
+| 4.1 | Storage governor and retention | budget 500 GB, hard `MAXSIZE`, oldest whole days dropped under pressure (5.10) |
+| 4.2 | Trade backfill | recovers trades over a gap from REST; `max_ts` is exclusive (found by a live test) (5.11) |
+| 4.3 | Backup and restore | GFS retention on the NAS share, restore only into a new database, proof by row-count manifest and `DBCC CHECKDB` (5.12) |
+| 4.5 | Users, tokens, TLS, pinning | uniform 401, throttle, trust on first use (5.13) |
+| 4.4 | Candles | stored `1d`/`1h` for all markets and `1m` for the watch list, exact roll-up, gap flags, `kterm candles` (5.14) |
+| - | Client time zone | `--utc`, `--tz`, `KALTERM_TZ`, else the computer's zone (5.15) |
+
+Running on `kaldb` at close: ingest and API release `host-7e4d2bc`; status reports no problems; backup and restore proof ok; the 1m watch-list candles were still catching up.
+
+Carried forward, none in M4: a stored per-user time zone (with per-user settings, M5/M7), persisted deltas, live add/remove of watched markets, WebSocket push (M5), mDNS discovery. Parked
+items stay in PLAN.md section 9.
