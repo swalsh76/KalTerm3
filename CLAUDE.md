@@ -17,7 +17,7 @@ oracle. No code is shared.
 
 ## Status
 
-M0, **M2 Core, M3, M4 and M5 are done** (BUILD-LOG §4 to §7; M6 Trading is in progress (6.1 to 6.6 built; 6.7 is the live run): **no real order is sent without the owner's go-ahead**). All M1 spikes are done (BUILD-LOG 2.1 to 2.7); S-1d (real power cuts) passed on the target server, so M3 may start. The
+M0, **M2 Core, M3, M4 and M5 are done** (BUILD-LOG §4 to §7; M6 Trading is in progress (6.1 to 6.7 done, including the live run on the real account; 6.8 closes M6): **no real order is sent without the owner's go-ahead**). All M1 spikes are done (BUILD-LOG 2.1 to 2.7); S-1d (real power cuts) passed on the target server, so M3 may start. The
 spike proposals in PLAN.md 6.3 and the M3 decisions D1 to D8 (6.4) are approved; M3 reads production market data with the
 read-only key, and a long ingest soak needs the owner's fresh go-ahead. S-1a found that this workstation's consumer NVMe acknowledges write-through writes
 from volatile cache (BUILD-LOG §2.2).

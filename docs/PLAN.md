@@ -314,7 +314,7 @@ run only after the exact order is shown and the owner says go.
 | 6.5a (built, BUILD-LOG 8.5) | Private WebSocket channel models (fill, user orders, market positions), the persistent trading state (day baseline, transfers, halt, unknown outcomes) and the account tracker (seeded from REST, reconciled on every reconnect, exactly once by id) |
 | 6.5b (built, BUILD-LOG 8.6) | The order service tying risk, snapshot, transport, state and audit log together: place, amend, cancel, kill switch, funding transfers, real write costs from the account |
 | 6.6 (built, BUILD-LOG 8.7) | CLI: `buy`, `sell`, `cancel`, `amend`, `orders`, `positions`, `balance`, `fills`, `kill`, `--dry-run`, the risk verdict before sending, the typed production confirmation |
-| 6.7 | Live end to end on the real account under the tiny limits, each write after the owner's go: far-from-market resting orders, amend, cancel, the kill switch; then one deliberate minimal fill to check fills, positions and fees; the server-offline test; as-built notes |
+| 6.7 (done, BUILD-LOG 8.8) | Live end to end on the real account under the tiny limits, each write after the owner's go: far-from-market resting orders, amend, cancel, the kill switch; then one deliberate minimal fill to check fills, positions and fees; the server-offline test; as-built notes |
 | 6.8 | Close-out: what the live checks showed, risk defaults revisited with the owner, docs |
 
 ## 7. Risks

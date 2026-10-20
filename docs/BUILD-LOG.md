@@ -1612,3 +1612,28 @@ Slice 6.5 is split in two so each PR stays reviewable: 6.5a is what the order se
 - Live (read-only key, GET only; shapes and exit codes only, no values): `balance`, `positions` (and `--all`), `orders` (and `--status all`) and `fills` ran against the real account, exit 0 each, with the expected tables; the balance JSON has
   `balance`, `portfolio_value`, `shards` (each `shard`, `available`) and `halted`. Nothing was sent.
 - No rollout is needed (the server does not run trading code). Still nothing has been sent to Kalshi.
+
+### 8.8 Slice 6.7: live on the real account (2026-10-20)
+
+Owner decision: development and testing use Kalshi production only, with a separate read-write trading key (Credential Manager) beside the read-only data key; the demo site is not used. Every write below was run by the owner from `kterm`
+after being shown the exact order and saying "go"; the audit log (`audit.jsonl`) holds the chain for each. The server was not involved: the trading commands ran while no KalTerm API was listening on this computer, which is the
+server-offline test.
+
+| Step | What was sent | Result |
+|---|---|---|
+| 1 | Buy 1 YES at $0.01, post-only, on a shard-0 market far below the best bid | Placed (201); listed as a resting BID, YES $0.0100, NO $0.9900. A buy of YES is a bid on the YES book, as designed |
+| 2 | Amend that order to $0.02 | Same order id, now BID $0.0200 with 1 left. The amend reply carries no remaining count we read (`resting -`), so the order list is the source of truth |
+| 3 | Cancel it | Reply 200, "cancelled 1 left". Kalshi's resting list kept showing it for several seconds, then dropped it |
+| 4 | Buy 1 YES at $0.01, post-only, on a shard-3 market with all money on shard 0 | The plan showed the $0.0200 transfer 0 to 3; sent once, shown in the balance at once; the order rested. Total unchanged |
+| 4b | Cancel it, timing the list | The list was already empty on the first look, 1.9 s after the cancel |
+| 5 | Place the shard-3 order again, then `kill` | Halted, cancel-all took the order (follow-up passes cancelled 0), book empty, 2.8 s in all; a dry-run order was then refused as halted; `resume` cleared it |
+| 6a | Buy 1 YES at $0.03 IOC (taker) | Filled 1 at $0.03; fee $0.0021; position 1 YES, exposure $0.0300; the balance fell by exactly cost plus fee |
+| 6b | Sell 1 YES at $0.02 IOC | Filled 1; fee $0.0014; position flat, realized -$0.0100, fees $0.0035; the balance fell by $0.0135 in the round trip |
+
+- Findings. (1) A resting order does not reduce a shard's balance: the balance is gross cash (shard 3 still showed the full $0.0200 with the order resting), which is what the tracker assumes. (2) Kalshi's resting-order list can lag a cancel by
+  seconds (not at all in 4b, several seconds after step 3), so the kill switch's rule of two empty looks a second apart within ten passes is right, and a lag longer than ten seconds would be reported, not hidden. (3) The real taker fee
+  is the modelled fee rounded up to $0.0001 ($0.002037 became $0.0021, $0.001372 became $0.0014, $0.000693 became $0.0007), matching the fee model and the balance's alignment to $0.0001; the risk layer's worst-case bound (up to $0.01) is
+  conservative. (4) Realized profit on a position excludes fees, which are reported separately. (5) A phrase typed wrongly at the production prompt (a pasted command) was refused with nothing sent.
+- Not answered, parked: whether Kalshi's auto-routing makes shard transfers unnecessary. The risk layer refuses an order its shard cannot fund, so it cannot be tested without bypassing the layer.
+- The $0.02 moved to shard 3 stays there (no command moves money back; Kalshi's web app can).
+- Open small items: show the remaining count after an amend from the order list; the confirmation prompt reads one line, so a pasted command is refused rather than sent (working as intended).
