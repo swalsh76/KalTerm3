@@ -224,3 +224,33 @@ public sealed record QueuePosition(string OrderId, string MarketTicker, Contract
 /// <summary>The reply to a request for queue positions.</summary>
 /// <param name="Positions">The positions.</param>
 public sealed record QueuePositionsReply([property: JsonPropertyName("queue_positions")] IReadOnlyList<QueuePosition>? Positions = null);
+
+/// <summary>The cost, in rate-limit tokens, of one endpoint.</summary>
+/// <param name="Method">The HTTP method.</param>
+/// <param name="Path">The path, with placeholders such as <c>{order_id}</c>.</param>
+/// <param name="Cost">Tokens one request costs.</param>
+public sealed record EndpointCost(string Method, string Path, decimal Cost);
+
+/// <summary>What each endpoint costs in tokens, from <c>GET /account/endpoint_costs</c>.</summary>
+/// <param name="DefaultCost">What an endpoint not listed costs.</param>
+/// <param name="Endpoints">The endpoints that cost something else.</param>
+public sealed record EndpointCostTable(decimal DefaultCost, [property: JsonPropertyName("endpoint_costs")] IReadOnlyList<EndpointCost>? Endpoints = null)
+{
+    /// <summary>What a request costs.</summary>
+    /// <param name="method">The HTTP method.</param>
+    /// <param name="path">The path as Kalshi lists it.</param>
+    /// <returns>The listed cost, or the default.</returns>
+    public decimal CostOf(string method, string path) =>
+        Endpoints?.FirstOrDefault(e => string.Equals(e.Method, method, StringComparison.OrdinalIgnoreCase) && e.Path == path)?.Cost ?? DefaultCost;
+}
+
+/// <summary>A token bucket of the account's rate limit.</summary>
+/// <param name="BucketCapacity">Tokens it holds.</param>
+/// <param name="RefillRate">Tokens it gains per second.</param>
+public sealed record BucketLimit(decimal BucketCapacity, decimal RefillRate);
+
+/// <summary>The account's rate limits, from <c>GET /account/limits</c>.</summary>
+/// <param name="UsageTier">The tier's name.</param>
+/// <param name="Read">The read bucket.</param>
+/// <param name="Write">The write bucket.</param>
+public sealed record AccountLimits(string UsageTier, BucketLimit Read, BucketLimit Write);

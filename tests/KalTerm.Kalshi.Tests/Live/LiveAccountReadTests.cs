@@ -81,4 +81,29 @@ public sealed class LiveAccountReadTests
 
         return list;
     }
+
+    [Fact(Skip = Why, SkipUnless = nameof(LiveGate.Enabled), SkipType = typeof(LiveGate))]
+    public async Task TheWriteBudgetOfTheAccountParses()
+    {
+        var (settings, signer) = LiveSupport.Credentials();
+        using (signer)
+        using (var client = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer }))
+        {
+            var token = TestContext.Current.CancellationToken;
+
+            var costs = await client.EndpointCostsAsync(token);
+            var limits = await client.AccountLimitsAsync(token);
+
+            // the route costs are Kalshi's published constants, not account values
+            LiveSupport.Say($"endpoint costs: default {costs.DefaultCost}, {costs.Endpoints?.Count ?? 0} listed");
+            foreach (var entry in (costs.Endpoints ?? []).Where(e => e.Path.Contains("order", StringComparison.OrdinalIgnoreCase) || e.Path.Contains("transfer", StringComparison.OrdinalIgnoreCase)))
+            {
+                LiveSupport.Say($"  {entry.Method} {entry.Path}: {entry.Cost}");
+            }
+
+            LiveSupport.Say($"limits: tier {limits.UsageTier}; write bucket {limits.Write.BucketCapacity} refilling {limits.Write.RefillRate} a second; read bucket {limits.Read.BucketCapacity} refilling {limits.Read.RefillRate}");
+            Assert.True(costs.DefaultCost > 0);
+            Assert.True(limits.Write.RefillRate > 0 && limits.Write.BucketCapacity >= costs.DefaultCost);
+        }
+    }
 }

@@ -30,6 +30,8 @@ namespace KalTerm.Kalshi.Models.Json;
 [JsonSerializable(typeof(FillsPage))]
 [JsonSerializable(typeof(SettlementsPage))]
 [JsonSerializable(typeof(QueuePositionsReply))]
+[JsonSerializable(typeof(EndpointCostTable))]
+[JsonSerializable(typeof(AccountLimits))]
 [JsonSerializable(typeof(Market))]
 [JsonSerializable(typeof(KalshiEvent))]
 [JsonSerializable(typeof(Series))]

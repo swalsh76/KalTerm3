@@ -52,7 +52,7 @@ public sealed class TradingClientOptions
 /// is not looked up at all. A 429 means Kalshi did not process it, so every write waits and retries. Cancels are idempotent and also retried after unclear answers. Kalshi does not de-duplicate transfers, so one is sent at most once.
 /// </para>
 /// </summary>
-public sealed class KalshiTradingClient : IDisposable
+public sealed class KalshiTradingClient : Orders.ITradingApi, IDisposable
 {
     private readonly HttpClient _http;
     private readonly TokenBucket _bucket;

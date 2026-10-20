@@ -21,7 +21,9 @@ internal sealed class FakeAccountRest : IAccountRest
 
     public ExchangeStatus Status { get; set; } = AccountTests.StatusOf(transfers: true);
 
-    public int BalanceCalls { get; private set; }
+    public int BalanceCalls { get; set; }
+
+    public Action<int>? OnBalanceRead { get; set; }
 
     public int FailBalance { get; set; }
 
@@ -32,6 +34,7 @@ internal sealed class FakeAccountRest : IAccountRest
     public Task<AccountBalance> BalanceAsync(CancellationToken cancellationToken)
     {
         BalanceCalls++;
+        OnBalanceRead?.Invoke(BalanceCalls);
         if (FailBalance != 0)
         {
             FailBalance--;

@@ -312,7 +312,7 @@ run only after the exact order is shown and the owner says go.
 | 6.3 (built, BUILD-LOG 8.3) | Account read side: portfolio models and GET methods, the Credential Manager key store, trading-key loading |
 | 6.4 (built, BUILD-LOG 8.4) | Write transport: `KalshiTradingClient` (separate, route-allowlisted), write token bucket, create / cancel / batch cancel / amend / decrease with idempotent `client_order_id` recovery, the shard transfer with its never-resend rule; a test fails any write made without the trading capability |
 | 6.5a (built, BUILD-LOG 8.5) | Private WebSocket channel models (fill, user orders, market positions), the persistent trading state (day baseline, transfers, halt, unknown outcomes) and the account tracker (seeded from REST, reconciled on every reconnect, exactly once by id) |
-| 6.5b | The order service tying risk, snapshot, transport, state and audit log together: place, amend, cancel, kill switch, funding transfers, real write costs from the account |
+| 6.5b (built, BUILD-LOG 8.6) | The order service tying risk, snapshot, transport, state and audit log together: place, amend, cancel, kill switch, funding transfers, real write costs from the account |
 | 6.6 | CLI: `buy`, `sell`, `cancel`, `amend`, `orders`, `positions`, `balance`, `fills`, `kill`, `--dry-run`, the risk verdict before sending, the typed production confirmation |
 | 6.7 | Live end to end on the real account under the tiny limits, each write after the owner's go: far-from-market resting orders, amend, cancel, the kill switch; then one deliberate minimal fill to check fills, positions and fees; the server-offline test; as-built notes |
 | 6.8 | Close-out: what the live checks showed, risk defaults revisited with the owner, docs |
