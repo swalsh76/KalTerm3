@@ -623,3 +623,66 @@ public class StatusBuilderBackupTests
         Assert.StartsWith("the last proof of a backup by restore failed: error the restored copy disagrees", Assert.Single(status.Problems), StringComparison.Ordinal);
     }
 }
+
+public class AnalyticsStatusTests
+{
+    private static StatusSnapshot Healthy() => new(
+        new IngestStateEntry(IngestStateKeys.Running, NowUtc.AddSeconds(-5)),
+        NowUtc.AddSeconds(-1),
+        NowUtc.AddSeconds(-3),
+        10L * 1024 * 1024 * 1024,
+        100L * 1024 * 1024 * 1024,
+        800L * 1024 * 1024 * 1024,
+        new Dictionary<string, long> { ["active"] = 100 },
+        new Dictionary<string, long>());
+
+    private static AnalyzerRunRecord Ok(TimeSpan ago) => new("ok", NowUtc - ago, NowUtc - ago + TimeSpan.FromSeconds(11), 201_000, "x written");
+
+    [Fact]
+    public void ARecentSuccessfulRunIsReportedWithItsAgeDurationAndRowsAndIsNoProblem()
+    {
+        var run = Ok(TimeSpan.FromMinutes(3));
+
+        var status = StatusBuilder.Build(Healthy() with { Analytics = new AnalyticsRecord(run, run) }, NowUtc);
+
+        Assert.Empty(status.Problems);
+        Assert.Equal(("ok", 180L, 11L, 201_000), (status.Analytics!.Last, status.Analytics.LastOkAgeSeconds, status.Analytics.LastOkSeconds, status.Analytics.LastOkRows));
+    }
+
+    [Fact]
+    public void ADatabaseWithoutTheTableOrARunnerThatNeverRanReportsNothingOrNoRun()
+    {
+        Assert.Null(StatusBuilder.Build(Healthy(), NowUtc).Analytics);
+        Assert.Null(StatusBuilder.Build(Healthy() with { Analytics = new AnalyticsRecord(null, null) }, NowUtc).Analytics!.Last);
+    }
+
+    [Fact]
+    public void AFailedOrTimedOutLastRunIsAProblemWithItsMessage()
+    {
+        var failed = new AnalyzerRunRecord("failed", NowUtc.AddMinutes(-1), NowUtc.AddMinutes(-1), null, "no database");
+        var timeout = new AnalyzerRunRecord("timeout", NowUtc.AddMinutes(-1), NowUtc.AddMinutes(-1), null, "cancelled after 300 seconds");
+
+        var one = StatusBuilder.Build(Healthy() with { Analytics = new AnalyticsRecord(failed, Ok(TimeSpan.FromMinutes(6))) }, NowUtc);
+        var two = StatusBuilder.Build(Healthy() with { Analytics = new AnalyticsRecord(timeout, null) }, NowUtc);
+
+        Assert.Contains("the metrics analyzer's last run failed: no database", one.Problems);
+        Assert.Contains("the metrics analyzer's last run timeout: cancelled after 300 seconds", two.Problems);
+    }
+
+    [Fact]
+    public void FifteenMinutesWithoutASuccessfulRunWhileIngestRunsIsAProblemButAStoppedIngestIsNot()
+    {
+        var old = Ok(TimeSpan.FromMinutes(16));
+        var record = new AnalyticsRecord(old, old);
+
+        var running = StatusBuilder.Build(Healthy() with { Analytics = record }, NowUtc);
+        var edge = StatusBuilder.Build(Healthy() with { Analytics = new AnalyticsRecord(Ok(TimeSpan.FromMinutes(15)), Ok(TimeSpan.FromMinutes(15))) }, NowUtc);
+        var stopped = StatusBuilder.Build(Healthy() with { Run = new IngestStateEntry(IngestStateKeys.Stopped, NowUtc.AddMinutes(-20)), Analytics = record }, NowUtc);
+        var never = StatusBuilder.Build(Healthy() with { Analytics = new AnalyticsRecord(new AnalyzerRunRecord("running", NowUtc.AddSeconds(-5), null, null, null), null) }, NowUtc);
+
+        Assert.Contains(running.Problems, p => p.Contains("has not finished a run for 16 min", StringComparison.Ordinal));
+        Assert.DoesNotContain(edge.Problems, p => p.Contains("analyzer", StringComparison.Ordinal));
+        Assert.DoesNotContain(stopped.Problems, p => p.Contains("analyzer", StringComparison.Ordinal));
+        Assert.Contains(never.Problems, p => p.Contains("has not finished a run", StringComparison.Ordinal));
+    }
+}

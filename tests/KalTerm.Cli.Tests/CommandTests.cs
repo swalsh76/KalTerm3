@@ -331,6 +331,59 @@ public sealed class CommandTests : IDisposable
     }
 
     [Fact]
+    public async Task TheScreenerListsMarketsAndSaysHowOldTheFiguresAre()
+    {
+        _cli.Api.Screener = new ScreenerPage("volume", "desc", "2026-10-18T22:55:00.000000+00:00", 300, [
+            new ScreenerRowDto("KX-A", "EV-A", "active", "Yes", "2026-10-18T22:55:00.000000+00:00", null, "0.560000", "0.020000", "1234.56", 7, "99.00", "0.550000", "0.570000", "0.020000", null, null, null, "0.012000", false),
+            new ScreenerRowDto("KX-B", "EV-B", "closed", "Yes", "2026-10-18T22:55:00.000000+00:00", null, null, "-0.010000", "5.00", 1, null, null, null, null, null, null, null, null, true)], "NEXT");
+
+        var exit = await _cli.RunAsync("screen");
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Equal(new ScreenQuery("volume", "desc", null, null, 20, null), _cli.Api.ScreenQueries.Single());
+        Assert.Contains("KX-A", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("+0.02", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("-0.01", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("1,234.56", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("partial", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("2 shown, ranked by volume (desc); figures from 2026-10-18 22:55:00 UTC, 5m ago.", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("More available: --cursor NEXT", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ScreenOptionsReachTheApiAndAScreenerWithoutARunSaysSo()
+    {
+        _cli.Api.Screener = new ScreenerPage("spread", "asc", null, null, [], null);
+
+        await _cli.RunAsync("screen", "--sort", "spread", "--asc", "--status", "active", "--min-volume", "1000", "--top", "5", "--cursor", "C0");
+
+        Assert.Equal(new ScreenQuery("spread", "asc", "active", "1000", 5, "C0"), _cli.Api.ScreenQueries.Single());
+        Assert.Contains("the metrics analyzer has not finished a run yet", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheStatusShowsTheAnalyticsLine()
+    {
+        _cli.Api.Status = Samples.Status() with { Analytics = new AnalyticsStatusDto("ok", "x", "2026-10-18T22:55:00.000000+00:00", "2026-10-18T22:55:00.000000+00:00", 300, 11, 201_000) };
+
+        await _cli.RunAsync("status");
+
+        Assert.Contains("Analytics", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("screener figures 5m ago, 201,000 markets in 11 s", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AFailedAnalyzerRunIsShownInTheStatusLine()
+    {
+        _cli.Api.Status = Samples.Status("the metrics analyzer's last run failed: no database") with { Analytics = new AnalyticsStatusDto("failed", "no database", "2026-10-18T22:55:00.000000+00:00", null, null, null, null) };
+
+        await _cli.RunAsync("status");
+
+        Assert.Contains("last run failed: no database", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("no successful run yet", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task MetricsShowEveryFigureAndASignedChange()
     {
         var exit = await _cli.RunAsync("metrics", "A-1");

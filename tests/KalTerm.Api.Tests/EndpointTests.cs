@@ -1,6 +1,7 @@
 using System.Net;
 using KalTerm.Contracts;
 using KalTerm.Data.Candles;
+using KalTerm.Data.Metrics;
 using KalTerm.Data.Reading;
 using static KalTerm.Api.Tests.Samples;
 
@@ -277,6 +278,100 @@ public sealed class EndpointTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         await AssertInvalidAsync("/v1/markets/bad%20ticker/metrics", "ticker");
+    }
+
+    // ---- screener -------------------------------------------------------------------------------------------------------------------
+
+    private static ScreenerRow Row(int id, string ticker, long volume, long? last = 500_000, bool partial = false) =>
+        new(id, ticker, "EV-" + ticker, "active", "Yes", NowUtc.AddMinutes(-3), new MarketMetrics(NowUtc, NowUtc.AddMinutes(-1), last, 20_000, volume, 7, 9_900, 490_000, 510_000, 20_000, 501_000, 480_000, 470_000, 12_000, partial));
+
+    [Fact]
+    public async Task TheScreenerDefaultsToTheBiggestVolumeFirstAndMapsEveryFigureAndTheRefreshAge()
+    {
+        Fakes.Screener.Result = new ScreenerResult([Row(1, "KX-A", 123_456), Row(2, "KX-B", 5, last: null, partial: true)], null, NowUtc.AddSeconds(-90));
+
+        var page = await _api.GetAsync<ScreenerPage>("/v1/screener");
+
+        Assert.Equal(("volume", "desc", ApiFormat.Moment(NowUtc.AddSeconds(-90)), 90L, null), (page.Sort, page.Order, page.RefreshedAt, page.AgeSeconds, page.NextCursor));
+        var first = page.Rows[0];
+        Assert.Equal(("KX-A", "EV-KX-A", "active", "Yes", "0.500000", "0.020000", "1234.56", 7L), (first.Ticker, first.EventTicker, first.Status, first.YesLabel, first.Last, first.Change24h, first.Volume24h, first.TradeCount24h));
+        Assert.Equal(("0.020000", "0.501000", "0.480000", "0.470000", "0.012000", "99.00", false), (first.Spread, first.Vwap24h, first.Sma20, first.Sma50, first.Volatility24h, first.OpenInterest, first.Partial));
+        Assert.Equal((null, true), (page.Rows[1].Last, page.Rows[1].Partial));
+        Assert.Equal(new ScreenerQuery(ScreenerSort.Volume, true, null, null, null, 50), Fakes.Screener.Queries.Single());
+    }
+
+    [Fact]
+    public async Task AScreenerWithoutAFinishedRunHasNoRefreshTime()
+    {
+        var page = await _api.GetAsync<ScreenerPage>("/v1/screener");
+
+        Assert.Equal((null, null), (page.RefreshedAt, page.AgeSeconds));
+    }
+
+    [Theory]
+    [InlineData("sort=trades&order=asc", ScreenerSort.Trades, false)]
+    [InlineData("sort=change", ScreenerSort.Change, true)]
+    [InlineData("sort=last&order=desc", ScreenerSort.Last, true)]
+    [InlineData("sort=spread", ScreenerSort.Spread, true)]
+    [InlineData("sort=open_interest&order=asc", ScreenerSort.OpenInterest, false)]
+    [InlineData("sort=volatility", ScreenerSort.Volatility, true)]
+    public async Task EverySortAndDirectionReachesTheReader(string query, ScreenerSort sort, bool descending)
+    {
+        var page = await _api.GetAsync<ScreenerPage>("/v1/screener?" + query);
+
+        var asked = Fakes.Screener.Queries.Single();
+        Assert.Equal((sort, descending), (asked.Sort, asked.Descending));
+        Assert.Equal(descending ? "desc" : "asc", page.Order);
+    }
+
+    [Theory]
+    [InlineData("status=active&min_volume=1000&limit=5", "active", 100_000L, 5)]
+    [InlineData("min_volume=12.5", null, 1_250L, 50)]
+    [InlineData("min_volume=0.05", null, 5L, 50)]
+    public async Task FiltersAndTheLimitReachTheReader(string query, string? status, long minVolumeE2, int limit)
+    {
+        await _api.GetAsync<ScreenerPage>("/v1/screener?" + query);
+
+        var asked = Fakes.Screener.Queries.Single();
+        Assert.Equal((status, minVolumeE2, limit), (asked.Status, asked.MinVolumeE2, asked.Limit));
+    }
+
+    [Fact]
+    public async Task AScreenerCursorCarriesTheKeyAndTheIdAndASecondPageResumesAfterIt()
+    {
+        Fakes.Screener.Result = new ScreenerResult([Row(7, "KX-A", 100)], new ScreenerPosition(100, 7), NowUtc);
+
+        var page = await _api.GetAsync<ScreenerPage>("/v1/screener?limit=1");
+        await _api.GetAsync<ScreenerPage>("/v1/screener?limit=1&cursor=" + page.NextCursor);
+
+        Assert.Equal("100|7", ApiFormat.DecodeCursor(page.NextCursor!));
+        Assert.Equal(new ScreenerPosition(100, 7), Fakes.Screener.Queries[1].After);
+    }
+
+    [Theory]
+    [InlineData("sort=bogus", "sort")]
+    [InlineData("order=sideways", "order")]
+    [InlineData("min_volume=-1", "min_volume")]
+    [InlineData("min_volume=1.234", "min_volume")]
+    [InlineData("min_volume=abc", "min_volume")]
+    [InlineData("limit=1001", "limit")]
+    [InlineData("status=Active", "status")]
+    [InlineData("sort=volume&sort=trades", "sort")]
+    public async Task BadScreenerParametersAreNamedAndRefused(string query, string field)
+    {
+        await AssertInvalidAsync("/v1/screener?" + query, field);
+    }
+
+    [Theory]
+    [InlineData("nope")]
+    [InlineData("1|")]
+    [InlineData("|1")]
+    [InlineData("x|1")]
+    [InlineData("1|-1")]
+    [InlineData("1|2|3")]
+    public async Task AScreenerCursorThatIsNotOursIsRefused(string inside)
+    {
+        await AssertInvalidAsync("/v1/screener?cursor=" + ApiFormat.EncodeCursor(inside), "cursor");
     }
 
     // ---- candles --------------------------------------------------------------------------------------------------------------------

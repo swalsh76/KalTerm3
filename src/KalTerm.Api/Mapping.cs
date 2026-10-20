@@ -100,6 +100,35 @@ public static class Mapping
             metrics.Partial);
     }
 
+    /// <summary>A screener row.</summary>
+    /// <param name="row">The row.</param>
+    /// <returns>The model.</returns>
+    public static ScreenerRowDto ToDto(ScreenerRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var m = row.Metrics;
+        return new ScreenerRowDto(
+            row.Ticker,
+            row.EventTicker,
+            row.Status,
+            row.YesSubTitle,
+            ApiFormat.Moment(row.ChangedAt),
+            ApiFormat.Moment(m.LastTime),
+            ApiFormat.Dollars(m.LastE6),
+            ApiFormat.Dollars(m.Change24hE6),
+            ApiFormat.Count(m.VolumeE2)!,
+            m.TradeCount,
+            ApiFormat.Count(m.OpenInterestE2),
+            ApiFormat.Dollars(m.YesBidE6),
+            ApiFormat.Dollars(m.YesAskE6),
+            ApiFormat.Dollars(m.SpreadE6),
+            ApiFormat.Dollars(m.Vwap24hE6),
+            ApiFormat.Dollars(m.Sma20E6),
+            ApiFormat.Dollars(m.Sma50E6),
+            ApiFormat.Dollars(m.Volatility24hE6),
+            m.Partial);
+    }
+
     /// <summary>A trade.</summary>
     /// <param name="trade">The stored trade.</param>
     /// <returns>The model.</returns>

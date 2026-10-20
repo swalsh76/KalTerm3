@@ -310,7 +310,8 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
             oldestDay?.Value,
             governorLast is { } last ? new IngestStateEntry(last.Value, DateTime.SpecifyKind(last.UpdatedAt, DateTimeKind.Utc)) : null,
             await BackfillAsync(connection, cancellationToken).ConfigureAwait(false),
-            await BackupRecordAsync(connection, cancellationToken).ConfigureAwait(false));
+            await BackupRecordAsync(connection, cancellationToken).ConfigureAwait(false),
+            await AnalyticsAsync(connection, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task<DateTime?> NewestAsync(IDbConnection connection, string table, DateTime now, CancellationToken cancellationToken)
@@ -341,6 +342,30 @@ public sealed class StatusReader(DataSource source, ReaderOptions? options = nul
         return rows.Count == 0
             ? null
             : new BackupRecord(rows.GetValueOrDefault("backup.configured"), rows.GetValueOrDefault("backup.last"), rows.GetValueOrDefault("backup.last_good"), rows.GetValueOrDefault("backup.last_verify"));
+    }
+
+    private async Task<AnalyticsRecord?> AnalyticsAsync(IDbConnection connection, CancellationToken cancellationToken)
+    {
+        try
+        {
+            async Task<AnalyzerRunRecord?> RunAsync(string where)
+            {
+                var row = await connection.QueryFirstOrDefaultAsync<(string Status, DateTime StartedAt, DateTime? FinishedAt, int? Rows, string? Message)?>(ReaderSupport.Command(
+                    $"SELECT TOP (1) status AS Status, started_at AS StartedAt, finished_at AS FinishedAt, row_count AS Rows, message AS Message FROM dbo.analyzer_run WHERE name = @name {where} ORDER BY run_id DESC",
+                    new { name = ReaderSupport.Ansi("market_metrics", 64) },
+                    _options,
+                    cancellationToken)).ConfigureAwait(false);
+                return row is { } r
+                    ? new AnalyzerRunRecord(r.Status, DateTime.SpecifyKind(r.StartedAt, DateTimeKind.Utc), r.FinishedAt is { } done ? DateTime.SpecifyKind(done, DateTimeKind.Utc) : null, r.Rows, r.Message)
+                    : null;
+            }
+
+            return new AnalyticsRecord(await RunAsync(string.Empty).ConfigureAwait(false), await RunAsync("AND status = 'ok'").ConfigureAwait(false));
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == ReaderSupport.InvalidObjectName)
+        {
+            return null;
+        }
     }
 
     private async Task<BackfillCounts?> BackfillAsync(IDbConnection connection, CancellationToken cancellationToken)

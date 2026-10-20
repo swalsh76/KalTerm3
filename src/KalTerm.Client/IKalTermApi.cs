@@ -10,6 +10,15 @@ namespace KalTerm.Client;
 /// <param name="Cursor">The <c>next_cursor</c> of the previous page.</param>
 public sealed record MarketsQuery(string? Status = null, string? Event = null, string? Search = null, int? Limit = null, string? Cursor = null);
 
+/// <summary>What the screener is asked. A <see langword="null"/> value is not sent and the server's default applies.</summary>
+/// <param name="Sort">volume, trades, change, last, spread, open_interest or volatility.</param>
+/// <param name="Order">asc or desc.</param>
+/// <param name="Status">Only markets with this status.</param>
+/// <param name="MinVolume">Only markets with at least this many contracts traded in 24 hours, for example <c>1000</c>.</param>
+/// <param name="Limit">Page size.</param>
+/// <param name="Cursor">The <c>next_cursor</c> of the previous page.</param>
+public sealed record ScreenQuery(string? Sort = null, string? Order = null, string? Status = null, string? MinVolume = null, int? Limit = null, string? Cursor = null);
+
 /// <summary>A time window and paging for ticks, trades and gaps. A <see langword="null"/> value is not sent; times are UTC.</summary>
 /// <param name="Start">The first moment wanted (inclusive).</param>
 /// <param name="End">The end of the window (exclusive).</param>
@@ -40,6 +49,13 @@ public interface IKalTermApi
     /// <returns>The market.</returns>
     /// <exception cref="ApiException">The API refused or has no such market (<c>not_found</c>).</exception>
     Task<MarketDto> GetMarketAsync(string ticker, CancellationToken cancellationToken = default);
+
+    /// <summary>Markets ranked by their metrics (24-hour volume by default), from the table the analyzer keeps.</summary>
+    /// <param name="query">What to rank and filter by.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The page.</returns>
+    /// <exception cref="ApiException">The API refused a parameter (<c>invalid_parameter</c>).</exception>
+    Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default);
 
     /// <summary>The metrics of one market (last, 24-hour change, volume, VWAP, spread, averages, volatility).</summary>
     /// <param name="ticker">The ticker.</param>

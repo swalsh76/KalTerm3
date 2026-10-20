@@ -1368,3 +1368,17 @@ items stay in PLAN.md section 9.
 - Tests: the runner against fakes (due, interval, lock, failure, timeout, stop, store failure, pruning, name rules); the analyzer against fakes; the store and the lock on real tables on kaldb; the set-based
   reader against the per-market reader on identical data (must agree exactly), universe rules and slicing; the whole host filling the table and recording the run.
 - Not yet: `status` does not show the analyzer runs (to come with the screener, which shows the refresh age); the rollout and a measured run on the production feed.
+
+### 5.18 Slice 5.3: the screener and the analytics status line (2026-10-20)
+
+- `GET /v1/screener?sort=&order=&status=&min_volume=&limit=&cursor=` ranks the markets of `dbo.market_metrics` joined to the catalog. Sorts: `volume` (default), `trades`, `change`, `last`, `spread`,
+  `open_interest`, `volatility`; `order` is `desc` (default) or `asc`; `status` filters by market status; `min_volume` is contracts with up to two decimals. A bad parameter is a 422 naming it.
+- Paging is keyset on (sort key, market id), so a page never repeats or skips a row while the table refreshes. A market without a value for the sort (no change yet, no spread) is last whichever way the
+  list runs (its key is stored as the extreme that sorts last). Ties break by market id.
+- The reply carries `refreshed_at` (the start of the newest successful `market_metrics` run, the moment the figures describe) and `age_seconds`, so a stalled runner shows in the data itself; `null` until a
+  run has finished. Each row has the same figures as the metrics endpoint plus the market's event, status, yes label and `changed_at`.
+- `status` gains an Analytics line and problems: the last run failed or timed out (with its message), or no successful run for 15 minutes while ingest runs. Older servers report `null`.
+- `kterm screen [--sort S] [--asc] [--status S] [--min-volume N] [--top N] [--cursor C]`: partial rows are marked in yellow, changes carry a sign, the footer says how old the figures are; times follow the
+  chosen time zone.
+- Tests: the reader on real tables on kaldb (sorts, ties, missing values last in both directions, keyset paging over ties and missing values both ways, filters, the refresh time from the newest successful
+  run only, limits); endpoint parameters, cursor and mapping; the status builder; contract pins; the CLI view and the status line.
