@@ -232,6 +232,22 @@ an environment variable). The system zone is only a default, never a fixed pass-
 Windows zone id, and `--utc`) arrives in the first slice that touches CLI output, and every view that prints a time must use it.
 Rules (checked against System.CommandLine and PowerShell 2026-10-19: no clashes): `--utc` with `--tz` is a usage error; an unknown zone id is an error; `--json` stays UTC; precedence is `--utc`, then `--tz`, then `KALTERM_TZ`, then the stored per-user setting, then the system zone; no short aliases.
 
+### 6.6 M5 Analytics: decisions and slices
+
+Approved by the owner 2026-10-20. Gate: per-user alerts fire. Each slice gets its own plan for approval before code.
+
+1. **5.1 Metrics:** last, change over 24 hours, volume, open interest, spread, VWAP, simple moving averages and volatility, computed from the stored candles and the latest tick in SQL and integer
+   arithmetic (money stays fixed-point `long`). `GET /v1/markets/{ticker}/metrics` and `kterm metrics TICKER`.
+2. **5.2 Screener:** results in a result table; `GET /v1/screener` ranks and filters markets by a metric; `kterm screen`.
+3. **5.3 Runner:** an analyzer takes a window and a market universe and returns typed rows into result tables; the runner owns scheduling, locking and change signalling. It runs **inside the ingest
+   host** as another loop (like the candle job), not as a separate service.
+4. **5.4 Per-user watchlists and alerts:** a user's own watchlists and alert definitions; alert kinds in v1 are price above or below, spread, volume spike (a window against a baseline) and open-interest
+   change. Evaluation ignores candles flagged `partial`. Fires are stored. The stored per-user time zone setting goes in here (precedence: `--utc`, `--tz`, `KALTERM_TZ`, stored setting, system zone).
+5. **5.5 Push:** alert fires reach clients as **Server-Sent Events** over the existing HTTPS listener (same token and certificate pinning); `kterm alerts`.
+
+Decisions: per-user watchlists only filter views; **the ingest watch list stays configuration** (live add/remove of watched markets stays in the parking lot). WebSocket push stays parked until a UI
+needs two-way traffic.
+
 ## 7. Risks
 
 - **Durability is unproven.** The premise of SQL Server is a hypothesis; M1 S-1 tests it first.
