@@ -1551,3 +1551,22 @@ Measured with the read-only production key, GET only, names and kinds of fields 
 - Tests (about 100 new, all against a scripted fake, nothing sent anywhere): route allow and refuse tables, construction guards, exact payloads, the mapping of intents, every ambiguous-answer path, cursors, 429, cancels,
   amend, decrease, transfer, token costs from the bucket, the audit. `KalTerm.Trading` is at 96.8% lines.
 - Nothing in 6.4 reaches the real Kalshi; no rollout is needed (the server does not run trading code).
+
+### 8.5 Slice 6.5a: the account tracker and the trading state (2026-10-20)
+
+Slice 6.5 is split in two so each PR stays reviewable: 6.5a is what the order service reads (this section), 6.5b is the service itself.
+
+- `KalTerm.Kalshi` gains the typed private-channel messages `FillMsg`, `UserOrderMsg` and `MarketPositionMsg` (envelope types `fill`, `user_order`, `market_position`; channels `fill`, `user_orders`,
+  `market_positions`), parsed exactly like the REST models: finer than six decimals for money or two for counts is an error, never a rounding.
+- `TradingState` (`trading_state.json` next to `risk.json`, atomic temp-and-move writes): the UTC day, the day's realized-profit baseline, the day's transferred total, the kill-switch halt, client order ids
+  whose outcome is unknown, and transfers begun and not confirmed (counted before the request, taken back only if Kalshi definitely refused). A new day resets the counters but not the halt or the unresolved items.
+  A file that exists and cannot be read is an error (`TradingStateException`), never a fresh start, because a reset would erase a halt.
+- `AccountTracker` follows the reference: Kalshi's private channels send no snapshot and no sequence numbers, so after subscribing and after every `reconnected` message it re-reads status, balance, positions
+  and resting orders over REST, and until that completes the snapshot says the stream is not OK (the risk layer refuses). Messages that arrived meanwhile are applied afterwards; they are idempotent (an order message
+  replaces the order only if not older, a fill counts once by trade id, a position message replaces the market's position and keeps figures it does not carry). The balance is polled every 5 s and at once after a fill;
+  if polling fails the snapshot ages and the risk layer refuses as stale. An unreadable message stops the stream and fails closed, with the reason in `Fault`. The snapshot subtracts what resting orders may lock from each
+  shard's gross cash (a resting order does not reduce Kalshi's balance, measured live in the reference).
+- Tests (about 50 new, scripted REST and socket, nothing sent anywhere): the reference's account and state cases, plus the message parsing and precision refusals in the Kalshi tests. `KalTerm.Trading` is at 96.3% lines.
+- Not checked against the real service: the private channels' wire shapes come from the reference's live measurements; the first look at them with the real trading key is part of 6.7 (a subscribe is a command,
+  outside the read-only GET permission, so it waits for the owner's go).
+- No rollout is needed (the server does not run trading code).
