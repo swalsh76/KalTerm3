@@ -306,6 +306,21 @@ public sealed class TradingCommandTests : IAsyncDisposable
     }
 
     [Theory]
+    [InlineData("The server returned status code '401' when status code '101' was expected.", "did not accept the key")]
+    [InlineData("The server returned status code '403' when status code '101' was expected.", "did not accept the key")]
+    [InlineData("The remote party closed the WebSocket connection without completing the close handshake.", "cannot open Kalshi's private stream")]
+    public async Task AStreamThatCannotBeOpenedIsOneClearLineNotAStackTrace(string detail, string expected)
+    {
+        _rig.OpenFails = new System.Net.WebSockets.WebSocketException(detail);
+
+        var exit = await _cli.RunAsync("buy", "KXA-1", "1", "0.01", "--dry-run");
+
+        Assert.Equal(CliApp.Failed, exit);
+        Assert.Contains(expected, string.Join(' ', _cli.Error.ReplaceLineEndings(" ").Split(' ', StringSplitOptions.RemoveEmptyEntries)), StringComparison.Ordinal);
+        Assert.DoesNotContain("   at ", _cli.Error, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("auth")]
     [InlineData("config")]
     public async Task AMissingKeyOrBadSettingsIsOneClearLine(string kind)
