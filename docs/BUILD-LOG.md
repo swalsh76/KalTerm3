@@ -1634,6 +1634,8 @@ server-offline test.
   seconds (not at all in 4b, several seconds after step 3), so the kill switch's rule of two empty looks a second apart within ten passes is right, and a lag longer than ten seconds would be reported, not hidden. (3) The real taker fee
   is the modelled fee rounded up to $0.0001 ($0.002037 became $0.0021, $0.001372 became $0.0014, $0.000693 became $0.0007), matching the fee model and the balance's alignment to $0.0001; the risk layer's worst-case bound (up to $0.01) is
   conservative. (4) Realized profit on a position excludes fees, which are reported separately. (5) A phrase typed wrongly at the production prompt (a pasted command) was refused with nothing sent.
-- Not answered, parked: whether Kalshi's auto-routing makes shard transfers unnecessary. The risk layer refuses an order its shard cannot fund, so it cannot be tested without bypassing the layer.
+- Shard funding is required (owner-approved experiment, a one-off throwaway program outside the repository, deleted afterwards, that skipped the risk layer): a post-only buy of 5 YES at $0.01 ($0.05) on a shard-3 market, with shard 3
+  holding $0.0200 and no transfer first, was rejected by Kalshi with HTTP 400 `insufficient_balance`. Nothing was placed and nothing moved. So an order does not borrow from another shard and the automatic funding step is needed. (The order
+  carried `exchange_index` 3; "auto-routing by ticker" in the V2 docs concerns which shard an order goes to, not where its collateral comes from. Not tried: omitting `exchange_index`, which would route to the same shard.)
 - The $0.02 moved to shard 3 stays there (no command moves money back; Kalshi's web app can).
 - Open small items: show the remaining count after an amend from the order list; the confirmation prompt reads one line, so a pasted command is refused rather than sent (working as intended).
