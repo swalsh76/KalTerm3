@@ -509,6 +509,13 @@ internal static class TradingCommands
         {
             return CliApp.Fail(env, $"cannot reach Kalshi: {ex.GetType().Name}");
         }
+        catch (System.Net.WebSockets.WebSocketException ex)
+        {
+            var unaccepted = ex.Message.Contains("401", StringComparison.Ordinal) || ex.Message.Contains("403", StringComparison.Ordinal);
+            return CliApp.Fail(env, unaccepted
+                ? "Kalshi did not accept the key when opening its private stream (HTTP 401 or 403). Keys belong to one Kalshi site: a key made on the real site works only for KALSHI_ENV=production, a key made on the demo site only for demo. Check which site made it and the key id (kterm trading-key show), then store it again with kterm trading-key set"
+                : $"cannot open Kalshi's private stream: {ex.Message}");
+        }
         catch (Exception ex) when (ex is AuthException or TradingStateException or KalshiConfigurationException or RiskConfigException or ArgumentException or NotSupportedException or PlatformNotSupportedException)
         {
             return CliApp.Fail(env, ex.Message);
