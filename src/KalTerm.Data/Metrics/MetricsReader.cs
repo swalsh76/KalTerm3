@@ -22,9 +22,7 @@ public interface IMetricsReader
 /// <param name="source">Opens connections.</param>
 public sealed class MetricsReader(DataSource source) : IMetricsReader
 {
-    private static readonly TimeSpan Window = TimeSpan.FromHours(24);
     private static readonly TimeSpan HourlyLookback = TimeSpan.FromDays(30);
-    private const int HourSeconds = 3600;
 
     private readonly CandleReader _candles = new(source);
 
@@ -33,7 +31,7 @@ public sealed class MetricsReader(DataSource source) : IMetricsReader
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ticker);
         var options = new ReaderOptions();
-        var from = asOf - Window;
+        var from = asOf - MetricsInputsBuilder.Window;
         await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
         if (await ReaderSupport.MarketIdAsync(connection, ticker, options, cancellationToken).ConfigureAwait(false) is not { } marketId)
         {
@@ -56,25 +54,13 @@ public sealed class MetricsReader(DataSource source) : IMetricsReader
             options,
             cancellationToken)).ConfigureAwait(false);
 
-        var hourly = await _candles.ReadAsync(marketId, HourSeconds, asOf - HourlyLookback, asOf, int.Min(CandleReader.MaxRows, (int)(HourlyLookback.TotalHours + 1)), cancellationToken).ConfigureAwait(false);
-        var priced = hourly.Where(c => c.CloseE6 is not null).OrderByDescending(c => c.BucketStart).ToList();
-        var closes = priced.Take(MetricsCalculator.MaxCloses).ToList();
-        var reference = priced.FirstOrDefault(c => c.BucketStart.AddSeconds(HourSeconds) <= from);
-        var partial = gapsInWindow > 0 || closes.Any(c => c.Partial);
-
-        return new MetricsInputs(
+        var hourly = await _candles.ReadAsync(marketId, MetricsInputsBuilder.HourSeconds, asOf - HourlyLookback, asOf, int.Min(CandleReader.MaxRows, (int)(HourlyLookback.TotalHours + 1)), cancellationToken).ConfigureAwait(false);
+        return MetricsInputsBuilder.Build(
             asOf,
-            tick is null ? null : DateTime.SpecifyKind(tick.Ts, DateTimeKind.Utc),
-            tick?.PriceE6,
-            tick?.YesBidE6,
-            tick?.YesAskE6,
-            tick?.OpenInterestE2,
-            trades.Count,
-            trades.Volume,
-            trades.PriceTimesCount,
-            reference?.CloseE6,
-            [.. closes.Select(c => c.CloseE6!.Value)],
-            partial);
+            tick is null ? null : new MetricsTick(tick.Ts, tick.PriceE6, tick.YesBidE6, tick.YesAskE6, tick.OpenInterestE2),
+            new MetricsTradeSums(trades.Count, trades.Volume, trades.PriceTimesCount),
+            gapsInWindow > 0,
+            hourly.Select(c => new HourlyClose(c.BucketStart, c.CloseE6, c.Partial)));
     }
 
     private sealed record TickRow(DateTime Ts, long? PriceE6, long? YesBidE6, long? YesAskE6, long? OpenInterestE2);

@@ -29,6 +29,69 @@ public sealed record MetricsInputs(
     IReadOnlyList<long> Closes,
     bool Partial);
 
+/// <summary>The latest ticker update of a market.</summary>
+/// <param name="Ts">When it was (UTC).</param>
+/// <param name="PriceE6">The last traded price.</param>
+/// <param name="YesBidE6">The yes bid.</param>
+/// <param name="YesAskE6">The yes ask.</param>
+/// <param name="OpenInterestE2">The open interest.</param>
+public sealed record MetricsTick(DateTime Ts, long? PriceE6, long? YesBidE6, long? YesAskE6, long? OpenInterestE2);
+
+/// <summary>The sums over a market's trades in the 24-hour window.</summary>
+/// <param name="Count">Number of trades.</param>
+/// <param name="Volume">Sum of counts (10^-2).</param>
+/// <param name="PriceTimesCount">Sum of yes price (10^-6) times count (10^-2).</param>
+public sealed record MetricsTradeSums(long Count, decimal Volume, decimal PriceTimesCount);
+
+/// <summary>One hourly candle as the metrics need it.</summary>
+/// <param name="BucketStart">The start of the hour (UTC).</param>
+/// <param name="CloseE6">The close, or <see langword="null"/> when nothing traded.</param>
+/// <param name="Partial">Whether the candle overlaps a gap.</param>
+public sealed record HourlyClose(DateTime BucketStart, long? CloseE6, bool Partial);
+
+/// <summary>
+/// Puts the raw parts a reader fetched into <see cref="MetricsInputs"/>: the one place that decides which candle is the 24-hour reference, which closes count and when the figures are partial,
+/// so the per-market reader and the set-based reader of the analyzer cannot disagree.
+/// </summary>
+public static class MetricsInputsBuilder
+{
+    /// <summary>Hourly candles are one hour long.</summary>
+    public const int HourSeconds = 3600;
+
+    /// <summary>The length of the window the figures cover.</summary>
+    public static readonly TimeSpan Window = TimeSpan.FromHours(24);
+
+    /// <summary>Builds the inputs of one market.</summary>
+    /// <param name="asOf">The moment described.</param>
+    /// <param name="tick">The latest ticker update, or <see langword="null"/>.</param>
+    /// <param name="trades">The trade sums of the window.</param>
+    /// <param name="gapOverlaps">Whether a gap overlaps the window.</param>
+    /// <param name="hourly">The market's hourly candles (any order; only those before <paramref name="asOf"/> matter).</param>
+    /// <returns>The inputs.</returns>
+    public static MetricsInputs Build(DateTime asOf, MetricsTick? tick, MetricsTradeSums trades, bool gapOverlaps, IEnumerable<HourlyClose> hourly)
+    {
+        ArgumentNullException.ThrowIfNull(trades);
+        ArgumentNullException.ThrowIfNull(hourly);
+        var from = asOf - Window;
+        var priced = hourly.Where(c => c.CloseE6 is not null).OrderByDescending(c => c.BucketStart).ToList();
+        var closes = priced.Take(MetricsCalculator.MaxCloses).ToList();
+        var reference = priced.FirstOrDefault(c => c.BucketStart.AddSeconds(HourSeconds) <= from);
+        return new MetricsInputs(
+            asOf,
+            tick is null ? null : DateTime.SpecifyKind(tick.Ts, DateTimeKind.Utc),
+            tick?.PriceE6,
+            tick?.YesBidE6,
+            tick?.YesAskE6,
+            tick?.OpenInterestE2,
+            trades.Count,
+            trades.Volume,
+            trades.PriceTimesCount,
+            reference?.CloseE6,
+            [.. closes.Select(c => c.CloseE6!.Value)],
+            gapOverlaps || closes.Any(c => c.Partial));
+    }
+}
+
 /// <summary>The metrics of one market, still fixed-point; a metric with too little data is <see langword="null"/>.</summary>
 /// <param name="AsOf">The moment described (UTC).</param>
 /// <param name="LastTime">When the latest ticker update was.</param>

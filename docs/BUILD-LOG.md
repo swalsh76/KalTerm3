@@ -1350,3 +1350,21 @@ items stay in PLAN.md section 9.
 - Change from the approved plan: volume and VWAP come from raw trades only (not closed candles plus a raw tail), so they do not wait for the candle job and are exact.
 - Tests: the arithmetic as pure vectors (rounding, a huge volume, short histories); the reader on real tables on kaldb (window edges, as-of filtering, reference close, closes newest first, the 50 cap, partial
   from a candle or a gap); endpoint, contract pin and CLI view.
+
+### 5.17 Slice 5.2: the analyzer runner and the market_metrics analyzer (2026-10-20)
+
+- Order change approved 2026-10-20: the runner comes before the screener (the screener reads the table the runner keeps fresh). Migration 0006 adds `dbo.market_metrics` (one row per active market) and
+  `dbo.analyzer_run` (run history, kept 7 days).
+- `IAnalyzer` (name, interval, `RunAsync(context)`) and `AnalyzerRunner`, a loop in the ingest host (`Ingest:Analytics`, default on; checks every 30 s). An analyzer starts when its interval has passed since its
+  last start (a failure counts, so a broken one is not hammered); each run holds a session application lock (`sp_getapplock`, no wait) so runs never overlap, within a timeout (5 minutes), is recorded in
+  `analyzer_run` (running, ok, failed, timeout; a stop is recorded as failed "stopped"), and raises the analyzer's change counter (`analyzer.NAME.version`) when its results changed. Failures are logged,
+  never thrown.
+- `market_metrics` (every 5 minutes): the universe is every market with a ticker update in the last hour, a trade in the last 24 hours or an hourly candle in the last 25 hours. `MetricsBatchReader` reads
+  it in slices of 25,000 market ids (newest tick per market over the last hour, trade sums over 24 hours, the newest 50 priced hourly closes) and `MetricsInputsBuilder` (shared with the per-market endpoint)
+  assembles the inputs, so both paths pick the same reference candle and the same partial flag. `MetricsCalculator` does the arithmetic. `MarketMetricsStore` bulk-copies a batch into a temporary table and
+  writes only the rows whose figures differ (`changed_at` says when a row last changed; how fresh the table is comes from the run history); markets that left the universe are deleted after a completed pass.
+- Difference from the single-market endpoint, by design: the table looks for the latest tick only in the last hour (a quiet market has no book figures rather than stale ones); the endpoint looks back 7 days.
+- Found while testing: a temporary table made by a Dapper command with parameters is dropped when the command ends (it runs inside `sp_executesql`); create it with a command without parameters.
+- Tests: the runner against fakes (due, interval, lock, failure, timeout, stop, store failure, pruning, name rules); the analyzer against fakes; the store and the lock on real tables on kaldb; the set-based
+  reader against the per-market reader on identical data (must agree exactly), universe rules and slicing; the whole host filling the table and recording the run.
+- Not yet: `status` does not show the analyzer runs (to come with the screener, which shows the refresh age); the rollout and a measured run on the production feed.

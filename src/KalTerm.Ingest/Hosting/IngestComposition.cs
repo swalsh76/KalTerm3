@@ -6,6 +6,7 @@ using KalTerm.Data.Governor;
 using KalTerm.Data.Markets;
 using KalTerm.Data.State;
 using KalTerm.Data.Writing;
+using KalTerm.Ingest.Analytics;
 using KalTerm.Ingest.Backfill;
 using KalTerm.Ingest.Books;
 using KalTerm.Ingest.Candles;
@@ -36,7 +37,8 @@ internal sealed record IngestOverrides(
     ITradeSource? Trades = null,
     BackfillOptions? Backfill = null,
     IBackupJob? Backup = null,
-    ICandleJob? Candles = null);
+    ICandleJob? Candles = null,
+    IAnalyzerRunner? Analyzers = null);
 
 /// <summary>Builds the real ingest process from its settings and runs it: database ready, then the <see cref="IngestRunner"/> over real storage and the Kalshi feed.</summary>
 public static class IngestComposition
@@ -104,6 +106,9 @@ public static class IngestComposition
             var candles = overrides?.Candles ?? (candleRules.Count == 0
                 ? null
                 : new CandleJob(new Data.Candles.CandleBuilder(data), new Data.Candles.CandleJobStore(data), candleRules, CandleJob.WatchedIds(options.WatchList, ids), null, time, loggerFactory.CreateLogger<CandleJob>()));
+            var analyzers = overrides?.Analyzers ?? (options.Analytics
+                ? new AnalyzerRunner([new MarketMetricsAnalyzer(new Data.Metrics.MetricsBatchReader(data), new Data.Metrics.MarketMetricsStore(data))], new AnalyzerStore(data), null, time, loggerFactory.CreateLogger<AnalyzerRunner>())
+                : null);
             var runner = new IngestRunner(
                 store,
                 ids,
@@ -122,7 +127,8 @@ public static class IngestComposition
                 new StorageGovernor(new GovernorStore(data), state, new GovernorOptions { RawRetentionDays = options.RetentionDays }, time, loggerFactory.CreateLogger<StorageGovernor>()),
                 backfiller,
                 backup,
-                candles);
+                candles,
+                analyzers);
             try
             {
                 await runner.RunAsync(cancellationToken).ConfigureAwait(false);

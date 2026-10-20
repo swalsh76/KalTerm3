@@ -26,6 +26,7 @@ public class IngestRunnerTests
         BackfillInterval = TimeSpan.FromMilliseconds(30),
         BackupCheckInterval = TimeSpan.FromMilliseconds(30),
         CandleInterval = TimeSpan.FromMilliseconds(30),
+        AnalyzerCheckInterval = TimeSpan.FromMilliseconds(30),
         Schedule = now => (now.AddMilliseconds(30), PassKind.Incremental),
     };
 
@@ -35,7 +36,7 @@ public class IngestRunnerTests
         private readonly CancellationTokenSource _stop = new();
         private int _listings;
 
-        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null, KalTerm.Ingest.Backfill.ITradeBackfiller? backfiller = null, KalTerm.Backup.IBackupJob? backup = null, KalTerm.Ingest.Candles.ICandleJob? candles = null)
+        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null, KalTerm.Ingest.Backfill.ITradeBackfiller? backfiller = null, KalTerm.Backup.IBackupJob? backup = null, KalTerm.Ingest.Candles.ICandleJob? candles = null, KalTerm.Ingest.Analytics.IAnalyzerRunner? analyzers = null)
         {
             var markets = catalog?.ToList() ?? [];
             Source = new ScriptedSource(open);
@@ -66,7 +67,8 @@ public class IngestRunnerTests
                 governor,
                 backfiller,
                 backup,
-                candles);
+                candles,
+                analyzers);
         }
 
         public FakeMarketStore Store { get; } = new();
@@ -429,6 +431,7 @@ public class IngestRunnerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BackfillInterval = TimeSpan.Zero }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { BackupCheckInterval = TimeSpan.Zero }.Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { CandleInterval = TimeSpan.Zero }.Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { AnalyzerCheckInterval = TimeSpan.Zero }.Validate());
         new IngestRunnerOptions().Validate();
 
         using var rig = new Rig(Sessions([]));
@@ -645,6 +648,20 @@ public class IngestRunnerTests
         await rig.StopAsync();
 
         Assert.Contains(rig.Log.Lines, l => l.Contains("candles broke", StringComparison.Ordinal));
+        Assert.True(rig.State.Writes(IngestStateKeys.Running) > 0);
+    }
+
+    [Fact]
+    public async Task TheAnalyzerRunnerIsCalledOnItsIntervalAndAFailureNeverStopsTheRun()
+    {
+        var analyzers = new FakeAnalyzerRunner { Failure = new InvalidOperationException("analysis broke") };
+        using var rig = new Rig(Sessions([]), analyzers: analyzers);
+
+        rig.Start();
+        await Wait.UntilAsync(() => analyzers.Calls >= 3, "three looks at the analyzers");
+        await rig.StopAsync();
+
+        Assert.Contains(rig.Log.Lines, l => l.Contains("analysis broke", StringComparison.Ordinal));
         Assert.True(rig.State.Writes(IngestStateKeys.Running) > 0);
     }
 }

@@ -77,6 +77,13 @@ public class IngestHostOptionsTests
     }
 
     [Fact]
+    public void AnalyticsAreOnByDefaultAndCanBeSwitchedOff()
+    {
+        Assert.True(new IngestHostOptions().Analytics);
+        Assert.False(new IngestHostOptions { Analytics = false }.Analytics);
+    }
+
+    [Fact]
     public void CandlesAreStoredByDefaultAsDaysAndHoursForEveryMarketAndMinutesForTheWatchList()
     {
         var options = new IngestHostOptions();

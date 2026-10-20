@@ -33,6 +33,9 @@ public sealed partial class IngestHostOptions
     /// </summary>
     public string Candles { get; set; } = Data.Candles.CandleRules.DefaultText;
 
+    /// <summary>Whether the analyzer runner runs (<c>Ingest:Analytics</c>): the metrics of every active market are kept in <c>dbo.market_metrics</c>. Default true.</summary>
+    public bool Analytics { get; set; } = true;
+
     /// <summary>The stored candle rules these settings describe.</summary>
     /// <returns>The rules.</returns>
     /// <exception cref="InvalidOperationException">The text is not a valid list of rules.</exception>
