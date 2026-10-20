@@ -1337,3 +1337,16 @@ Running on `kaldb` at close: ingest and API release `host-7e4d2bc`; status repor
 
 Carried forward, none in M4: a stored per-user time zone (with per-user settings, M5/M7), persisted deltas, live add/remove of watched markets, WebSocket push (M5), mDNS discovery. Parked
 items stay in PLAN.md section 9.
+
+### 5.16 Slice 5.1: market metrics (2026-10-20)
+
+- `GET /v1/markets/{ticker}/metrics` and `kterm metrics TICKER`: computed when asked, for one market, as of now. No new tables, no migration. Unknown market is 404.
+- Figures (all fixed-point, no floating point, division rounds half up): last, bid, ask, open interest and spread (ask minus bid) from the latest ticker update in the last 7 days; `volume_24h`, `trade_count_24h`
+  and `vwap_24h` (sum of price times count over sum of counts) from the raw trades of that market in the 24 hours before now (the window is open at its start); `change_24h` is the last price
+  minus the close of the last priced hourly candle that ended at or before 24 hours ago; `sma_20` and `sma_50` are the mean of the latest 20 or 50 priced hourly closes; `volatility_24h` is the sample
+  standard deviation, in dollars, of the changes between consecutive closes among the latest 24 priced hourly closes (integer square root, no log returns).
+- A metric that lacks data is `null`, not a smaller number: an average needs all of its closes, the volatility needs three, a spread needs both sides. Hours without trades have no price and are not
+  closes (no forward fill). `partial` is true when a gap overlaps the 24 hours, or a candle used is flagged partial.
+- Change from the approved plan: volume and VWAP come from raw trades only (not closed candles plus a raw tail), so they do not wait for the candle job and are exact.
+- Tests: the arithmetic as pure vectors (rounding, a huge volume, short histories); the reader on real tables on kaldb (window edges, as-of filtering, reference close, closes newest first, the 50 cap, partial
+  from a candle or a gap); endpoint, contract pin and CLI view.

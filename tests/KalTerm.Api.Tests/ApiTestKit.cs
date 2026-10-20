@@ -3,6 +3,7 @@ using KalTerm.Data;
 using KalTerm.Data.Auth;
 using KalTerm.Data.Books;
 using KalTerm.Data.Candles;
+using KalTerm.Data.Metrics;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -119,6 +120,19 @@ internal sealed class FakeCandles : ICandleService
     }
 }
 
+internal sealed class FakeMetrics : IMetricsReader
+{
+    public List<(string Ticker, DateTime AsOf)> Reads { get; } = [];
+
+    public MetricsInputs? Inputs { get; set; } = new(Samples.NowUtc, Samples.NowUtc.AddSeconds(-3), 560_000, 550_000, 570_000, 9_900, 2, 400, 220_000_000, 540_000, [500_000, 400_000, 450_000], false);
+
+    public Task<MetricsInputs?> ReadAsync(string ticker, DateTime asOf, CancellationToken cancellationToken = default)
+    {
+        Reads.Add((ticker, asOf));
+        return Task.FromResult(Inputs);
+    }
+}
+
 internal sealed class FakeStatus : IStatusReader
 {
     public StatusSnapshot Snapshot { get; set; } = new(null, null, null, 1_000, null, null, new Dictionary<string, long>(), new Dictionary<string, long>());
@@ -154,6 +168,8 @@ internal sealed class FakeReaders
 
     public FakeCandles Candles { get; } = new();
 
+    public FakeMetrics Metrics { get; } = new();
+
     public FakeStatus Status { get; } = new();
 
     public FakeReadiness Readiness { get; } = new();
@@ -166,6 +182,7 @@ internal sealed class FakeReaders
         services.AddSingleton<IGapReader>(Gaps);
         services.AddSingleton<IBookReader>(Books);
         services.AddSingleton<ICandleService>(Candles);
+        services.AddSingleton<IMetricsReader>(Metrics);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
         services.AddSingleton(new ApiAuthOptions(false));

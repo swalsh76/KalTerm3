@@ -255,6 +255,30 @@ public sealed class EndpointTests : IAsyncLifetime
         await AssertInvalidAsync("/v1/markets/bad%20ticker/trades", "ticker");
     }
 
+    // ---- metrics --------------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task MetricsAreComputedAsOfNowAndMapEveryFigure()
+    {
+        var metrics = await _api.GetAsync<MetricsDto>("/v1/markets/KX-1/metrics");
+
+        Assert.Equal(("KX-1", ApiFormat.Moment(NowUtc), "0.560000", "0.020000"), (metrics.Ticker, metrics.AsOf, metrics.Last, metrics.Change24h));
+        Assert.Equal(("4.00", 2L, "99.00", "0.020000", "0.550000"), (metrics.Volume24h, metrics.TradeCount24h, metrics.OpenInterest, metrics.Spread, metrics.Vwap24h));
+        Assert.Equal((null, null, "0.106066", false), (metrics.Sma20, metrics.Sma50, metrics.Volatility24h, metrics.Partial));
+        Assert.Equal(("KX-1", NowUtc), Fakes.Metrics.Reads.Single());
+    }
+
+    [Fact]
+    public async Task MetricsOfAnUnknownMarketAreNotFoundAndABadTickerIsRefused()
+    {
+        Fakes.Metrics.Inputs = null;
+
+        var (response, _) = await _api.GetAsync("/v1/markets/KX-NOPE/metrics");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await AssertInvalidAsync("/v1/markets/bad%20ticker/metrics", "ticker");
+    }
+
     // ---- candles --------------------------------------------------------------------------------------------------------------------
 
     private static StoredCandle Candle(DateTime start, bool partial = false) =>

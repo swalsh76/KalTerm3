@@ -18,6 +18,7 @@ namespace KalTerm.Contracts;
 [JsonSerializable(typeof(TickPage))]
 [JsonSerializable(typeof(CandleDto))]
 [JsonSerializable(typeof(CandlePage))]
+[JsonSerializable(typeof(MetricsDto))]
 [JsonSerializable(typeof(TradeDto))]
 [JsonSerializable(typeof(TradePage))]
 [JsonSerializable(typeof(BackfillDto))]
