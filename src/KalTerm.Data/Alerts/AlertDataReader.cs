@@ -23,7 +23,7 @@ public interface IAlertDataReader
 /// <param name="source">Opens connections.</param>
 public sealed class AlertDataReader(DataSource source) : IAlertDataReader
 {
-    private static readonly TimeSpan TickLookback = TimeSpan.FromHours(24);
+    private static readonly TimeSpan[] TickWindows = [TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10), TimeSpan.FromHours(1), TimeSpan.FromHours(24)];
     private static readonly TimeSpan PriceWindow = TimeSpan.FromMinutes(1);
 
     /// <inheritdoc/>
@@ -54,18 +54,14 @@ public sealed class AlertDataReader(DataSource source) : IAlertDataReader
                 await connection.ExecuteAsync(new CommandDefinition($"INSERT #m (market_id) VALUES {values.ToString().TrimEnd(',')}", commandTimeout: 60, cancellationToken: cancellationToken)).ConfigureAwait(false);
             }
 
-            var parameters = new { now, tickFrom = now - TickLookback, hourAgo, hourAgoFrom = hourAgo - TickLookback, recentFrom, baselineFrom };
-            var ticks = (await connection.QueryAsync<TickRow>(new CommandDefinition(
-                """
-                SELECT m.market_id AS MarketId, p.price_e6 AS PriceE6, b.yes_bid_e6 AS BidE6, b.yes_ask_e6 AS AskE6, b.open_interest_e2 AS OpenInterestE2, h.open_interest_e2 AS HourAgoE2
-                FROM #m m
-                OUTER APPLY (SELECT TOP (1) price_e6 FROM dbo.ticker WHERE market_id = m.market_id AND ts > @tickFrom AND ts <= @now AND price_e6 IS NOT NULL ORDER BY ts DESC) p
-                OUTER APPLY (SELECT TOP (1) yes_bid_e6, yes_ask_e6, open_interest_e2 FROM dbo.ticker WHERE market_id = m.market_id AND ts > @tickFrom AND ts <= @now ORDER BY ts DESC) b
-                OUTER APPLY (SELECT TOP (1) open_interest_e2 FROM dbo.ticker WHERE market_id = m.market_id AND ts > @hourAgoFrom AND ts <= @hourAgo AND open_interest_e2 IS NOT NULL ORDER BY ts DESC) h
-                """,
-                parameters,
-                commandTimeout: 60,
-                cancellationToken: cancellationToken)).ConfigureAwait(false)).ToDictionary(t => t.MarketId);
+            var parameters = new { now, recentFrom, baselineFrom, hourAgo };
+            // Looking a market's newest tick up is cheap when the market ids are in the statement itself (the ordered columnstore can then skip whole segments) and very costly when they come from a
+            // join (every market is scanned: ten seconds a lookup). So the ids are written into the statement and the lookups widen step by step: busy markets are found in the first minute and
+            // only the quiet ones need the longer windows.
+            var ids = marketIds.Distinct().Order().ToList();
+            var latest = await LatestAsync(connection, ids, now, string.Empty, TickWindows, cancellationToken).ConfigureAwait(false);
+            var latestPrice = await LatestAsync(connection, ids, now, "AND price_e6 IS NOT NULL", TickWindows, cancellationToken).ConfigureAwait(false);
+            var hourAgoOi = await LatestAsync(connection, ids, hourAgo, "AND open_interest_e2 IS NOT NULL", TickWindows, cancellationToken).ConfigureAwait(false);
             var volumes = (await connection.QueryAsync<VolumeRow>(new CommandDefinition(
                 """
                 SELECT t.market_id AS MarketId,
@@ -86,16 +82,18 @@ public sealed class AlertDataReader(DataSource source) : IAlertDataReader
 
             foreach (var id in marketIds)
             {
-                ticks.TryGetValue(id, out var tick);
+                latest.TryGetValue(id, out var tick);
+                latestPrice.TryGetValue(id, out var priceTick);
+                hourAgoOi.TryGetValue(id, out var before);
                 volumes.TryGetValue(id, out var volume);
                 bool Overlaps(DateTime from) => gaps.Any(g => (g.MarketId is null || g.MarketId == id) && g.StartedAt < now && (g.EndedAt is null || g.EndedAt > from));
                 result[id] = new AlertObservation(
-                    tick?.PriceE6,
+                    priceTick?.PriceE6,
                     tick?.AskE6 is { } ask && tick.BidE6 is { } bid ? ask - bid : null,
                     volume?.Recent ?? 0,
                     volume?.Baseline ?? 0,
                     tick?.OpenInterestE2,
-                    tick?.HourAgoE2,
+                    before?.OpenInterestE2,
                     Overlaps(now - PriceWindow),
                     Overlaps(recentFrom),
                     Overlaps(hourAgo));
@@ -109,7 +107,42 @@ public sealed class AlertDataReader(DataSource source) : IAlertDataReader
         }
     }
 
-    private sealed record TickRow(int MarketId, long? PriceE6, long? BidE6, long? AskE6, long? OpenInterestE2, long? HourAgoE2);
+    /// <summary>The newest row at or before <paramref name="upper"/> that satisfies <paramref name="extra"/> for each market, looked for in widening windows.</summary>
+    private static async Task<Dictionary<int, TickRow>> LatestAsync(System.Data.Common.DbConnection connection, IReadOnlyList<int> ids, DateTime upper, string extra, TimeSpan[] windows, CancellationToken cancellationToken)
+    {
+        var found = new Dictionary<int, TickRow>();
+        foreach (var window in windows)
+        {
+            var remaining = ids.Where(id => !found.ContainsKey(id)).ToList();
+            if (remaining.Count == 0)
+            {
+                break;
+            }
+
+            foreach (var chunk in remaining.Chunk(500))
+            {
+                var rows = await connection.QueryAsync<TickRow>(new CommandDefinition(
+                    $"""
+                    SELECT MarketId, PriceE6, BidE6, AskE6, OpenInterestE2 FROM (
+                        SELECT market_id AS MarketId, price_e6 AS PriceE6, yes_bid_e6 AS BidE6, yes_ask_e6 AS AskE6, open_interest_e2 AS OpenInterestE2,
+                               ROW_NUMBER() OVER (PARTITION BY market_id ORDER BY ts DESC) AS rn
+                        FROM dbo.ticker WHERE market_id IN ({string.Join(',', chunk)}) AND ts > @from AND ts <= @upper {extra}) x
+                    WHERE rn = 1
+                    """,
+                    new { from = upper - window, upper },
+                    commandTimeout: 60,
+                    cancellationToken: cancellationToken)).ConfigureAwait(false);
+                foreach (var row in rows)
+                {
+                    found[row.MarketId] = row;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    private sealed record TickRow(int MarketId, long? PriceE6, long? BidE6, long? AskE6, long? OpenInterestE2);
 
     private sealed record VolumeRow(int MarketId, long Recent, long Baseline);
 
