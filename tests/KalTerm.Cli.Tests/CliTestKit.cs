@@ -61,6 +61,18 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public MetricsDto Metrics { get; set; } = new("A-1", "2026-10-18T23:00:00.000000+00:00", "2026-10-18T22:59:59.250000+00:00", "0.560000", "0.020000", "1234.00", 7, "99.00", "0.550000", "0.570000", "0.020000", "0.555000", "0.540000", "0.500000", "0.012000", false);
 
+    public WatchlistListDto Watchlists { get; set; } = new([new WatchlistSummaryDto("favorites", 2, "2026-10-18T20:00:00.000000+00:00")]);
+
+    public WatchlistDto Watchlist { get; set; } = new("favorites", "2026-10-18T20:00:00.000000+00:00", ["A-1", "B-2"]);
+
+    public AlertListDto Alerts { get; set; } = new([new AlertDto(7, "A-1", "price_above", "0.600000", 60, false, "2026-10-18T20:00:00.000000+00:00", null, null)]);
+
+    public AlertFiresPage Fires { get; set; } = new([new AlertFireDto(41, 7, "A-1", "price_above", "0.600000", "0.610000", "2026-10-18T22:59:00.250000+00:00")], 41);
+
+    public string? StoredTimeZone { get; set; }
+
+    public List<string> Changes { get; } = [];
+
     public GapPage Gaps { get; set; } = new([]);
 
     public OrderBookPage Books { get; set; } = new([Samples.Book("A-1")]);
@@ -120,6 +132,69 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Answer(Screener);
     }
 
+    public Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default) => Answer(Watchlists);
+
+    public Task<WatchlistDto> GetWatchlistAsync(string name, CancellationToken cancellationToken = default) => Answer(Watchlist);
+
+    public Task<WatchlistDto> CreateWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    {
+        Changes.Add("create-watchlist " + name);
+        return Answer(new WatchlistDto(name, "2026-10-18T23:00:00.000000+00:00", []));
+    }
+
+    public Task DeleteWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    {
+        Changes.Add("delete-watchlist " + name);
+        return Answer(0);
+    }
+
+    public Task AddToWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
+    {
+        Changes.Add($"add {name} {ticker}");
+        return Answer(0);
+    }
+
+    public Task RemoveFromWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
+    {
+        Changes.Add($"remove {name} {ticker}");
+        return Answer(0);
+    }
+
+    public Task<AlertListDto> GetAlertsAsync(CancellationToken cancellationToken = default) => Answer(Alerts);
+
+    public Task<AlertDto> CreateAlertAsync(CreateAlertRequest request, CancellationToken cancellationToken = default)
+    {
+        Changes.Add($"create-alert {request.Ticker} {request.Kind} {request.Threshold} {request.CooldownSeconds}");
+        return Answer(new AlertDto(8, request.Ticker, request.Kind, request.Threshold, request.CooldownSeconds ?? 60, false, "2026-10-18T23:00:00.000000+00:00", null, null));
+    }
+
+    public Task SetAlertPausedAsync(int id, bool paused, CancellationToken cancellationToken = default)
+    {
+        Changes.Add($"{(paused ? "pause" : "resume")} {id}");
+        return Answer(0);
+    }
+
+    public Task DeleteAlertAsync(int id, CancellationToken cancellationToken = default)
+    {
+        Changes.Add("delete-alert " + id);
+        return Answer(0);
+    }
+
+    public Task<AlertFiresPage> GetAlertFiresAsync(long? after = null, int? limit = null, CancellationToken cancellationToken = default)
+    {
+        Changes.Add($"fires {after} {limit}");
+        return Answer(Fires);
+    }
+
+    public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) => Task.FromResult(new SettingDto("time_zone", StoredTimeZone));
+
+    public Task SetTimeZoneSettingAsync(string? zone, CancellationToken cancellationToken = default)
+    {
+        Changes.Add("tz " + (zone ?? "(clear)"));
+        StoredTimeZone = zone;
+        return Answer(0);
+    }
+
     public Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default) => Answer(Metrics);
 
     public Task<GapPage> GetGapsAsync(WindowQuery query, CancellationToken cancellationToken = default)
@@ -155,6 +230,8 @@ internal sealed class Harness : IDisposable
     private readonly Queue<string> _typed = new();
 
     public TimeZoneInfo SystemZone { get; set; } = TimeZoneInfo.Utc;
+
+    public bool HasStoredToken { get; set; } = true;
 
     public Harness(Dictionary<string, string>? variables = null)
     {
@@ -230,6 +307,7 @@ internal sealed class Harness : IDisposable
             ReadLine = () => _typed.Count > 0 ? _typed.Dequeue() : null,
             ReadSecret = () => Secret,
             Time = new AutoAdvanceTimeProvider(autoFire: false, utcStart: Samples.Now),
+            HasToken = _ => HasStoredToken,
             GetVariable = name => Variables.GetValueOrDefault(name),
             SystemZone = SystemZone,
         };

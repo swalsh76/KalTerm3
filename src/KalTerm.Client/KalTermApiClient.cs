@@ -5,7 +5,8 @@ using KalTerm.Contracts;
 namespace KalTerm.Client;
 
 /// <summary>
-/// <see cref="IKalTermApi"/> over HTTP. Read-only: it only ever sends <c>GET</c>. A refusal from the API becomes an <see cref="ApiException"/> carrying the
+/// <see cref="IKalTermApi"/> over HTTP. Market data is read with <c>GET</c> only; the single other thing it sends is the caller's own watchlists, alerts and time zone to the KalTerm server
+/// (<c>POST</c>, <c>PUT</c>, <c>PATCH</c> and <c>DELETE</c> under <c>/v1/watchlists</c>, <c>/v1/alerts</c> and <c>/v1/me/settings</c>, and nothing else). It never talks to Kalshi. A refusal from the API becomes an <see cref="ApiException"/> carrying the
 /// API's own error code; a connection that fails or times out becomes an <see cref="ApiUnavailableException"/> naming the address.
 /// </summary>
 public sealed class KalTermApiClient : IKalTermApi, IDisposable
@@ -79,7 +80,70 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
     public Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
-        return GetAsync("v1/screener", [("sort", query.Sort), ("order", query.Order), ("status", query.Status), ("min_volume", query.MinVolume), ("limit", Number(query.Limit)), ("cursor", query.Cursor)], ApiJson.Wire.ScreenerPage, cancellationToken);
+        return GetAsync("v1/screener", [("sort", query.Sort), ("order", query.Order), ("status", query.Status), ("min_volume", query.MinVolume), ("limit", Number(query.Limit)), ("cursor", query.Cursor), ("watchlist", query.Watchlist)], ApiJson.Wire.ScreenerPage, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync("v1/watchlists", [], ApiJson.Wire.WatchlistListDto, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<WatchlistDto> GetWatchlistAsync(string name, CancellationToken cancellationToken = default) =>
+        GetAsync($"v1/watchlists/{Segment(name)}", [], ApiJson.Wire.WatchlistDto, cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<WatchlistDto> CreateWatchlistAsync(string name, CancellationToken cancellationToken = default) =>
+        Read(await SendAsync(HttpMethod.Post, "v1/watchlists", JsonSerializer.Serialize(new CreateWatchlistRequest(name), ApiJson.Wire.CreateWatchlistRequest), cancellationToken).ConfigureAwait(false), ApiJson.Wire.WatchlistDto);
+
+    /// <inheritdoc/>
+    public async Task DeleteWatchlistAsync(string name, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Delete, $"v1/watchlists/{Segment(name)}", null, cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc/>
+    public async Task AddToWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Put, $"v1/watchlists/{Segment(name)}/markets/{Segment(ticker)}", null, cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc/>
+    public async Task RemoveFromWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Delete, $"v1/watchlists/{Segment(name)}/markets/{Segment(ticker)}", null, cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc/>
+    public Task<AlertListDto> GetAlertsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync("v1/alerts", [], ApiJson.Wire.AlertListDto, cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<AlertDto> CreateAlertAsync(CreateAlertRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Read(await SendAsync(HttpMethod.Post, "v1/alerts", JsonSerializer.Serialize(request, ApiJson.Wire.CreateAlertRequest), cancellationToken).ConfigureAwait(false), ApiJson.Wire.AlertDto);
+    }
+
+    /// <inheritdoc/>
+    public async Task SetAlertPausedAsync(int id, bool paused, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Patch, $"v1/alerts/{id.ToString(System.Globalization.CultureInfo.InvariantCulture)}", JsonSerializer.Serialize(new PatchAlertRequest(paused), ApiJson.Wire.PatchAlertRequest), cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc/>
+    public async Task DeleteAlertAsync(int id, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Delete, $"v1/alerts/{id.ToString(System.Globalization.CultureInfo.InvariantCulture)}", null, cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc/>
+    public Task<AlertFiresPage> GetAlertFiresAsync(long? after = null, int? limit = null, CancellationToken cancellationToken = default) =>
+        GetAsync("v1/alerts/fires", [("after", after?.ToString(System.Globalization.CultureInfo.InvariantCulture)), ("limit", Number(limit))], ApiJson.Wire.AlertFiresPage, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) =>
+        GetAsync("v1/me/settings/time_zone", [], ApiJson.Wire.SettingDto, cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task SetTimeZoneSettingAsync(string? zone, CancellationToken cancellationToken = default)
+    {
+        if (zone is null)
+        {
+            await SendAsync(HttpMethod.Delete, "v1/me/settings/time_zone", null, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await SendAsync(HttpMethod.Put, "v1/me/settings/time_zone", JsonSerializer.Serialize(new SettingValueRequest(zone), ApiJson.Wire.SettingValueRequest), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -183,6 +247,49 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
             {
                 throw new ApiException(response.StatusCode, "bad_response");
             }
+        }
+    }
+
+    private static T Read<T>(string body, JsonTypeInfo<T> info)
+        where T : class
+    {
+        try
+        {
+            return JsonSerializer.Deserialize(body, info) ?? throw new ApiException(System.Net.HttpStatusCode.OK, "bad_response");
+        }
+        catch (JsonException)
+        {
+            throw new ApiException(System.Net.HttpStatusCode.OK, "bad_response");
+        }
+    }
+
+    /// <summary>Sends a change to the caller's own data and returns the reply body (empty for a 204).</summary>
+    private async Task<string> SendAsync(HttpMethod method, string path, string? json, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
+        if (json is not null)
+        {
+            request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        }
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ApiUnavailableException($"could not reach the API at {_http.BaseAddress}: {ex.Message}", ex);
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ApiUnavailableException($"the API at {_http.BaseAddress} did not answer in time", ex);
+        }
+
+        using (response)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode ? body : throw Refusal(response.StatusCode, body);
         }
     }
 

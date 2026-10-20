@@ -191,6 +191,77 @@ public sealed record ScreenerRowDto(
 /// <param name="NextCursor">Pass as <c>cursor</c> for the next page; <see langword="null"/> on the last page.</param>
 public sealed record ScreenerPage(string Sort, string Order, string? RefreshedAt, long? AgeSeconds, IReadOnlyList<ScreenerRowDto> Rows, string? NextCursor);
 
+/// <summary>A watchlist in a list of them.</summary>
+/// <param name="Name">The name.</param>
+/// <param name="Markets">How many markets it holds.</param>
+/// <param name="CreatedAt">When it was made.</param>
+public sealed record WatchlistSummaryDto(string Name, int Markets, string CreatedAt);
+
+/// <summary>The caller's watchlists.</summary>
+/// <param name="Watchlists">The watchlists, by name.</param>
+public sealed record WatchlistListDto(IReadOnlyList<WatchlistSummaryDto> Watchlists);
+
+/// <summary>A watchlist and its markets.</summary>
+/// <param name="Name">The name.</param>
+/// <param name="CreatedAt">When it was made.</param>
+/// <param name="Markets">Its market tickers, in order.</param>
+public sealed record WatchlistDto(string Name, string CreatedAt, IReadOnlyList<string> Markets);
+
+/// <summary>The body that makes a watchlist.</summary>
+/// <param name="Name">A name of lower-case letters, digits, dots, dashes and underscores, starting with a letter or digit, up to 64 characters.</param>
+public sealed record CreateWatchlistRequest(string Name);
+
+/// <summary>An alert of the caller. <c>Threshold</c> and the fire <c>Value</c> are in the unit of the kind: dollars for <c>price_above</c>, <c>price_below</c> and <c>spread_above</c>; a whole factor for <c>volume_spike</c>; contracts for <c>oi_change</c>.</summary>
+/// <param name="Id">The alert's id.</param>
+/// <param name="Ticker">The market it watches.</param>
+/// <param name="Kind">price_above, price_below, spread_above, volume_spike or oi_change.</param>
+/// <param name="Threshold">The threshold.</param>
+/// <param name="CooldownSeconds">The least time between two fires.</param>
+/// <param name="Paused">Whether it is paused.</param>
+/// <param name="CreatedAt">When it was made.</param>
+/// <param name="LastEvaluatedAt">When it was last judged; <see langword="null"/> if it never was.</param>
+/// <param name="LastFiredAt">When it last fired; <see langword="null"/> if it never did.</param>
+public sealed record AlertDto(int Id, string Ticker, string Kind, string Threshold, int CooldownSeconds, bool Paused, string CreatedAt, string? LastEvaluatedAt, string? LastFiredAt);
+
+/// <summary>The caller's alerts.</summary>
+/// <param name="Alerts">The alerts, oldest first.</param>
+public sealed record AlertListDto(IReadOnlyList<AlertDto> Alerts);
+
+/// <summary>The body that makes an alert.</summary>
+/// <param name="Ticker">The market.</param>
+/// <param name="Kind">price_above, price_below, spread_above, volume_spike or oi_change.</param>
+/// <param name="Threshold">The threshold as text: dollars (<c>0.60</c>), a whole factor (<c>5</c>) or contracts (<c>100</c>), according to the kind.</param>
+/// <param name="CooldownSeconds">The least time between two fires, 10 to 86,400; 60 when left out.</param>
+public sealed record CreateAlertRequest(string Ticker, string Kind, string Threshold, int? CooldownSeconds = null);
+
+/// <summary>The body that pauses or resumes an alert.</summary>
+/// <param name="Paused">The new state.</param>
+public sealed record PatchAlertRequest(bool Paused);
+
+/// <summary>An alert that fired.</summary>
+/// <param name="Id">The fire's id; they only grow.</param>
+/// <param name="AlertId">The alert.</param>
+/// <param name="Ticker">The market.</param>
+/// <param name="Kind">The kind.</param>
+/// <param name="Threshold">The threshold when it fired.</param>
+/// <param name="Value">What was observed.</param>
+/// <param name="FiredAt">When.</param>
+public sealed record AlertFireDto(long Id, int AlertId, string Ticker, string Kind, string Threshold, string Value, string FiredAt);
+
+/// <summary>Alerts that fired, oldest first.</summary>
+/// <param name="Fires">The fires.</param>
+/// <param name="LastId">The largest id among them (pass as <c>after</c> to get what came next); <see langword="null"/> when there are none.</param>
+public sealed record AlertFiresPage(IReadOnlyList<AlertFireDto> Fires, long? LastId);
+
+/// <summary>A setting of the caller.</summary>
+/// <param name="Name">The setting, for example <c>time_zone</c>.</param>
+/// <param name="Value">Its value; <see langword="null"/> when it is not set.</param>
+public sealed record SettingDto(string Name, string? Value);
+
+/// <summary>The body that sets a setting.</summary>
+/// <param name="Value">The value.</param>
+public sealed record SettingValueRequest(string Value);
+
 /// <summary>One executed trade.</summary>
 /// <param name="Time">When it executed.</param>
 /// <param name="TradeId">Kalshi's trade id.</param>

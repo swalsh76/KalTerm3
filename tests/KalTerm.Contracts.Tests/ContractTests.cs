@@ -82,6 +82,39 @@ public class ContractTests
     }
 
     [Fact]
+    public void WatchlistsAndTheirRequests()
+    {
+        Pin(new WatchlistSummaryDto("favorites", 2, "2026-10-18T20:00:00.000000+00:00"), """{"name":"favorites","markets":2,"created_at":"2026-10-18T20:00:00.000000+00:00"}""");
+        Pin(new WatchlistListDto([new WatchlistSummaryDto("favorites", 2, "2026-10-18T20:00:00.000000+00:00")]), """{"watchlists":[{"name":"favorites","markets":2,"created_at":"2026-10-18T20:00:00.000000+00:00"}]}""");
+        Pin(new WatchlistDto("favorites", "2026-10-18T20:00:00.000000+00:00", ["KX-1", "KX-2"]), """{"name":"favorites","created_at":"2026-10-18T20:00:00.000000+00:00","markets":["KX-1","KX-2"]}""");
+        Pin(new CreateWatchlistRequest("favorites"), """{"name":"favorites"}""");
+    }
+
+    [Fact]
+    public void AlertsTheirRequestsAndTheirFires()
+    {
+        var alert = new AlertDto(7, "KX-1", "price_above", "0.600000", 60, false, "2026-10-18T20:00:00.000000+00:00", "2026-10-18T22:00:00.000000+00:00", null);
+
+        Pin(alert, """{"id":7,"ticker":"KX-1","kind":"price_above","threshold":"0.600000","cooldown_seconds":60,"paused":false,"created_at":"2026-10-18T20:00:00.000000+00:00","last_evaluated_at":"2026-10-18T22:00:00.000000+00:00","last_fired_at":null}""");
+        Pin(new AlertListDto([alert]), """{"alerts":[{"id":7,"ticker":"KX-1","kind":"price_above","threshold":"0.600000","cooldown_seconds":60,"paused":false,"created_at":"2026-10-18T20:00:00.000000+00:00","last_evaluated_at":"2026-10-18T22:00:00.000000+00:00","last_fired_at":null}]}""");
+        Pin(new CreateAlertRequest("KX-1", "volume_spike", "5", 30), """{"ticker":"KX-1","kind":"volume_spike","threshold":"5","cooldown_seconds":30}""");
+        Pin(new CreateAlertRequest("KX-1", "volume_spike", "5"), """{"ticker":"KX-1","kind":"volume_spike","threshold":"5","cooldown_seconds":null}""");
+        Pin(new PatchAlertRequest(true), """{"paused":true}""");
+        var fire = new AlertFireDto(41, 7, "KX-1", "oi_change", "500.00", "-750.00", "2026-10-18T22:59:00.250000+00:00");
+        Pin(fire, """{"id":41,"alert_id":7,"ticker":"KX-1","kind":"oi_change","threshold":"500.00","value":"-750.00","fired_at":"2026-10-18T22:59:00.250000+00:00"}""");
+        Pin(new AlertFiresPage([fire], 41), """{"fires":[{"id":41,"alert_id":7,"ticker":"KX-1","kind":"oi_change","threshold":"500.00","value":"-750.00","fired_at":"2026-10-18T22:59:00.250000+00:00"}],"last_id":41}""");
+        Pin(new AlertFiresPage([], null), """{"fires":[],"last_id":null}""");
+    }
+
+    [Fact]
+    public void SettingsAndTheirRequest()
+    {
+        Pin(new SettingDto("time_zone", "Asia/Tokyo"), """{"name":"time_zone","value":"Asia/Tokyo"}""");
+        Pin(new SettingDto("time_zone", null), """{"name":"time_zone","value":null}""");
+        Pin(new SettingValueRequest("Asia/Tokyo"), """{"value":"Asia/Tokyo"}""");
+    }
+
+    [Fact]
     public void AGapAndItsPage()
     {
         var gap = new GapDto(7, "ingest_down", "2026-10-19T04:33:49.000000+00:00", "2026-10-19T04:40:46.000000+00:00", "the previous run stopped cleanly", new BackfillDto("done", 120, 7, "2026-10-19T04:41:30.000000+00:00", "window recovered"));

@@ -19,7 +19,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
             tables.Add(reader.GetString(0));
         }
 
-        Assert.Equal(["analyzer_run", "api_token", "app_user", "candle", "ingest_gap", "ingest_state", "market", "market_metrics", "orderbook_state", "SchemaVersions", "ticker", "trade"], tables);
+        Assert.Equal(["alert", "alert_fire", "analyzer_run", "api_token", "app_user", "candle", "ingest_gap", "ingest_state", "market", "market_metrics", "orderbook_state", "SchemaVersions", "ticker", "trade", "user_setting", "watchlist", "watchlist_market"], tables);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class SchemaTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
         var journal = await db.ScalarAsync<int>("SELECT COUNT(*) FROM dbo.SchemaVersions");
 
         Assert.Empty(again);
-        Assert.Equal(6, journal);
+        Assert.Equal(7, journal);
     }
 
     [Theory]

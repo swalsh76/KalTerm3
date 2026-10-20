@@ -1382,3 +1382,28 @@ items stay in PLAN.md section 9.
   chosen time zone.
 - Tests: the reader on real tables on kaldb (sorts, ties, missing values last in both directions, keyset paging over ties and missing values both ways, filters, the refresh time from the newest successful
   run only, limits); endpoint parameters, cursor and mapping; the status builder; contract pins; the CLI view and the status line.
+
+### 5.19 Slice 5.4: per-user watchlists, alerts and the stored time zone (2026-10-20)
+
+- Rollouts first, for the record. 5.2 (2026-10-20): ingest restarted for migration 0006; the first `market_metrics` run took 15.3 s for 201,567 markets, the second 10.6 s with 16,724 rows written (only changed rows are
+  written); every figure of the two busiest markets equalled the per-market endpoint. 5.3 (2026-10-20): API redeployed; the top six active markets by 24-hour volume agreed with Kalshi's own `volume_24h` within about 0.2%
+  for five of them and 6.5% for one match trading actively (our figures were 92 s old and the window definitions differ slightly).
+- Migration 0007: `watchlist`, `watchlist_market`, `user_setting`, `alert`, `alert_fire`, all hanging off `app_user`. Every store call takes the user id of the caller (from the token) and filters by it; there is no way to
+  name another user. Limits: 20 watchlists, 500 markets a list, 200 alerts. Watchlist names are lower-case letters, digits, dots, dashes and underscores.
+- Alerts watch one market. Kinds and thresholds: `price_above` / `price_below` (dollars, strictly between 0 and 1; the last traded price), `spread_above` (dollars; ask minus bid), `volume_spike` (a whole factor 2 to 1,000: the
+  last 15 minutes of volume against the average 15 minutes of the 24 hours before; no baseline means no judgment), `oi_change` (contracts, at least 1: open interest moved by that much, up or down, over the last hour).
+- Firing rule (`AlertRules`, pure): the first judgment of an alert only records whether its condition already holds, so nothing fires for what was true when it was made; after that it fires when the condition becomes true,
+  no sooner than its cooldown (default 60 s, 10 to 86,400) after the last fire, and is ready again once the condition has cleared. Data that is missing, or overlaps a gap (the last minute for price and spread, the
+  recent 15 minutes for a spike, the last hour for open interest), decides nothing. Resuming a paused alert makes it judge afresh.
+- The `alerts` analyzer runs every 10 s in the runner. Two runners now, each in its own loop (alerts; metrics), so a 10-second metrics refresh never delays an alert; the runner check interval is 5 s. It reads the raw
+  ticker and trade rows of only the markets that have alerts, records each judgment and every fire in one transaction, and raises the `analyzer.alerts.version` counter when something fired (for the push in 5.5).
+- The API gains its first writing endpoints: `GET/POST /v1/watchlists`, `GET/DELETE /v1/watchlists/{name}`, `PUT/DELETE /v1/watchlists/{name}/markets/{ticker}`, `GET/POST /v1/alerts`, `PATCH/DELETE /v1/alerts/{id}`,
+  `GET /v1/alerts/fires?after=&limit=`, `GET/PUT/DELETE /v1/me/settings/time_zone`, and `GET /v1/screener?watchlist=NAME`. Bodies are small JSON objects (at most 4 KB, a bad one is a 422 naming `body`); a duplicate
+  or a full list is a 409; a missing market a 404 `market_not_found`; without a user (a server that does not require tokens) all of them are 401. The client sends changes only under `/v1/watchlists`, `/v1/alerts`
+  and `/v1/me/settings` (a test enforces it) and never talks to Kalshi.
+- CLI: `kterm watchlist list|show|create|delete|add|remove`, `kterm alert list|add|pause|resume|remove|fires`, `kterm settings tz [ZONE] [--clear]`, `kterm screen --watchlist NAME`. The stored time zone now sits in the
+  precedence after `KALTERM_TZ` and before the computer's zone; it is asked for only when a token is known for the server and quietly ignored if the call fails.
+- Tests: the kinds, thresholds and the firing rule as pure tests; the stores on real tables on kaldb (isolation between two users, limits, cascades, ordering of fires, the evaluation reads with gaps and the
+  insert chunk, applying outcomes in one transaction); the analyzer against fakes; the whole host firing an alert from ticks written while it runs; endpoint validation and ownership; contract pins; client requests;
+  the CLI commands.
+- Not yet: the push of fires to clients (5.5; for now `kterm alert fires --after ID`).

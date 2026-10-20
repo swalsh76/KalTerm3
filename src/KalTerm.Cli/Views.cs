@@ -207,6 +207,51 @@ internal static class Views
         return new Rows(table.Render(width), new Markup($"[grey]{page.Rows.Count} shown, ranked by {Escape(page.Sort)} ({Escape(page.Order)}); {age}.{more}[/]"));
     }
 
+    public static IRenderable Watchlists(WatchlistListDto lists, int width)
+    {
+        var table = new TextTable().Column("Name").Column("Markets", right: true).Column($"Created ({ZoneName})");
+        foreach (var list in lists.Watchlists)
+        {
+            table.Row(list.Name, list.Markets.ToString(CultureInfo.InvariantCulture), Moment(list.CreatedAt));
+        }
+
+        return new Rows(table.Render(width), new Markup($"[grey]{lists.Watchlists.Count} watchlist(s).[/]"));
+    }
+
+    public static IRenderable Watchlist(WatchlistDto list) =>
+        new Rows(
+            new Markup($"[bold]{Escape(list.Name)}[/]  {list.Markets.Count} market(s), made {MomentWithZone(list.CreatedAt)}"),
+            new Text(list.Markets.Count == 0 ? "  (empty)" : string.Join(Environment.NewLine, list.Markets.Select(m => "  " + m))));
+
+    public static IRenderable Alerts(AlertListDto alerts, int width)
+    {
+        var table = new TextTable().Column("Id", right: true).Column("Market").Column("Kind").Column("Threshold", right: true).Column("Cooldown", right: true).Column("State").Column($"Last fired ({ZoneName})");
+        foreach (var alert in alerts.Alerts)
+        {
+            table.Row(
+                alert.Id.ToString(CultureInfo.InvariantCulture),
+                alert.Ticker,
+                alert.Kind,
+                alert.Threshold,
+                alert.CooldownSeconds.ToString(CultureInfo.InvariantCulture) + " s",
+                alert.Paused ? new Cell("paused", "yellow") : "active",
+                alert.LastFiredAt is null ? None : Moment(alert.LastFiredAt));
+        }
+
+        return new Rows(table.Render(width), new Markup($"[grey]{alerts.Alerts.Count} alert(s).[/]"));
+    }
+
+    public static IRenderable Fires(AlertFiresPage page, int width)
+    {
+        var table = new TextTable().Column("Fire", right: true).Column($"Time ({ZoneName})").Column("Market").Column("Kind").Column("Threshold", right: true).Column("Value", right: true).Column("Alert", right: true);
+        foreach (var fire in page.Fires)
+        {
+            table.Row(fire.Id.ToString(CultureInfo.InvariantCulture), Moment(fire.FiredAt, true), fire.Ticker, fire.Kind, fire.Threshold, new Cell(fire.Value, "green"), fire.AlertId.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return new Rows(table.Render(width), new Markup($"[grey]{page.Fires.Count} shown.{(page.LastId is { } last ? $" Newer ones: --after {last}" : string.Empty)}[/]"));
+    }
+
     public static IRenderable Metrics(MetricsDto metrics)
     {
         var rows = new List<IRenderable>

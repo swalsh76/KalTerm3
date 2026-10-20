@@ -246,7 +246,7 @@ Approved by the owner 2026-10-20. Gate: per-user alerts fire. Each slice gets it
    in batches; `MetricsCalculator` does the arithmetic, so there is one copy of the formulas. A market with no ticker update in the last hour has null book fields, never stale ones.
    Measured on `kaldb` 2026-10-20: trades 24 hours by market 0.3 s, latest tick per market over the last hour 0.75 s (over 24 hours 10.6 s, so not used).
 3. **5.3 Screener** (built, BUILD-LOG 5.18): `GET /v1/screener` ranks and filters markets by a metric from `dbo.market_metrics`, with the refresh age shown so a stalled runner cannot pass for live data; `kterm screen`.
-4. **5.4 Per-user watchlists and alerts:** a user's own watchlists and alert definitions; alert kinds in v1 are price above or below, spread, volume spike (a window against a baseline) and open-interest
+4. **5.4 Per-user watchlists and alerts** (built, BUILD-LOG 5.19; owner 2026-10-20: the alerts analyzer runs every **10 seconds**, the default cooldown is **1 minute**, single-market alerts, windows as below): a user's own watchlists and alert definitions; alert kinds in v1 are price above or below, spread, volume spike (a window against a baseline) and open-interest
    change. Evaluation ignores candles flagged `partial`. Fires are stored. The stored per-user time zone setting goes in here (precedence: `--utc`, `--tz`, `KALTERM_TZ`, stored setting, system zone).
 5. **5.5 Push:** alert fires reach clients as **Server-Sent Events** over the existing HTTPS listener (same token and certificate pinning); `kterm alerts`.
 

@@ -1,10 +1,12 @@
 using KalTerm.Contracts;
 using KalTerm.Data;
+using KalTerm.Data.Alerts;
 using KalTerm.Data.Auth;
 using KalTerm.Data.Books;
 using KalTerm.Data.Candles;
 using KalTerm.Data.Metrics;
 using KalTerm.Data.Reading;
+using KalTerm.Data.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -146,6 +148,118 @@ internal sealed class FakeScreener : IScreenerReader
     }
 }
 
+/// <summary>The user data store in memory: it remembers every call (with the user id it was given) and answers from what a test set.</summary>
+internal sealed class FakeUserData : IUserDataStore
+{
+    public List<string> Calls { get; } = [];
+
+    public IReadOnlyList<WatchlistSummary> Lists { get; set; } = [];
+
+    public WatchlistDetail? Detail { get; set; }
+
+    public StoreOutcome Outcome { get; set; } = StoreOutcome.Ok;
+
+    public IReadOnlyList<UserAlert> Alerts { get; set; } = [];
+
+    public IReadOnlyList<UserFire> Fires { get; set; } = [];
+
+    public IReadOnlyList<int>? MarketIds { get; set; } = [1, 2];
+
+    public string? Setting { get; set; }
+
+    public int NextAlertId { get; set; } = 5;
+
+    public Task<IReadOnlyList<WatchlistSummary>> ListWatchlistsAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"list-watchlists {userId}");
+        return Task.FromResult(Lists);
+    }
+
+    public Task<WatchlistDetail?> GetWatchlistAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"get-watchlist {userId} {name}");
+        return Task.FromResult(Detail);
+    }
+
+    public Task<StoreOutcome> CreateWatchlistAsync(int userId, string name, DateTime now, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"create-watchlist {userId} {name}");
+        return Task.FromResult(Outcome);
+    }
+
+    public Task<StoreOutcome> DeleteWatchlistAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"delete-watchlist {userId} {name}");
+        return Task.FromResult(Outcome);
+    }
+
+    public Task<StoreOutcome> AddMarketAsync(int userId, string name, string ticker, DateTime now, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"add-market {userId} {name} {ticker}");
+        return Task.FromResult(Outcome);
+    }
+
+    public Task<StoreOutcome> RemoveMarketAsync(int userId, string name, string ticker, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"remove-market {userId} {name} {ticker}");
+        return Task.FromResult(Outcome);
+    }
+
+    public Task<IReadOnlyList<int>?> WatchlistMarketIdsAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"market-ids {userId} {name}");
+        return Task.FromResult(MarketIds);
+    }
+
+    public Task<IReadOnlyList<UserAlert>> ListAlertsAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"list-alerts {userId}");
+        return Task.FromResult(Alerts);
+    }
+
+    public Task<(StoreOutcome Outcome, int? AlertId)> AddAlertAsync(int userId, string ticker, AlertKind kind, long threshold, int cooldownSeconds, DateTime now, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"add-alert {userId} {ticker} {AlertKinds.Name(kind)} {threshold} {cooldownSeconds}");
+        if (Outcome == StoreOutcome.Ok)
+        {
+            Alerts = [.. Alerts, new UserAlert(NextAlertId, ticker, kind, threshold, cooldownSeconds, false, now, null, null)];
+        }
+
+        return Task.FromResult((Outcome, Outcome == StoreOutcome.Ok ? (int?)NextAlertId : null));
+    }
+
+    public Task<StoreOutcome> DeleteAlertAsync(int userId, int alertId, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"delete-alert {userId} {alertId}");
+        return Task.FromResult(Outcome);
+    }
+
+    public Task<StoreOutcome> SetAlertPausedAsync(int userId, int alertId, bool paused, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"pause-alert {userId} {alertId} {paused}");
+        return Task.FromResult(Outcome);
+    }
+
+    public Task<IReadOnlyList<UserFire>> ReadFiresAsync(int userId, long? afterFireId, int limit, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"fires {userId} {afterFireId} {limit}");
+        return Task.FromResult(Fires);
+    }
+
+    public Task<string?> GetSettingAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"get-setting {userId} {name}");
+        return Task.FromResult(Setting);
+    }
+
+    public Task SetSettingAsync(int userId, string name, string? value, DateTime now, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"set-setting {userId} {name} {value ?? "(clear)"}");
+        Setting = value;
+        return Task.CompletedTask;
+    }
+}
+
 internal sealed class FakeStatus : IStatusReader
 {
     public StatusSnapshot Snapshot { get; set; } = new(null, null, null, 1_000, null, null, new Dictionary<string, long>(), new Dictionary<string, long>());
@@ -185,6 +299,8 @@ internal sealed class FakeReaders
 
     public FakeScreener Screener { get; } = new();
 
+    public FakeUserData UserData { get; } = new();
+
     public FakeStatus Status { get; } = new();
 
     public FakeReadiness Readiness { get; } = new();
@@ -199,6 +315,7 @@ internal sealed class FakeReaders
         services.AddSingleton<ICandleService>(Candles);
         services.AddSingleton<IMetricsReader>(Metrics);
         services.AddSingleton<IScreenerReader>(Screener);
+        services.AddSingleton<IUserDataStore>(UserData);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
         services.AddSingleton(new ApiAuthOptions(false));
@@ -227,6 +344,21 @@ internal sealed class ApiTestHost : IAsyncDisposable
         return await BuildAsync(fakes.Register, fakes, new AutoAdvanceTimeProvider(autoFire: false, utcStart: Samples.Now));
     }
 
+    /// <summary>The fake readers, with every request made as a given user (what the sign-in check would have set after a good token).</summary>
+    public static async Task<ApiTestHost> StartAsUserAsync(int userId = 42)
+    {
+        var fakes = new FakeReaders();
+        return await BuildAsync(
+            fakes.Register,
+            fakes,
+            new AutoAdvanceTimeProvider(autoFire: false, utcStart: Samples.Now),
+            app => app.Use(async (context, next) =>
+            {
+                context.Items[ApiAuthentication.UserItem] = new AuthenticatedUser(userId, "tester", "read", 1);
+                await next(context);
+            }));
+    }
+
     /// <summary>With tokens required, a fake user store, a controllable clock and a hook that runs before the API (to set the caller's addresses).</summary>
     public static async Task<ApiTestHost> StartWithAuthAsync(IUserStore users, AutoAdvanceTimeProvider time, Action<HttpContext>? before = null)
     {
@@ -251,6 +383,18 @@ internal sealed class ApiTestHost : IAsyncDisposable
 
     /// <summary>Over a real database; the clock is the real one, because the rows in it are stamped with real times.</summary>
     public static Task<ApiTestHost> StartWithDatabaseAsync(DataSource source) => BuildAsync(services => services.AddKalTermApi(source, null, requireToken: false), new FakeReaders(), TimeProvider.System);
+
+    public async Task<(HttpResponseMessage Response, string Body)> SendAsync(HttpMethod method, string url, string? json = null)
+    {
+        using var request = new HttpRequestMessage(method, new Uri(url, UriKind.Relative));
+        if (json is not null)
+        {
+            request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        }
+
+        var response = await Client.SendAsync(request, TestContext.Current.CancellationToken);
+        return (response, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
 
     public async Task<(HttpResponseMessage Response, string Body)> GetAsync(string url)
     {

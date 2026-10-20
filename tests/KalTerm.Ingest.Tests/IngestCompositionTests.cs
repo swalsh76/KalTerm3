@@ -372,4 +372,62 @@ public sealed class IngestCompositionTests : IAsyncLifetime
         Assert.Equal("ok: 1 written, 0 removed", await ScalarAsync<string>("SELECT TOP (1) status + ISNULL(': ' + message, '') FROM dbo.analyzer_run WHERE name = 'market_metrics' ORDER BY run_id"));
         Assert.Equal("1", await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'analyzer.market_metrics.version'"));
     }
+
+    [Fact]
+    public async Task AnAlertFiresWhenItsConditionBecomesTrueWhileTheHostRuns()
+    {
+        await Requirement.RequireLocalDbAsync();
+        var settings = KalshiSettings.Create(KalshiEnvironment.Demo, "test-key", KeyFile());
+        var options = Options();
+        await DatabasePreparer.PrepareAsync(options, NullLogger.Instance, TestContext.Current.CancellationToken);
+        var data = Source();
+        var userId = await new Data.Auth.UserStore(data).AddUserAsync("alert-user", "read", DateTime.UtcNow, TestContext.Current.CancellationToken);
+        var market = await new Data.Markets.MarketStore(data).UpsertAsync([new Data.Markets.MarketRecord("E-1", "EV-1", "binary", "active", "Yes", "No")], DateTime.UtcNow, TestContext.Current.CancellationToken);
+        var id = market.Ids["E-1"];
+        var (outcome, alertId) = await new Data.Users.UserDataStore(data).AddAlertAsync(userId, "E-1", Data.Alerts.AlertKind.PriceAbove, 600_000, 10, DateTime.UtcNow, TestContext.Current.CancellationToken);
+        Assert.Equal(Data.Users.StoreOutcome.Ok, outcome);
+
+        var source = new ScriptedSource(_ => Task.FromResult<IStreamSession>(new ScriptedSession()));
+        using var stop = new CancellationTokenSource();
+        var alerts = new KalTerm.Ingest.Analytics.AnalyzerRunner(
+            [new KalTerm.Ingest.Analytics.AlertAnalyzer(new Data.Alerts.AlertEngineStore(data), new Data.Alerts.AlertDataReader(data), TimeSpan.FromMilliseconds(100))],
+            new KalTerm.Ingest.Analytics.AnalyzerStore(data));
+        var overrides = Overrides(source) with
+        {
+            Runner = new IngestRunnerOptions { HeartbeatInterval = TimeSpan.FromMilliseconds(50), AnalyzerCheckInterval = TimeSpan.FromMilliseconds(50), Schedule = now => (now.AddHours(1), PassKind.Full) },
+            Analyzers = [alerts],
+        };
+
+        var run = IngestComposition.RunAsync(options, settings, NullLoggerFactory.Instance, overrides, stop.Token);
+        await Wait.UntilAsync(() => source.Opens >= 1 || run.IsCompleted, "the stream to open");
+        if (run.IsCompleted)
+        {
+            await run;
+        }
+
+        await InsertTickAsync(id, 500_000);
+        await Wait.UntilAsync(() => ScalarAsync<int>($"SELECT COUNT(*) FROM dbo.alert WHERE alert_id = {alertId} AND armed = 1").GetAwaiter().GetResult() == 1, "the alert to be armed by its first judgment");
+        Assert.Equal(0, await ScalarAsync<int>($"SELECT COUNT(*) FROM dbo.alert_fire WHERE alert_id = {alertId}"));
+        await InsertTickAsync(id, 650_000);
+        await Wait.UntilAsync(() => ScalarAsync<int>($"SELECT COUNT(*) FROM dbo.alert_fire WHERE alert_id = {alertId}").GetAwaiter().GetResult() >= 1, "the alert to fire");
+        await stop.CancelAsync();
+        await run;
+
+        Assert.Equal((650_000L, "price_above", 600_000L, userId), (
+            await ScalarAsync<long>($"SELECT TOP (1) value FROM dbo.alert_fire WHERE alert_id = {alertId} ORDER BY fire_id"),
+            await ScalarAsync<string>($"SELECT TOP (1) kind FROM dbo.alert_fire WHERE alert_id = {alertId} ORDER BY fire_id"),
+            await ScalarAsync<long>($"SELECT TOP (1) threshold FROM dbo.alert_fire WHERE alert_id = {alertId} ORDER BY fire_id"),
+            await ScalarAsync<int>($"SELECT TOP (1) user_id FROM dbo.alert_fire WHERE alert_id = {alertId} ORDER BY fire_id")));
+        Assert.Equal(0, await ScalarAsync<int>($"SELECT CASE WHEN armed IS NULL THEN 1 ELSE 0 END FROM dbo.alert WHERE alert_id = {alertId}"));
+        Assert.True(long.Parse(await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'analyzer.alerts.version'"), System.Globalization.CultureInfo.InvariantCulture) >= 1);
+    }
+
+    private async Task InsertTickAsync(int marketId, long price)
+    {
+        await using var connection = await Source().OpenAsync(TestContext.Current.CancellationToken);
+        await using var insert = new SqlCommand("INSERT dbo.ticker (ts, market_id, price_e6, yes_bid_e6, yes_ask_e6, volume_e2) VALUES (SYSUTCDATETIME(), @id, @p, @p, @p, 1)", connection);
+        insert.Parameters.AddWithValue("@id", marketId);
+        insert.Parameters.AddWithValue("@p", price);
+        await insert.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+    }
 }
