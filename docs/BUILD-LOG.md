@@ -1672,3 +1672,24 @@ Plan: PLAN.md section 6.8 (approved 2026-10-20: WPF, server push streams, read-o
 - Run it: `dotnet run --project src/KalTerm.Terminal -c Release`. Needs a token (`kalterm-admin token create` on the server); the first start opens the connect dialog. Started once to check that it launches and its theme loads.
 - No rollout is needed (the server is unchanged). Some tests of other projects (certificate storage, admin, share credentials) need an elevated shell on a development machine because the code limits those folders to SYSTEM and
   Administrators; CI runs elevated.
+
+### 9.2 Slice 7.2: server push streams (2026-10-20)
+
+Approved by the owner 2026-10-20: ticks reach a client 2 to 3 seconds after they happen (books no later than the ingest publishes them); 5 market streams per user, 50 in all, 50 markets per stream. Live add and remove of a stream's
+markets is slice 7.2b; in 7.2 a client reconnects to change what it watches.
+
+- `GET /v1/stream?ticks=T1,T2&books=T3&depth=N` (token required, same listener and certificate as everything else) is a Server-Sent Events stream. Events: `ready` (stream id, where live data begins, the markets accepted, the unknown
+  ones, the book tickers with no published book, the depth), `book` (the whole book, sent on connect and whenever it changes, at most once a second per market; no id), `tick` (one ticker update; its id is its time, usable as a resume
+  point), `reset` (`too_far_behind` or `slow_consumer`: reload over REST and connect again without a resume point), and `: keep-alive` comments every 15 s. A token is rechecked every 30 s and a revoked one ends the stream.
+- Resume: `after=` or `Last-Event-ID` (a tick's id). The server replays the ticks since that moment, inclusively (so the tick at the resume moment comes again, and the client drops the repeat), up to 10 minutes back and 20,000 rows, then
+  goes live; beyond that it says `reset`.
+- How: one watcher in the API (`MarketStreamHub`, polling once a second and only while a stream is open) reads, for the union of watched markets, the books (one `IN` query; sent when changed) and the ticker rows since the last poll, up to
+  2 seconds behind now, in one query (`IMarketStreamReader`, ordered by every column so ties come in a fixed order); each row goes to the streams that watch its market. A new stream is added between two polls, so no moment of ticks is
+  missed by it. A poll that fails is logged and tried again from the same place. A poll that hit its row limit holds back the last millisecond until the next one. A stream that falls 20,000 events behind is told to reload.
+- Found by the tests, fixed: after a keep-alive timeout the abandoned read of the queue stayed pending and swallowed the next event; the endpoint now keeps one read pending across keep-alives.
+- `KalTerm.Client`: `StreamMarketsAsync` and `MarketWatcher` (reconnects with 1 s doubling to 30 s, resumes from the last tick, drops the repeat at the resume moment, passes a `reset` on and opens afresh). `kterm watch TICKER...
+  [--book] [--depth N] [--json]` prints ticks and books as they arrive until Ctrl+C.
+- Tests (about 110 new): the hub (limits, fan-out, no moment missed between polls, failed reads, the row limit, books, unknown tickers, overflow, idle), the endpoint over a test server (every event, resume both ways, resets, refusals, limits,
+  a revoked token), the client and the watcher (including the reconnect and dedupe rules), `kterm watch`, the new readers on real tables, and one end-to-end test over a real database through the real watcher. Run on kaldb: Data 388, API 344.
+- Rollout: the API only (no migration, the ingest is not touched). A live check after it measures what a fake cannot: that no tick is missed behind the 2-second margin (the stream's ticks against the same window read over REST) and how
+  soon after being written a tick arrives.

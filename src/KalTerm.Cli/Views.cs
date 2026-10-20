@@ -242,6 +242,19 @@ internal static class Views
     }
 
     /// <summary>One fire as a line: when, which market, what, and the value that crossed the threshold.</summary>
+    /// <summary>One ticker update of a watched market as a line.</summary>
+    public static string TickLine(MarketTickDto update) =>
+        $"{Moment(update.Tick.Time, true)} {ZoneName}  [bold]{Escape(update.Ticker)}[/]  price {Dollars(update.Tick.Price)}  bid {Dollars(update.Tick.YesBid)}  ask {Dollars(update.Tick.YesAsk)}  volume {Count(update.Tick.Volume)}";
+
+    /// <summary>A watched book as a line: the best prices (the yes ask is derived from the best no bid) and whether the book can be trusted.</summary>
+    public static string BookLine(OrderBookDto book)
+    {
+        var bid = book.YesBids.Count > 0 ? book.YesBids[0] : null;
+        var noBid = book.NoBids.Count > 0 ? book.NoBids[0] : null;
+        var ask = noBid is not null && Micros(noBid.Price) is { } micros ? Dollars(Format(Dollar - micros)) : None;
+        return $"{Moment(book.UpdatedAt, true)} {ZoneName}  [bold]{Escape(book.Ticker)}[/]  book  bid {(bid is null ? None : Dollars(bid.Price))} x{(bid is null ? None : Count(bid.Quantity))}  ask {ask} x{(noBid is null ? None : Count(noBid.Quantity))}  {ConditionMarkup(book)}";
+    }
+
     public static string FireLine(AlertFireDto fire) =>
         $"{Moment(fire.FiredAt, true)} {ZoneName}  [bold]{Escape(fire.Ticker)}[/]  {Escape(fire.Kind)} {Escape(fire.Threshold)}  [green]{Escape(fire.Value)}[/]  (alert {fire.AlertId.ToString(CultureInfo.InvariantCulture)}, fire {fire.Id.ToString(CultureInfo.InvariantCulture)})";
 

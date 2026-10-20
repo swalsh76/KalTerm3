@@ -215,6 +215,36 @@ public interface IBookReader
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The book, or <see langword="null"/> when the market is not published.</returns>
     Task<StoredBook?> GetAsync(string ticker, CancellationToken cancellationToken = default);
+
+    /// <summary>The books of several markets (those that are published), in ticker order.</summary>
+    /// <param name="tickers">The tickers.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The books.</returns>
+    Task<IReadOnlyList<StoredBook>> GetManyAsync(IReadOnlyCollection<string> tickers, CancellationToken cancellationToken = default);
+}
+
+/// <summary>One ticker update with the market it belongs to.</summary>
+/// <param name="Ticker">The market.</param>
+/// <param name="Tick">The update.</param>
+public sealed record StreamTick(string Ticker, StoredTick Tick);
+
+/// <summary>What the push streams read: markets by ticker, and ticker updates of many markets over a window.</summary>
+public interface IMarketStreamReader
+{
+    /// <summary>The market ids of the tickers that exist.</summary>
+    /// <param name="tickers">The tickers.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>Ticker to market id; a ticker that is not a market is absent.</returns>
+    Task<IReadOnlyDictionary<string, int>> ResolveAsync(IReadOnlyCollection<string> tickers, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates of the given markets with <paramref name="from"/> &lt;= time &lt; <paramref name="until"/>, oldest first (ties in a fixed order), at most <paramref name="limit"/>.</summary>
+    /// <param name="markets">Market id to ticker.</param>
+    /// <param name="from">The window start (inclusive).</param>
+    /// <param name="until">The window end (exclusive).</param>
+    /// <param name="limit">The most rows to return.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The updates.</returns>
+    Task<IReadOnlyList<StreamTick>> ReadTicksAsync(IReadOnlyDictionary<int, string> markets, DateTime from, DateTime until, int limit, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Reads the gap log.</summary>

@@ -132,6 +132,12 @@ dotnet run --project src/KalTerm.Cli -c Release -- status
 .\tools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
 ```
 
+Watch markets live from this computer (ticks, and order books with `--book`, pushed as they happen; Ctrl+C stops it; it reconnects by itself and misses no tick):
+
+```powershell
+dotnet run --project src/KalTerm.Cli -c Release -- watch <TICKER> [<TICKER>...] --book --api https://kaldb:5280
+```
+
 Read the server from this computer (once per server: trust its certificate, then store your token; the operator makes users and tokens on the server with `kalterm-admin user add` and `token create`):
 
 ```powershell

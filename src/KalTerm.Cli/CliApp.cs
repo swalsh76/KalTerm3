@@ -294,6 +294,34 @@ internal static partial class CliApp
         alert.Subcommands.Add(alertWatch);
         root.Subcommands.Add(alert);
 
+        // ---- watch ----
+        var watchTickers = new Argument<string[]>("tickers") { Description = "Market tickers", Arity = ArgumentArity.OneOrMore };
+        var watchBook = new Option<bool>("--book") { Description = "Also push the order book of each market (only watched markets have one)" };
+        var watchDepth = new Option<int?>("--depth") { Description = "How many price levels each side of a book carries (1 to 100)" };
+        var watchCommand = new Command("watch", "Watch markets live: ticker updates (and order books with --book) as they happen, until Ctrl+C. It reconnects by itself and misses no tick");
+        watchCommand.Arguments.Add(watchTickers);
+        watchCommand.Options.Add(watchBook);
+        watchCommand.Options.Add(watchDepth);
+        watchCommand.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var tickers = (IReadOnlyList<string>)[.. parsed.GetRequiredValue(watchTickers)];
+            env.Error.MarkupLine("[grey]watching; Ctrl+C stops[/]");
+            var watcher = new MarketWatcher((request, token) => client.StreamMarketsAsync(request, token), env.Time);
+            await watcher.RunAsync(
+                tickers,
+                parsed.GetValue(watchBook) ? tickers : [],
+                parsed.GetValue(watchDepth),
+                item =>
+                {
+                    WatchEvent(env, asJson, item);
+                    return Task.CompletedTask;
+                },
+                notice => env.Error.MarkupLine($"[yellow]{Escape(notice)}[/]"),
+                ct).ConfigureAwait(false);
+            return Ok;
+        }));
+        root.Subcommands.Add(watchCommand);
+
         // ---- settings ----
         var settings = new Command("settings", "Your settings on the server");
         var zoneValue = new Argument<string?>("zone") { Description = "A time zone such as America/Denver or UTC; without it, show the stored one", Arity = ArgumentArity.ZeroOrOne };
@@ -601,6 +629,50 @@ internal static partial class CliApp
         finally
         {
             (client as IDisposable)?.Dispose();
+        }
+    }
+
+    /// <summary>Prints one event of a market stream: a line, or with <c>--json</c> one line of JSON naming the event.</summary>
+    private static void WatchEvent(CliEnvironment env, bool asJson, MarketStreamEvent item)
+    {
+        if (asJson)
+        {
+            var (name, json) = item switch
+            {
+                ReadyEvent ready => ("ready", ApiJson.Serialize(ready.Ready)),
+                BookEvent book => ("book", ApiJson.Serialize(book.Book)),
+                TickEvent tick => ("tick", ApiJson.Serialize(tick.Tick)),
+                ResetEvent reset => ("reset", ApiJson.Serialize(new StreamResetDto(reset.Reason))),
+                _ => ("unknown", "null"),
+            };
+            env.Out.Profile.Out.Writer.WriteLine($"{{\"event\":\"{name}\",\"data\":{json}}}");
+            return;
+        }
+
+        switch (item)
+        {
+            case ReadyEvent ready:
+                env.Error.MarkupLine($"[grey]stream open: {ready.Ready.Ticks.Count} market(s) for ticks, {ready.Ready.Books.Count} for books[/]");
+                if (ready.Ready.Unknown.Count > 0)
+                {
+                    env.Error.MarkupLine($"[yellow]not markets here: {Escape(string.Join(", ", ready.Ready.Unknown))}[/]");
+                }
+
+                if (ready.Ready.NoBook.Count > 0)
+                {
+                    env.Error.MarkupLine($"[yellow]no book published for: {Escape(string.Join(", ", ready.Ready.NoBook))}[/]");
+                }
+
+                break;
+            case TickEvent tick:
+                env.Out.MarkupLine(Views.TickLine(tick.Tick));
+                break;
+            case BookEvent book:
+                env.Out.MarkupLine(Views.BookLine(book.Book));
+                break;
+            case ResetEvent reset:
+                env.Error.MarkupLine($"[yellow]the server asked for a reload ({Escape(reset.Reason)}); data before this point may be missing[/]");
+                break;
         }
     }
 

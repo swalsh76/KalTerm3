@@ -82,6 +82,13 @@ public static class ApiEndpoints
         services.AddSingleton<IAlertVersionReader>(new AlertVersionReader(source));
         services.AddSingleton<AlertStreamHub>();
         services.AddHostedService<AlertStreamWatcher>();
+        services.AddSingleton<IMarketStreamReader>(new MarketStreamReader(source, options));
+        services.AddSingleton(provider => new MarketStreamHub(
+            provider.GetRequiredService<IMarketStreamReader>(),
+            provider.GetRequiredService<IBookReader>(),
+            provider.GetRequiredService<TimeProvider>(),
+            provider.GetService<MarketStreamOptions>()));
+        services.AddHostedService<MarketStreamWatcher>();
         services.AddSingleton<ICandleReader>(new CandleReader(source));
         services.AddSingleton<ICandleComputer>(new CandleBuilder(source));
         services.AddSingleton<ICandleService>(provider => new CandleService(
@@ -288,6 +295,8 @@ public static class ApiEndpoints
                     page.Next is null ? null : ApiFormat.EncodeCursor(string.Create(CultureInfo.InvariantCulture, $"{page.Next.Key}|{page.Next.MarketId}"))),
                 ApiJson.Wire.ScreenerPage);
         });
+
+        app.MapGet("/v1/stream", MarketStreamEndpoint.HandleAsync);
 
         app.MapGet("/v1/orderbooks", async (HttpRequest request, IBookReader reader, TimeProvider time, CancellationToken cancellationToken) =>
         {

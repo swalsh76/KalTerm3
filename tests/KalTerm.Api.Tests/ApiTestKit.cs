@@ -105,6 +105,49 @@ internal sealed class FakeBooks : IBookReader
 
     public Task<StoredBook?> GetAsync(string ticker, CancellationToken cancellationToken = default) =>
         Task.FromResult(Books.FirstOrDefault(b => b.Ticker == ticker));
+
+    public Exception? Throw { get; set; }
+
+    public int ManyReads { get; private set; }
+
+    public Task<IReadOnlyList<StoredBook>> GetManyAsync(IReadOnlyCollection<string> tickers, CancellationToken cancellationToken = default)
+    {
+        ManyReads++;
+        return Throw is null ? Task.FromResult<IReadOnlyList<StoredBook>>([.. Books.Where(b => tickers.Contains(b.Ticker)).OrderBy(b => b.Ticker, StringComparer.Ordinal)]) : Task.FromException<IReadOnlyList<StoredBook>>(Throw);
+    }
+}
+
+/// <summary>The market stream reader over lists a test fills: which tickers are markets, and the ticker rows in the table.</summary>
+internal sealed class FakeStreamReader : IMarketStreamReader
+{
+    public Dictionary<string, int> Markets { get; } = new(StringComparer.Ordinal) { ["KX-1"] = 1, ["KX-2"] = 2, ["KX-3"] = 3 };
+
+    public List<StreamTick> Rows { get; } = [];
+
+    public List<(DateTime From, DateTime Until, int Limit, int[] Ids)> Reads { get; } = [];
+
+    public int Resolves { get; private set; }
+
+    public Exception? Throw { get; set; }
+
+    public Task<IReadOnlyDictionary<string, int>> ResolveAsync(IReadOnlyCollection<string> tickers, CancellationToken cancellationToken = default)
+    {
+        Resolves++;
+        return Throw is null
+            ? Task.FromResult<IReadOnlyDictionary<string, int>>(tickers.Where(Markets.ContainsKey).ToDictionary(t => t, t => Markets[t], StringComparer.Ordinal))
+            : Task.FromException<IReadOnlyDictionary<string, int>>(Throw);
+    }
+
+    public Task<IReadOnlyList<StreamTick>> ReadTicksAsync(IReadOnlyDictionary<int, string> markets, DateTime from, DateTime until, int limit, CancellationToken cancellationToken = default)
+    {
+        Reads.Add((from, until, limit, [.. markets.Keys.Order()]));
+        if (Throw is not null)
+        {
+            return Task.FromException<IReadOnlyList<StreamTick>>(Throw);
+        }
+
+        return Task.FromResult<IReadOnlyList<StreamTick>>([.. Rows.Where(r => markets.Values.Contains(r.Ticker) && r.Tick.Ts >= from && r.Tick.Ts < until).OrderBy(r => r.Tick.Ts).Take(limit)]);
+    }
 }
 
 internal sealed class FakeCandles : ICandleService
@@ -293,7 +336,18 @@ internal sealed class FakeReadiness : IReadinessProbe
 /// <summary>All the fake readers, registered together.</summary>
 internal sealed class FakeReaders
 {
-    public FakeReaders() => Hub = new AlertStreamHub(Version, new AlertStreamOptions { MaxPerUser = 2, MaxTotal = 3, KeepAlive = TimeSpan.FromMilliseconds(150) });
+    public FakeReaders(MarketStreamOptions? streamOptions = null)
+    {
+        Hub = new AlertStreamHub(Version, new AlertStreamOptions { MaxPerUser = 2, MaxTotal = 3, KeepAlive = TimeSpan.FromMilliseconds(150) });
+        StreamHub = new MarketStreamHub(StreamReader, Books, StreamTime, streamOptions ?? new MarketStreamOptions { MaxPerUser = 2, MaxTotal = 3, MaxMarkets = 3, KeepAlive = TimeSpan.FromMilliseconds(150) });
+    }
+
+    public FakeStreamReader StreamReader { get; } = new();
+
+    /// <summary>The clock the market streams use (the ticker table is read up to two seconds behind it).</summary>
+    public AutoAdvanceTimeProvider StreamTime { get; } = new(autoFire: false, utcStart: Samples.Now);
+
+    public MarketStreamHub StreamHub { get; }
 
     public FakeMarkets Markets { get; } = new();
 
@@ -334,6 +388,8 @@ internal sealed class FakeReaders
         services.AddSingleton<IUserDataStore>(UserData);
         services.AddSingleton<IAlertVersionReader>(Version);
         services.AddSingleton(Hub);
+        services.AddSingleton<IMarketStreamReader>(StreamReader);
+        services.AddSingleton(StreamHub);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
         services.AddSingleton(new ApiAuthOptions(false));
@@ -363,9 +419,9 @@ internal sealed class ApiTestHost : IAsyncDisposable
     }
 
     /// <summary>The fake readers, with every request made as a given user (what the sign-in check would have set after a good token).</summary>
-    public static async Task<ApiTestHost> StartAsUserAsync(int userId = 42)
+    public static async Task<ApiTestHost> StartAsUserAsync(int userId = 42, MarketStreamOptions? stream = null)
     {
-        var fakes = new FakeReaders();
+        var fakes = new FakeReaders(stream);
         return await BuildAsync(
             fakes.Register,
             fakes,
@@ -401,6 +457,17 @@ internal sealed class ApiTestHost : IAsyncDisposable
 
     /// <summary>Over a real database; the clock is the real one, because the rows in it are stamped with real times.</summary>
     public static Task<ApiTestHost> StartWithDatabaseAsync(DataSource source) => BuildAsync(services => services.AddKalTermApi(source, null, requireToken: false), new FakeReaders(), TimeProvider.System);
+
+    /// <summary>Over a real database, with every request made as a given user (for the streams, which belong to a user).</summary>
+    public static Task<ApiTestHost> StartWithDatabaseAsUserAsync(DataSource source, int userId = 42) => BuildAsync(
+        services => services.AddKalTermApi(source, null, requireToken: false),
+        new FakeReaders(),
+        TimeProvider.System,
+        app => app.Use(async (context, next) =>
+        {
+            context.Items[ApiAuthentication.UserItem] = new AuthenticatedUser(userId, "tester", "read", 1);
+            await next(context);
+        }));
 
     public async Task<(HttpResponseMessage Response, string Body)> SendAsync(HttpMethod method, string url, string? json = null)
     {

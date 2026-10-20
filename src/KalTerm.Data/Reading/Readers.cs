@@ -39,6 +39,21 @@ internal static class ReaderSupport
     public static CommandDefinition Command(string sql, object? parameters, ReaderOptions options, CancellationToken cancellationToken) =>
         new(sql, parameters, commandTimeout: options.CommandTimeoutSeconds, cancellationToken: cancellationToken);
 
+    /// <summary>The text and parameters of an <c>IN (...)</c> list of varchar values, each its own varchar parameter so the index stays usable (a list Dapper expands would be nvarchar).</summary>
+    public static (string Text, DynamicParameters Parameters) AnsiList(IEnumerable<string> values, int length, string prefix = "v")
+    {
+        var parameters = new DynamicParameters();
+        var names = new List<string>();
+        foreach (var value in values)
+        {
+            var name = prefix + names.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            parameters.Add(name, Ansi(value, length));
+            names.Add("@" + name);
+        }
+
+        return ("(" + string.Join(", ", names) + ")", parameters);
+    }
+
     public static void CheckLimit(int limit) => ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)(limit - 1), (uint)(MaxLimit - 1), nameof(limit));
 
     /// <summary>The id of a market, or <see langword="null"/> when there is none.</summary>
@@ -454,6 +469,20 @@ public sealed class BookReader(DataSource source, ReaderOptions? options = null)
         return rows.Count == 0 ? null : ToBook(rows[0]);
     }
 
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<StoredBook>> GetManyAsync(IReadOnlyCollection<string> tickers, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(tickers);
+        if (tickers.Count == 0)
+        {
+            return [];
+        }
+
+        var (list, parameters) = ReaderSupport.AnsiList(tickers, 128);
+        var rows = await QueryAsync($"{Select} WHERE m.ticker IN {list} ORDER BY m.ticker", parameters, cancellationToken).ConfigureAwait(false);
+        return [.. rows.Select(ToBook)];
+    }
+
     private static StoredBook ToBook(Row row) => new(
         row.Ticker,
         DateTime.SpecifyKind(row.UpdatedAt, DateTimeKind.Utc),
@@ -477,6 +506,55 @@ public sealed class BookReader(DataSource source, ReaderOptions? options = null)
     }
 
     private sealed record Row(string Ticker, DateTime UpdatedAt, DateTime PublishedAt, bool Stale, bool Approximate, string YesLevels, string NoLevels);
+}
+
+/// <summary><see cref="IMarketStreamReader"/> over <c>dbo.market</c> and <c>dbo.ticker</c>.</summary>
+/// <param name="source">Opens connections.</param>
+/// <param name="options">Limits; <see langword="null"/> for the defaults.</param>
+public sealed class MarketStreamReader(DataSource source, ReaderOptions? options = null) : IMarketStreamReader
+{
+    private const string Columns = "t.market_id AS MarketId, t.ts AS Ts, t.price_e6 AS PriceE6, t.yes_bid_e6 AS YesBidE6, t.yes_ask_e6 AS YesAskE6, t.yes_bid_size_e2 AS YesBidSizeE2, t.yes_ask_size_e2 AS YesAskSizeE2, t.volume_e2 AS VolumeE2, t.open_interest_e2 AS OpenInterestE2, t.last_trade_size_e2 AS LastTradeSizeE2";
+
+    // A total order over the columns, so rows with the same time come back in the same order every time.
+    private const string Order = "t.ts, t.market_id, t.price_e6, t.yes_bid_e6, t.yes_ask_e6, t.yes_bid_size_e2, t.yes_ask_size_e2, t.volume_e2, t.open_interest_e2, t.last_trade_size_e2";
+
+    private readonly ReaderOptions _options = ReaderOptionsCheck.Checked(options);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyDictionary<string, int>> ResolveAsync(IReadOnlyCollection<string> tickers, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(tickers);
+        if (tickers.Count == 0)
+        {
+            return new Dictionary<string, int>(StringComparer.Ordinal);
+        }
+
+        var (list, parameters) = ReaderSupport.AnsiList(tickers, 128);
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await connection.QueryAsync<(string Ticker, int MarketId)>(ReaderSupport.Command($"SELECT ticker AS Ticker, market_id AS MarketId FROM dbo.market WHERE ticker IN {list}", parameters, _options, cancellationToken)).ConfigureAwait(false);
+        return rows.ToDictionary(r => r.Ticker, r => r.MarketId, StringComparer.Ordinal);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<StreamTick>> ReadTicksAsync(IReadOnlyDictionary<int, string> markets, DateTime from, DateTime until, int limit, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(markets);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        if (markets.Count == 0 || until <= from)
+        {
+            return [];
+        }
+
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await connection.QueryAsync<Row>(ReaderSupport.Command(
+            $"SELECT TOP (@limit) {Columns} FROM dbo.ticker t WHERE t.market_id IN @ids AND t.ts >= @from AND t.ts < @until ORDER BY {Order}",
+            new { limit, ids = markets.Keys.ToArray(), from, until },
+            _options,
+            cancellationToken)).ConfigureAwait(false);
+        return [.. rows.Select(r => new StreamTick(markets[r.MarketId], new StoredTick(DateTime.SpecifyKind(r.Ts, DateTimeKind.Utc), r.PriceE6, r.YesBidE6, r.YesAskE6, r.YesBidSizeE2, r.YesAskSizeE2, r.VolumeE2, r.OpenInterestE2, r.LastTradeSizeE2)))];
+    }
+
+    private sealed record Row(int MarketId, DateTime Ts, long? PriceE6, long? YesBidE6, long? YesAskE6, long? YesBidSizeE2, long? YesAskSizeE2, long? VolumeE2, long? OpenInterestE2, long? LastTradeSizeE2);
 }
 
 internal static class ReaderOptionsCheck

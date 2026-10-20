@@ -1,0 +1,152 @@
+using System.Text.Json;
+using KalTerm.Contracts;
+
+namespace KalTerm.Client;
+
+/// <summary>What a market stream should watch.</summary>
+/// <param name="Ticks">The markets whose ticker updates are wanted.</param>
+/// <param name="Books">The markets whose order books are wanted.</param>
+/// <param name="Depth">How many price levels each side of a book carries; the server's default when <see langword="null"/>.</param>
+/// <param name="ResumeFrom">Replay the ticks since this moment first (a tick's id or the stream's <c>ResumeFrom</c>); <see langword="null"/> for new ticks only.</param>
+public sealed record MarketStreamRequest(IReadOnlyList<string> Ticks, IReadOnlyList<string> Books, int? Depth = null, string? ResumeFrom = null);
+
+/// <summary>Something a market stream says.</summary>
+public abstract record MarketStreamEvent;
+
+/// <summary>The stream is open: what the server accepted and where live data begins.</summary>
+/// <param name="Ready">The details.</param>
+public sealed record ReadyEvent(StreamReadyDto Ready) : MarketStreamEvent;
+
+/// <summary>A book changed. It is the whole book: replace what you hold.</summary>
+/// <param name="Book">The book.</param>
+public sealed record BookEvent(OrderBookDto Book) : MarketStreamEvent;
+
+/// <summary>A ticker update.</summary>
+/// <param name="Tick">The update.</param>
+/// <param name="Id">Its id: the moment of the update, usable as a resume point.</param>
+public sealed record TickEvent(MarketTickDto Tick, string Id) : MarketStreamEvent;
+
+/// <summary>The server cannot continue from where the client was: reload over REST, then carry on.</summary>
+/// <param name="Reason">Why.</param>
+public sealed record ResetEvent(string Reason) : MarketStreamEvent;
+
+/// <summary>
+/// Keeps a market stream going: it opens the stream, hands every event over, and when the connection drops or the server cannot be reached it waits (1 s, doubling to 30 s, starting over after anything arrives) and opens
+/// it again from where it was, so no tick is missed and none is repeated. When the server says it cannot continue (a reset) the caller is told, and the stream is opened afresh. A refusal that waiting will not cure
+/// (a token the server does not accept) ends it.
+/// </summary>
+/// <param name="open">Opens one stream.</param>
+/// <param name="time">The clock the waits use.</param>
+public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, IAsyncEnumerable<MarketStreamEvent>> open, TimeProvider? time = null)
+{
+    private static readonly TimeSpan FirstWait = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan LongestWait = TimeSpan.FromSeconds(30);
+
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
+
+    /// <summary>Watches until cancelled.</summary>
+    /// <param name="ticks">The markets whose ticks are wanted.</param>
+    /// <param name="books">The markets whose books are wanted.</param>
+    /// <param name="depth">The book depth, or <see langword="null"/> for the default.</param>
+    /// <param name="onEvent">Called with every event, in order. A tick is delivered once, even across a reconnect.</param>
+    /// <param name="onNotice">Called with a line of text when the stream dropped and is being reopened.</param>
+    /// <param name="cancellationToken">Stops the watch.</param>
+    /// <returns>A task that completes when the watch is cancelled.</returns>
+    /// <exception cref="ApiException">The server refused in a way waiting will not cure.</exception>
+    public async Task RunAsync(IReadOnlyList<string> ticks, IReadOnlyList<string> books, int? depth, Func<MarketStreamEvent, Task> onEvent, Action<string> onNotice, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(onEvent);
+        ArgumentNullException.ThrowIfNull(onNotice);
+        string? resume = null;
+        var atResume = new HashSet<string>(StringComparer.Ordinal);   // ticks already delivered at the resume moment, which the server sends again (it resumes inclusively)
+        var wait = FirstWait;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var reset = false;
+            try
+            {
+                await foreach (var item in open(new MarketStreamRequest(ticks, books, depth, resume), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    wait = FirstWait;
+                    switch (item)
+                    {
+                        case ReadyEvent ready:
+                            resume ??= ready.Ready.ResumeFrom;
+                            break;
+                        case TickEvent tick:
+                            var key = JsonSerializer.Serialize(tick.Tick, ApiJson.Wire.MarketTickDto);
+                            if (string.Equals(tick.Id, resume, StringComparison.Ordinal))
+                            {
+                                if (!atResume.Add(key))
+                                {
+                                    continue;   // sent before the connection dropped
+                                }
+                            }
+                            else
+                            {
+                                resume = tick.Id;
+                                atResume.Clear();
+                                atResume.Add(key);
+                            }
+
+                            break;
+                        case ResetEvent:
+                            reset = true;
+                            resume = null;
+                            atResume.Clear();
+                            break;
+                    }
+
+                    await onEvent(item).ConfigureAwait(false);
+                    if (reset)
+                    {
+                        onNotice("the server asked for a reload; reconnecting");
+                        break;
+                    }
+                }
+
+                if (!reset)
+                {
+                    onNotice("the server closed the stream; reconnecting");
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (ApiUnavailableException ex)
+            {
+                onNotice(ex.Message);
+            }
+            catch (IOException ex)
+            {
+                onNotice("the connection dropped: " + ex.Message);
+            }
+            catch (ApiException ex) when (ex.Code is "too_many_streams" or "http_error")
+            {
+                onNotice(ex.Code == "too_many_streams" ? "the server has too many streams open for you; waiting" : $"the server answered {(ex.Status is { } status ? (int)status : 0)}; waiting");
+                wait = LongestWait;
+            }
+            catch (JsonException)
+            {
+                onNotice("the server sent something unreadable; reconnecting");
+            }
+
+            if (reset)
+            {
+                continue;   // a reset is answered at once: the caller reloads while the new stream opens
+            }
+
+            try
+            {
+                await Task.Delay(wait, _time, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            wait = TimeSpan.FromSeconds(Math.Min(LongestWait.TotalSeconds, wait.TotalSeconds * 2));
+        }
+    }
+}

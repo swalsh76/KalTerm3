@@ -144,6 +144,16 @@ public interface IKalTermApi
     /// <exception cref="ApiException">The server refused the stream (<c>unauthorized</c>, <c>too_many_streams</c>).</exception>
     IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Ticker updates and order books of the named markets, pushed as they happen (Server-Sent Events). The stream replays the ticks since <see cref="MarketStreamRequest.ResumeFrom"/> first, then sends live ones;
+    /// use <see cref="MarketWatcher"/> to keep one going across drops.
+    /// </summary>
+    /// <param name="request">What to watch.</param>
+    /// <param name="cancellationToken">Closes the stream.</param>
+    /// <returns>The events.</returns>
+    /// <exception cref="ApiException">The server refused the stream (<c>unauthorized</c>, <c>too_many_streams</c>, <c>invalid_parameter</c>).</exception>
+    IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, CancellationToken cancellationToken = default);
+
     /// <summary>The caller's stored time zone.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The setting; its value is <see langword="null"/> when none is stored.</returns>
