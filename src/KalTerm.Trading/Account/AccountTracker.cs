@@ -170,6 +170,9 @@ public sealed class AccountTracker : IAsyncDisposable
     /// <summary>Raised (never throwing into the tracker) whenever what the snapshot shows may have changed.</summary>
     public event Action? Changed;
 
+    /// <summary>The persistent trading state the tracker rolls and reads.</summary>
+    public TradingState State => _state;
+
     /// <summary>The recent fills, oldest first (at most 500).</summary>
     public IReadOnlyList<FillMsg> Fills
     {

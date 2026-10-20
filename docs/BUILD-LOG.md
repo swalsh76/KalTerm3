@@ -1570,3 +1570,23 @@ Slice 6.5 is split in two so each PR stays reviewable: 6.5a is what the order se
 - Not checked against the real service: the private channels' wire shapes come from the reference's live measurements; the first look at them with the real trading key is part of 6.7 (a subscribe is a command,
   outside the read-only GET permission, so it waits for the owner's go).
 - No rollout is needed (the server does not run trading code).
+
+### 8.6 Slice 6.5b: the order service and the account's write budget (2026-10-20)
+
+- `OrderService` (new `KalTerm.Trading/Orders`) is the one path from a wish to an order, ported from the reference. `PrepareAsync` is read-only: it asks Kalshi for the market (shard, status) and the series' fee multiplier
+  (cached per event), refreshes the balance and asks the risk layer; the `Prepared` it returns, with `Describe` lines, says exactly what would happen including shard funding. `ExecuteAsync` re-checks with fresh data
+  (`PlanChangedException` if the cost rose or the funding differs from what was shown), moves the money (`BeginTransfer` saved before the request, `FinishTransfer` after; a definite refusal is taken back out of the day's total,
+  an unclear answer stays pending and stops the order), waits up to ten seconds for the balance to show the transfer (it lags, seen live), checks once more and only then sends the order built from the `ApprovedOrder`.
+  An unclear create answer saves the client order id in the trading state. Prices finer than four decimals fail in prepare, before any money moves.
+- Mapping to the YES book: buy YES is a bid, sell YES an ask, buy NO at q an ask at 1 - q, sell NO a bid at 1 - q. An amend is checked as the replacement with the old order left out of the account, takes the new total count, and a
+  partly filled order may change its price only. Kalshi's action and outcome labels are never used to rebuild an order.
+- Kill switch: halt first (saved, so a restart cannot undo it), cancel all, then list resting orders and batch-cancel what is found, up to ten passes a second apart; done only after two empty looks. Errors are reported, never
+  hidden, and a listing that keeps failing is never "clean". The daily-loss guard (`GuardOnceAsync`, `StartGuard`) fires the same kill switch when the day's realized loss reaches the limit, and an order attempted over it trips it too.
+  Cancels are never refused by the risk layer and work while halted; `CancelByIdsAsync` needs no tracker (it reads Kalshi's own record of each order). `TypedPhraseMatches` is the production confirmation check
+  (`TICKER buy|sell yes|no COUNT PRICE`, numbers compared as numbers, ticker case-sensitive).
+- The write budget is read from the account: `KalshiRestClient.EndpointCostsAsync` and `AccountLimitsAsync` (GETs) and `TradingBudget.ReadAsync` turn them into the bucket (the tier's rate and capacity times the margin) and the costs
+  the trading client uses. Live (read-only key): the tier is basic, the write bucket holds 100 and refills 100 a second, the read bucket holds 600 and refills 200; cancels (one, all, batch) cost 2; create, amend, decrease and the
+  transfer are not listed, so they cost the default of 10; the paths are written `/trade-api/v2/...` with `:order_id`. The budget takes the highest listed cost of the order routes and of the cancel routes.
+- Tests (about 70 new): the reference's order-service cases (mapping, fees, funding, plan change, transfer outcomes, lagging balance, halts, kill switch passes and errors, guard, amend rules, cancel by id, typed phrase), against a
+  scripted exchange that moves money and orders; the budget against the real response shape. `KalTerm.Trading` is at 95.0% lines.
+- No rollout is needed (the server does not run trading code). Still nothing has been sent to Kalshi by this code.

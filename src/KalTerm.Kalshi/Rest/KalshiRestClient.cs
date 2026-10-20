@@ -207,6 +207,30 @@ public sealed partial class KalshiRestClient : IDisposable
             "balance");
     }
 
+    /// <summary>What each endpoint costs in rate-limit tokens.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The costs.</returns>
+    public async Task<EndpointCostTable> EndpointCostsAsync(CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/account/endpoint_costs");
+        return KalshiJson.Parse(
+            await GetStringAsync("/account/endpoint_costs", null, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.EndpointCostTable,
+            "endpoint costs");
+    }
+
+    /// <summary>The account's rate limits: the read and write buckets of its tier.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The limits.</returns>
+    public async Task<AccountLimits> AccountLimitsAsync(CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/account/limits");
+        return KalshiJson.Parse(
+            await GetStringAsync("/account/limits", null, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.AccountLimits,
+            "account limits");
+    }
+
     /// <summary>One page of positions (market and event). Filters: <c>ticker</c>, <c>event_ticker</c>, <c>settlement_status</c>, <c>count_filter</c>, <c>exchange_index</c>, <c>limit</c>, <c>cursor</c>.</summary>
     /// <param name="query">The filters.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
