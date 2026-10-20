@@ -9,10 +9,13 @@ using Microsoft.Extensions.Logging;
 
 namespace KalTerm.Ingest.Tests;
 
-/// <summary>Polls a condition; the runner's loops run on the real clock with tiny intervals, so tests wait for outcomes, not for counted timer fires.</summary>
+/// <summary>
+/// Polls a condition; the runner's loops run on the real clock with tiny intervals, so tests wait for outcomes, not for counted timer fires. The limit is generous (45 s) because the database
+/// tests start a whole host on a shared CI machine, where creating and migrating the database once took longer than 15 s; a wait that succeeds costs nothing extra.
+/// </summary>
 internal static class Wait
 {
-    public static async Task UntilAsync(Func<bool> condition, string what, int milliseconds = 15_000)
+    public static async Task UntilAsync(Func<bool> condition, string what, int milliseconds = 45_000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(milliseconds);
         while (!condition())
