@@ -238,9 +238,14 @@ Approved by the owner 2026-10-20. Gate: per-user alerts fire. Each slice gets it
 
 1. **5.1 Metrics** (built, BUILD-LOG 5.16): last, change over 24 hours, volume, open interest, spread, VWAP, simple moving averages and volatility, computed from the stored candles and the latest tick in SQL and integer
    arithmetic (money stays fixed-point `long`). `GET /v1/markets/{ticker}/metrics` and `kterm metrics TICKER`.
-2. **5.2 Screener:** results in a result table; `GET /v1/screener` ranks and filters markets by a metric; `kterm screen`.
-3. **5.3 Runner:** an analyzer takes a window and a market universe and returns typed rows into result tables; the runner owns scheduling, locking and change signalling. It runs **inside the ingest
-   host** as another loop (like the candle job), not as a separate service.
+2. **5.2 Runner** (built, BUILD-LOG 5.17; order swapped with the screener, owner 2026-10-20: the screener needs a result table that something keeps fresh): an analyzer has a name, an interval and a run method that
+   takes the clock, the 24-hour window and the market universe and returns rows. The runner is another loop **inside the ingest host** (like the candle job): it runs an analyzer when due
+   (state key per analyzer), holds `sp_getapplock` per analyzer so runs never overlap, applies a timeout, logs a failure instead of throwing, records every run in `analyzer_run`, and bumps
+   a per-analyzer change counter when results change (for alerts and push). First analyzer `market_metrics` fills `dbo.market_metrics` (migration 0006) every **5 minutes** for the universe
+   **"any ticker update or trade in the last 24 hours"** (about 200 thousand markets, 34 thousand of them traded; a market idle for 24 hours loses its row). SQL does only set-based sums, fetched
+   in batches; `MetricsCalculator` does the arithmetic, so there is one copy of the formulas. A market with no ticker update in the last hour has null book fields, never stale ones.
+   Measured on `kaldb` 2026-10-20: trades 24 hours by market 0.3 s, latest tick per market over the last hour 0.75 s (over 24 hours 10.6 s, so not used).
+3. **5.3 Screener:** `GET /v1/screener` ranks and filters markets by a metric from `dbo.market_metrics`, with the refresh age shown so a stalled runner cannot pass for live data; `kterm screen`.
 4. **5.4 Per-user watchlists and alerts:** a user's own watchlists and alert definitions; alert kinds in v1 are price above or below, spread, volume spike (a window against a baseline) and open-interest
    change. Evaluation ignores candles flagged `partial`. Fires are stored. The stored per-user time zone setting goes in here (precedence: `--utc`, `--tz`, `KALTERM_TZ`, stored setting, system zone).
 5. **5.5 Push:** alert fires reach clients as **Server-Sent Events** over the existing HTTPS listener (same token and certificate pinning); `kterm alerts`.

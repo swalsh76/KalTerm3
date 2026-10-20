@@ -34,7 +34,7 @@ public sealed class IngestCompositionTests : IAsyncLifetime
     }
 
     private IngestHostOptions Options(int? provisionGb = 1) =>
-        new() { Server = LocalDbServer.Server, Database = _database, ProvisionMaxSizeGb = provisionGb, PartitionDaysAhead = 2 };
+        new() { Server = LocalDbServer.Server, Database = _database, ProvisionMaxSizeGb = provisionGb, PartitionDaysAhead = 2, Analytics = false };
 
     private DataSource Source() => new(Options().ToConnectionOptions());
 
@@ -330,5 +330,46 @@ public sealed class IngestCompositionTests : IAsyncLifetime
         Assert.Equal(450_000L, await ScalarAsync<long>($"SELECT close_e6 FROM dbo.candle WHERE market_id = {id} AND interval_s = 3600 AND bucket_start = '{hour:yyyy-MM-dd HH:mm:ss}'"));
         Assert.Equal(400L, await ScalarAsync<long>($"SELECT volume_e2 FROM dbo.candle WHERE market_id = {id} AND interval_s = 3600 AND bucket_start = '{hour:yyyy-MM-dd HH:mm:ss}'"));
         Assert.Equal("1d=all;1h=all;1m=watched", await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'candles.stored'"));
+    }
+
+    [Fact]
+    public async Task WithAnalyticsOnTheHostFillsTheMetricsTableAndRecordsTheRun()
+    {
+        await Requirement.RequireLocalDbAsync();
+        var settings = KalshiSettings.Create(KalshiEnvironment.Demo, "test-key", KeyFile());
+        var options = Options();
+        options.Analytics = true;
+        await DatabasePreparer.PrepareAsync(options, NullLogger.Instance, TestContext.Current.CancellationToken);
+        var market = await new Data.Markets.MarketStore(Source()).UpsertAsync([new Data.Markets.MarketRecord("E-1", "EV-1", "binary", "active", "Yes", "No")], DateTime.UtcNow, TestContext.Current.CancellationToken);
+        var id = market.Ids["E-1"];
+        await new Data.PartitionMaintenance(Source()).EnsureAheadAsync(DateOnly.FromDateTime(DateTime.UtcNow), 2, TestContext.Current.CancellationToken);
+        await using (var connection = await Source().OpenAsync(TestContext.Current.CancellationToken))
+        {
+            await using var insert = new SqlCommand("INSERT dbo.trade (ts, market_id, trade_id, yes_price_e6, no_price_e6, count_e2, taker_side, is_block) VALUES (SYSUTCDATETIME(), @id, 'a1', 400000, 600000, 300, 1, 0)", connection);
+            insert.Parameters.AddWithValue("@id", id);
+            await insert.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        var source = new ScriptedSource(_ => Task.FromResult<IStreamSession>(new ScriptedSession()));
+        using var stop = new CancellationTokenSource();
+        var overrides = Overrides(source) with { Runner = new IngestRunnerOptions { HeartbeatInterval = TimeSpan.FromMilliseconds(50), AnalyzerCheckInterval = TimeSpan.FromMilliseconds(100), Schedule = now => (now.AddHours(1), PassKind.Full) } };
+
+        var run = IngestComposition.RunAsync(options, settings, NullLoggerFactory.Instance, overrides, stop.Token);
+        await Wait.UntilAsync(() => source.Opens >= 1 || run.IsCompleted, "the stream to open");
+        if (run.IsCompleted)
+        {
+            await run;
+        }
+
+        await Wait.UntilAsync(() => ScalarAsync<int>("SELECT COUNT(*) FROM dbo.analyzer_run WHERE name = 'market_metrics' AND status = 'ok'").GetAwaiter().GetResult() >= 1, "a finished run of the analyzer");
+        await stop.CancelAsync();
+        await run;
+
+        Assert.Equal((300L, 1L, 400_000L), (
+            await ScalarAsync<long>($"SELECT volume_e2 FROM dbo.market_metrics WHERE market_id = {id}"),
+            await ScalarAsync<long>($"SELECT trade_count FROM dbo.market_metrics WHERE market_id = {id}"),
+            await ScalarAsync<long>($"SELECT vwap_e6 FROM dbo.market_metrics WHERE market_id = {id}")));
+        Assert.Equal("ok: 1 written, 0 removed", await ScalarAsync<string>("SELECT TOP (1) status + ISNULL(': ' + message, '') FROM dbo.analyzer_run WHERE name = 'market_metrics' ORDER BY run_id"));
+        Assert.Equal("1", await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'analyzer.market_metrics.version'"));
     }
 }
