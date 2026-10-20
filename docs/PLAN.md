@@ -333,7 +333,7 @@ quietly). Any new third-party package is named in its slice plan, must be permis
 
 | # | Slice |
 |---|---|
-| 7.1 | Shell: the `KalTerm.Terminal` project and its test project, the main window, connecting (server address, trust the certificate, store the token; the same pin and token stores as `kterm`), the status page (a view of `/v1/status`), the time-zone choice; proves the coverage approach for XAML |
+| 7.1 (built, BUILD-LOG 9.1) | Shell: the `KalTerm.Terminal` project and its test project, the main window, connecting (server address, trust the certificate, store the token; the same pin and token stores as `kterm`), the status page (a view of `/v1/status`), the time-zone choice; proves the coverage approach for XAML |
 | 7.2 | Server push streams: SSE streams beside the alert stream for ticks and order books of the markets a client names (same token and certificate, per-user and total stream limits, resume, keep-alive, a watcher reading the existing change counters), `KalTerm.Client` stream readers, and a `kterm` reader so the contract is tested without a UI. A server change: needs its own rollout to kaldb, asked for at the end of the slice |
 | 7.3 | Markets: a searchable, sortable market list (live), and a market detail with ticks, trades and metrics updating from the streams |
 | 7.4 | Charts and book: candle charts with intervals and the live order book |

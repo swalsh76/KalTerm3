@@ -1,0 +1,65 @@
+<UserControl x:Class="KalTerm.Terminal.Views.StatusView"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="Visible" />
+        <Style x:Key="Line" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Severity}" Value="Error">
+                    <Setter Property="Foreground" Value="Firebrick" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                    <Setter Property="Foreground" Value="DarkGoldenrod" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Stale}" Value="True">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBlock Text="Loading…" Visibility="{Binding Loading, Converter={StaticResource Visible}}" />
+            <TextBlock Text="{Binding Page.Heading}" FontSize="18" FontWeight="SemiBold" Visibility="{Binding HasPage, Converter={StaticResource Visible}}" />
+            <TextBlock Text="{Binding Error}" Foreground="Firebrick" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+            <StackPanel Margin="0,12,0,0" Visibility="{Binding HasProblems, Converter={StaticResource Visible}}">
+                <TextBlock Text="NEEDS ATTENTION" Foreground="Firebrick" FontWeight="Bold" />
+                <ItemsControl ItemsSource="{Binding Page.Problems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Foreground="Firebrick" TextWrapping="Wrap" Margin="12,2,0,0" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+            <TextBlock Text="All checks passed." Foreground="ForestGreen" Margin="0,12,0,0" Visibility="{Binding AllClear, Converter={StaticResource Visible}}" />
+            <ItemsControl ItemsSource="{Binding Page.Lines}" Grid.IsSharedSizeScope="True" Margin="0,16,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition SharedSizeGroup="Label" Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Label}" FontWeight="SemiBold" Margin="0,0,16,0" />
+                            <TextBlock Grid.Column="1" Text="{Binding Text}" Style="{StaticResource Line}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding Page.GapNote}" Foreground="Gray" TextWrapping="Wrap" Margin="0,12,0,0" Visibility="{Binding HasPage, Converter={StaticResource Visible}}" />
+            <DockPanel Margin="0,16,0,0">
+                <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshCommand}" Padding="10,2" />
+                <TextBlock Text="{Binding UpdatedText}" Foreground="Gray" VerticalAlignment="Center" />
+            </DockPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
