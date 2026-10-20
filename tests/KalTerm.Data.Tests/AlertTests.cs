@@ -392,6 +392,26 @@ public class AlertEvaluationStoreTests(DatabaseFixture db) : IClassFixture<Datab
     }
 
     [Fact]
+    public async Task AQuietMarketIsFoundByTheWiderWindowsAndOneQuieterThanADayHasNothing()
+    {
+        db.Require();
+        var quiet = await ReaderSeed.MarketAsync(db, "AE-QUIET");
+        var gone = await ReaderSeed.MarketAsync(db, "AE-GONE");
+        var busy = await ReaderSeed.MarketAsync(db, "AE-BUSY");
+        await TickAsync(quiet, Now.AddHours(-20), 300_000, 290_000, 310_000, 7_000);
+        await TickAsync(quiet, Now.AddHours(-30), 100_000, 90_000, 110_000, 6_000);
+        await TickAsync(gone, Now.AddHours(-26), 300_000, 290_000, 310_000, 7_000);
+        await TickAsync(busy, Now.AddSeconds(-10), 500_000, 490_000, 510_000, 9_000);
+        await TickAsync(busy, Now.AddHours(-3), 450_000, 440_000, 460_000, 8_000);
+
+        var seen = await Reader().ReadAsync([quiet, gone, busy], Now, TestContext.Current.CancellationToken);
+
+        Assert.Equal((300_000L, 20_000L, 7_000L, 7_000L), (seen[quiet].LastE6, seen[quiet].SpreadE6, seen[quiet].OpenInterestE2, seen[quiet].OpenInterestHourAgoE2));
+        Assert.Equal((500_000L, 20_000L, 9_000L, 8_000L), (seen[busy].LastE6, seen[busy].SpreadE6, seen[busy].OpenInterestE2, seen[busy].OpenInterestHourAgoE2));
+        Assert.Equal(new AlertObservation(null, null, 0, 0, null, null, false, false, false), seen[gone]);
+    }
+
+    [Fact]
     public async Task TheRecentQuarterHourAndTheDayBeforeAreSummedSeparately()
     {
         db.Require();

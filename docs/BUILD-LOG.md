@@ -1407,3 +1407,6 @@ items stay in PLAN.md section 9.
   insert chunk, applying outcomes in one transaction); the analyzer against fakes; the whole host firing an alert from ticks written while it runs; endpoint validation and ownership; contract pins; client requests;
   the CLI commands.
 - Not yet: the push of fires to clients (5.5; for now `kterm alert fires --after ID`).
+- Found by the live check after the rollout: the first alerts analyzer took 34 to 39 seconds a run for three alerts. The cause was how the newest tick of each market was looked up: ids taken from a joined temporary
+  table made SQL Server scan the ordered columnstore for every market (about 10 s a lookup, measured), while the same lookup with the ids written into the statement takes about 0.2 s. The reader now writes the ids
+  (in chunks of 500) into the statement and widens the window step by step (1 minute, 10 minutes, 1 hour, 24 hours), so busy markets are found at once and only quiet ones need the longer looks.
