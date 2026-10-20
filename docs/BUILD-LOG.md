@@ -1639,3 +1639,14 @@ server-offline test.
   carried `exchange_index` 3; "auto-routing by ticker" in the V2 docs concerns which shard an order goes to, not where its collateral comes from. Not tried: omitting `exchange_index`, which would route to the same shard.)
 - The $0.02 moved to shard 3 stays there (no command moves money back; Kalshi's web app can).
 - Open small items: show the remaining count after an amend from the order list; the confirmation prompt reads one line, so a pasted command is refused rather than sent (working as intended).
+
+### 8.9 Slice 6.8: close-out of M6 (2026-10-20)
+
+- Gate met: the risk layer, trading client, kill switch and the `kterm` commands are built and verified on the real account under tiny limits, each live write after the owner's go (BUILD-LOG 8.8). Production stays off by default in code
+  (`production_enabled` in `risk.json`, absent means false); the owner switched it on for this machine on 2026-10-20 and keeps it on. Orders still need the typed confirmation, and the live runs need the owner's go on each exact order.
+- Risk defaults revisited with the owner and kept: order count 5, position 10, order notional $1, exposure $3, daily loss $2, 3 open orders, transfers $2 an order and $5 a day, snapshot 10 s. The live run never came near any of them.
+- What M6 left in place: `KalTerm.Trading` (risk, keys, transport, account tracker, order service, session factory), `trading_state.json` and `audit.jsonl` next to `risk.json`, the trading key in Credential Manager (production only; the demo
+  site is not used), and the `kterm` commands `buy`, `sell`, `amend`, `cancel`, `kill`, `resume`, `balance`, `positions`, `orders`, `fills`, `trading-key`. Nothing in the trading code runs on the server.
+- Measured by the live run and now fact: shard funding is required (Kalshi rejects an unfunded order with `insufficient_balance`); a resting order does not reduce a shard's balance; the order list can lag a cancel by seconds; the real
+  fee is the modelled fee rounded up to $0.0001; a pasted command at the confirmation prompt is refused.
+- Small items were parked in PLAN section 9. Next milestones: M7 (UI) is decided later; M8 (host layer and verification) is the remaining required one.

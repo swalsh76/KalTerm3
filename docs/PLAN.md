@@ -71,7 +71,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** (**met 2026-10-18**, BUILD-LOG 2.7). **Done 2026-10-19** (BUILD-LOG 5.9: production feed ingesting on `kaldb`, CLI reading ticks, trades, gaps and order books) |
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green (**met 2026-10-20**, BUILD-LOG §6) |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire (**met 2026-10-20**, BUILD-LOG §7) |
-| **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead (plan: section 6.7) |
+| **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead (plan: section 6.7). **Met 2026-10-20** (BUILD-LOG §8) |
 | **M7 UI** | WPF terminal | decided later |
 | **M8 Host layer and verification** | Installer, services, reboot and power-cut tests, 48 h soak | all pass |
 
@@ -315,7 +315,7 @@ run only after the exact order is shown and the owner says go.
 | 6.5b (built, BUILD-LOG 8.6) | The order service tying risk, snapshot, transport, state and audit log together: place, amend, cancel, kill switch, funding transfers, real write costs from the account |
 | 6.6 (built, BUILD-LOG 8.7) | CLI: `buy`, `sell`, `cancel`, `amend`, `orders`, `positions`, `balance`, `fills`, `kill`, `--dry-run`, the risk verdict before sending, the typed production confirmation |
 | 6.7 (done, BUILD-LOG 8.8) | Live end to end on the real account under the tiny limits, each write after the owner's go: far-from-market resting orders, amend, cancel, the kill switch; then one deliberate minimal fill to check fills, positions and fees; the server-offline test; as-built notes |
-| 6.8 | Close-out: what the live checks showed, risk defaults revisited with the owner, docs |
+| 6.8 (done, BUILD-LOG 8.9) | Close-out: what the live checks showed, risk defaults revisited with the owner, docs |
 
 ## 7. Risks
 
@@ -346,7 +346,8 @@ and the API contract tests.
 ## 9. Parking lot
 
 - Trading, parked from M6 (owner 2026-10-20): fill-or-kill orders, order groups, subaccounts, the RFQ and communications channels, encrypted trading keys, a manual `kterm transfer` command, scripted
-  non-interactive production orders, a daily-loss day that is not the UTC day.
+  non-interactive production orders, a daily-loss day that is not the UTC day. Small items from the live run: show the remaining count after an amend from the order list (the amend reply carries none);
+  a way to move money back between shards (Kalshi's web app does it today); omitting `exchange_index` to let Kalshi route by ticker (the order would still need its shard funded).
 - Settled-market slimming and tombstones (reference decision 15): our catalog holds only open markets and stays small; revisit if it grows.
 - Merging empty old partition boundaries after retention: the 15,000 partition limit is decades away at one boundary per day.
 
