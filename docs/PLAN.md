@@ -339,7 +339,7 @@ quietly). Any new third-party package is named in its slice plan, must be permis
 | 7.4 | Charts and book: candle charts with intervals and the live order book |
 | 7.5 | Screener and watchlists: the ranked screener with its refresh age, per-user watchlists, filtering the market list by a watchlist |
 | 7.6 | Alerts: manage alerts, and desktop notification and sound when one fires (the alert stream); the notification text follows the time-zone setting |
-| 7.7 | Layouts: saved per user on the server (a migration and endpoints, like watchlists), restored on start; the stored time-zone setting edited in the UI. A server change: its own rollout |
+| 7.7 | Layouts: saved per user on the server (a migration and endpoints, like watchlists), restored on start; the stored time-zone setting edited in the UI, and the zone box label made unambiguous (owner 2026-10-20: it showed "(UTC-07:00) Mountain Time" beside times at -06:00, because Windows' zone names carry the standard-time offset; show the offset in effect now, for example "Mountain Time (US & Canada), now UTC-06:00"). A server change: its own rollout |
 | 7.8 | Trading panel: balance, positions, orders and fills; an order ticket that shows the risk verdict and any shard funding before sending; the typed production confirmation as a dialog; cancel, amend, and a kill-switch button; the live check follows the 6.7 rules (each real write after the owner's go, under the tiny limits) |
 | 7.9 | Close-out: the live checks, docs |
 
@@ -378,6 +378,8 @@ and the API contract tests.
 - Trading, parked from M6 (owner 2026-10-20): fill-or-kill orders, order groups, subaccounts, the RFQ and communications channels, encrypted trading keys, a manual `kterm transfer` command, scripted
   non-interactive production orders, a daily-loss day that is not the UTC day. Small items from the live run: show the remaining count after an amend from the order list (the amend reply carries none);
   a way to move money back between shards (Kalshi's web app does it today); omitting `exchange_index` to let Kalshi route by ticker (the order would still need its shard funded).
+- A GUI for the administrator's tasks on the host server (owner 2026-10-20): users and tokens, the certificate and its fingerprint, backups and restores, the service state, so none of it needs a PowerShell window, an
+  elevated shell or the SQL instance name typed by hand (which tripped the first `user add` on `kaldb`: the instance is `lpc:.\KALTERM`, and a non-elevated shell is refused by SQL Server). Natural home: after M7, or with the installer in M8.
 - Settled-market slimming and tombstones (reference decision 15): our catalog holds only open markets and stays small; revisit if it grows.
 - Merging empty old partition boundaries after retention: the 15,000 partition limit is decades away at one boundary per day.
 
