@@ -178,6 +178,60 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
     }
 
     /// <inheritdoc/>
+    public async IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var parameters = new List<(string Name, string? Value)>
+        {
+            ("ticks", request.Ticks.Count == 0 ? null : string.Join(',', request.Ticks)),
+            ("books", request.Books.Count == 0 ? null : string.Join(',', request.Books)),
+            ("depth", request.Depth?.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            ("after", request.ResumeFrom),
+        };
+        using var message = new HttpRequestMessage(HttpMethod.Get, new Uri(Url("v1/stream", parameters), UriKind.Relative));
+        message.Headers.Accept.ParseAdd("text/event-stream");
+        HttpResponseMessage response;
+        try
+        {
+            response = await _http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ApiUnavailableException($"could not reach the API at {_http.BaseAddress}: {ex.Message}", ex);
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ApiUnavailableException($"the API at {_http.BaseAddress} did not answer in time", ex);
+        }
+
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                throw Refusal(response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+            await foreach (var (type, id, data) in ServerSentEvents.ReadAsync(reader, cancellationToken).ConfigureAwait(false))
+            {
+                MarketStreamEvent? item = type switch
+                {
+                    "ready" => JsonSerializer.Deserialize(data, ApiJson.Wire.StreamReadyDto) is { } ready ? new ReadyEvent(ready) : null,
+                    "book" => JsonSerializer.Deserialize(data, ApiJson.Wire.OrderBookDto) is { } book ? new BookEvent(book) : null,
+                    "tick" when id is not null => JsonSerializer.Deserialize(data, ApiJson.Wire.MarketTickDto) is { } tick ? new TickEvent(tick, id) : null,
+                    "reset" => JsonSerializer.Deserialize(data, ApiJson.Wire.StreamResetDto) is { } reset ? new ResetEvent(reset.Reason) : null,
+                    _ => null,
+                };
+                if (item is not null)
+                {
+                    yield return item;
+                }
+            }
+        }
+    }
+
+    /// <inheritdoc/>
     public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) =>
         GetAsync("v1/me/settings/time_zone", [], ApiJson.Wire.SettingDto, cancellationToken);
 

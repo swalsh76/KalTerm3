@@ -447,3 +447,22 @@ public sealed record HealthDto(string Status);
 /// <param name="Error">A short code: <c>invalid_parameter</c>, <c>not_found</c>, <c>unavailable</c>, <c>unauthorized</c> (no valid token), <c>too_many_attempts</c>.</param>
 /// <param name="Fields">For <c>invalid_parameter</c>, which parameters were wrong (never their values).</param>
 public sealed record ErrorDto(string Error, IReadOnlyList<string>? Fields = null);
+
+/// <summary>One ticker update of one market, as pushed on the stream.</summary>
+/// <param name="Ticker">The market.</param>
+/// <param name="Tick">The update.</param>
+public sealed record MarketTickDto(string Ticker, TickDto Tick);
+
+/// <summary>The first event of a market stream: what the server accepted, and where live data starts.</summary>
+/// <param name="StreamId">This stream's id.</param>
+/// <param name="ResumeFrom">Where the live ticks begin (UTC, milliseconds): send it as <c>after</c> or <c>Last-Event-ID</c> to resume from here if nothing newer was received.</param>
+/// <param name="Ticks">The markets whose ticks are pushed.</param>
+/// <param name="Books">The markets whose order books are pushed.</param>
+/// <param name="Unknown">Requested tickers that are not markets here (nothing is pushed for them).</param>
+/// <param name="NoBook">Requested book tickers that have no published book (only watched markets have one).</param>
+/// <param name="Depth">How many price levels each side of a pushed book carries.</param>
+public sealed record StreamReadyDto(string StreamId, string ResumeFrom, IReadOnlyList<string> Ticks, IReadOnlyList<string> Books, IReadOnlyList<string> Unknown, IReadOnlyList<string> NoBook, int Depth);
+
+/// <summary>The stream cannot continue from where the client was: reload over REST, then connect again without a resume point.</summary>
+/// <param name="Reason">Why, for example <c>too_far_behind</c> or <c>slow_consumer</c>.</param>
+public sealed record StreamResetDto(string Reason);

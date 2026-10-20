@@ -193,6 +193,32 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Answer(Fires);
     }
 
+    /// <summary>What each opening of the market stream gives: a list of events, or an exception. When the script has run out the stream cancels the run.</summary>
+    public Queue<object> MarketScript { get; } = new();
+
+    public List<MarketStreamRequest> MarketOpens { get; } = [];
+
+    public async IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        MarketOpens.Add(request);
+        if (!MarketScript.TryDequeue(out var step))
+        {
+            StopWhenScriptEnds?.Cancel();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            yield break;
+        }
+
+        if (step is Exception failure)
+        {
+            throw failure;
+        }
+
+        foreach (var item in (IEnumerable<MarketStreamEvent>)step)
+        {
+            yield return item;
+        }
+    }
+
     public async IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         StreamOpens.Add(after);
