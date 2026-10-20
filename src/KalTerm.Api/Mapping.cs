@@ -1,5 +1,6 @@
 using KalTerm.Contracts;
 using KalTerm.Data.Books;
+using KalTerm.Data.Candles;
 using KalTerm.Data.Reading;
 
 namespace KalTerm.Api;
@@ -46,6 +47,30 @@ public static class Mapping
             ApiFormat.Count(tick.VolumeE2),
             ApiFormat.Count(tick.OpenInterestE2),
             ApiFormat.Count(tick.LastTradeSizeE2));
+    }
+
+    /// <summary>A candle.</summary>
+    /// <param name="candle">The candle.</param>
+    /// <returns>The model.</returns>
+    public static CandleDto ToDto(StoredCandle candle)
+    {
+        ArgumentNullException.ThrowIfNull(candle);
+        return new CandleDto(
+            ApiFormat.Moment(candle.BucketStart)!,
+            ApiFormat.Dollars(candle.OpenE6),
+            ApiFormat.Dollars(candle.HighE6),
+            ApiFormat.Dollars(candle.LowE6),
+            ApiFormat.Dollars(candle.CloseE6),
+            ApiFormat.Count(candle.VolumeE2)!,
+            candle.TradeCount,
+            ApiFormat.Dollars(candle.YesBidE6),
+            ApiFormat.Dollars(candle.YesAskE6),
+            ApiFormat.Count(candle.OpenInterestE2),
+            candle.Partial,
+            candle.TradesPartial,
+            candle.BookPartial,
+            candle.GapKind,
+            candle.GapSeconds);
     }
 
     /// <summary>A trade.</summary>

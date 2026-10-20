@@ -284,4 +284,51 @@ public sealed class IngestCompositionTests : IAsyncLifetime
             Directory.Delete(target, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task TheHostBuildsTheCandlesOfRowsAlreadyInTheDatabaseOnceTheirBucketHasClosed()
+    {
+        await Requirement.RequireLocalDbAsync();
+        var settings = KalshiSettings.Create(KalshiEnvironment.Demo, "test-key", KeyFile());
+        await DatabasePreparer.PrepareAsync(Options(), NullLogger.Instance, TestContext.Current.CancellationToken);
+        var hour = DateTime.UtcNow.Date.AddDays(-1).AddHours(10);
+        await new Data.PartitionMaintenance(Source()).EnsureAheadAsync(DateOnly.FromDateTime(hour), 3, TestContext.Current.CancellationToken);   // rows must not land in the last partition
+        var market = await new Data.Markets.MarketStore(Source()).UpsertAsync([new Data.Markets.MarketRecord("E-1", "EV-1", "binary", "active", "Yes", "No")], DateTime.UtcNow, TestContext.Current.CancellationToken);
+        var id = market.Ids["E-1"];
+        await using (var connection = await Source().OpenAsync(TestContext.Current.CancellationToken))
+        {
+            foreach (var (minute, trade, price, count) in new[] { (5, "c1", 400_000L, 100L), (30, "c2", 550_000L, 200L), (50, "c3", 450_000L, 100L) })
+            {
+                await using var insert = new SqlCommand("INSERT dbo.trade (ts, market_id, trade_id, yes_price_e6, no_price_e6, count_e2, taker_side, is_block) VALUES (@ts, @id, @trade, @p, @np, @c, 1, 0)", connection);
+                insert.Parameters.AddWithValue("@ts", hour.AddMinutes(minute));
+                insert.Parameters.AddWithValue("@id", id);
+                insert.Parameters.AddWithValue("@trade", trade);
+                insert.Parameters.AddWithValue("@p", price);
+                insert.Parameters.AddWithValue("@np", 1_000_000 - price);
+                insert.Parameters.AddWithValue("@c", count);
+                await insert.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+            }
+        }
+
+        var source = new ScriptedSource(_ => Task.FromResult<IStreamSession>(new ScriptedSession()));
+        using var stop = new CancellationTokenSource();
+        var overrides = Overrides(source) with { Runner = new IngestRunnerOptions { HeartbeatInterval = TimeSpan.FromMilliseconds(50), CandleInterval = TimeSpan.FromMilliseconds(100), Schedule = now => (now.AddHours(1), PassKind.Full) } };
+
+        var run = IngestComposition.RunAsync(Options(), settings, NullLoggerFactory.Instance, overrides, stop.Token);
+        await Wait.UntilAsync(() => source.Opens >= 1 || run.IsCompleted, "the stream to open (the database exists by then)");
+        if (run.IsCompleted)
+        {
+            await run;
+        }
+
+        await Wait.UntilAsync(() => ScalarAsync<int>($"SELECT COUNT(*) FROM dbo.candle WHERE market_id = {id} AND interval_s = 3600").GetAwaiter().GetResult() >= 1, "the hour's candle");
+        await stop.CancelAsync();
+        await run;
+
+        Assert.Equal(550_000L, await ScalarAsync<long>($"SELECT high_e6 FROM dbo.candle WHERE market_id = {id} AND interval_s = 3600 AND bucket_start = '{hour:yyyy-MM-dd HH:mm:ss}'"));
+        Assert.Equal(400_000L, await ScalarAsync<long>($"SELECT open_e6 FROM dbo.candle WHERE market_id = {id} AND interval_s = 3600 AND bucket_start = '{hour:yyyy-MM-dd HH:mm:ss}'"));
+        Assert.Equal(450_000L, await ScalarAsync<long>($"SELECT close_e6 FROM dbo.candle WHERE market_id = {id} AND interval_s = 3600 AND bucket_start = '{hour:yyyy-MM-dd HH:mm:ss}'"));
+        Assert.Equal(400L, await ScalarAsync<long>($"SELECT volume_e2 FROM dbo.candle WHERE market_id = {id} AND interval_s = 3600 AND bucket_start = '{hour:yyyy-MM-dd HH:mm:ss}'"));
+        Assert.Equal("1d=all;1h=all;1m=watched", await ScalarAsync<string>("SELECT value FROM dbo.ingest_state WHERE name = 'candles.stored'"));
+    }
 }

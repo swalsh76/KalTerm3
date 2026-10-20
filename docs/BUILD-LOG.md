@@ -1294,3 +1294,20 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   after 10 failed attempts in a minute the caller got 429 (even with the right token) while `/healthz` stayed open; `token list` shows the token's last use.
 - `tools\kaldb\kterm.ps1` (the remoting wrapper) now works for `status` only (the loopback exemption); data commands need a token, so use the CLI directly from a computer that trusts the server.
 - Not done: nothing is exposed except the API port; mDNS discovery, WebSocket push and per-user watchlists remain out of scope (parking lot / M5, M7).
+
+### 5.14 Slice 4.4: candles (2026-10-19)
+
+- Migration 0005: `dbo.candle` keyed `(interval_s, market_id, bucket_start)` (page compressed) and `ingest_gap.candles_built_at`. A candle is the yes-price open, high, low and close of the trades in a UTC,
+  epoch-aligned bucket (a week starts on Monday), the volume and trade count, and the yes bid, ask and open interest of the last ticker update. No trade means no price; nothing is forward-filled.
+- Stored intervals are configuration (`Ingest:Candles`, default `1d=all;1h=all;1m=watched`; 1, 5, 15 minutes, 1 and 4 hours and 1 day are allowed). The ingest host records the rules in `candles.stored`
+  so the API knows what is stored. The candle job runs about once a minute: for each interval it builds the buckets closed more than 90 seconds ago (up to a day, or 6 hours for a minute interval, per run, so a
+  catch-up does not hold the database), never reaches before the oldest raw day (rebuilding a candle after the governor dropped its rows would erase it), and remembers how far it has built.
+- Gaps (option C): a bucket overlapping a gap is `partial` with `gap_kind` and the seconds covered. When a gap's trade backfill finishes, the candles over it are rebuilt and the trade flag clears; the
+  book flag (bid, ask, open interest) stays. Rebuilding replaces the rows of the range, so running twice is harmless.
+- `GET /v1/markets/{ticker}/candles?interval=&start=&end=&limit=&cursor=`: the interval is whole minutes up to a day, or a week (`15m`, `4h`, `1d`, `1w`, or bare minutes), default `1h`; anything else is
+  `422 invalid_parameter` naming `interval`. The answer is the stored interval when it exists, else an exact roll-up of the coarsest stored shorter interval that divides it (first open, last close, highest
+  high, lowest low, sums), else computed from the market's raw rows for at most 24 hours (`source` says which). A watch-list-scoped interval is used only for a watched market. The page carries
+  `interval`, `source`, the candles and a `next_cursor` (the next bucket). `kterm candles TICKER --interval 15m --since 6h` shows them, partial ones in yellow. Times are still printed in UTC; the
+  selectable client time zone (`--tz`/`--utc`) is a separate item not yet done.
+- Tests: rules and roll-up (pure); the builder on real tables on kaldb (OHLC, sparse buckets, idempotent rebuild, gap flags with and without a finished backfill, slicing, compute equals stored); the job
+  against fakes; the host building the candles of rows already in the database; the service (stored, rolled up, computed, paging, scope); the endpoint, contract pins and the CLI view.

@@ -2,6 +2,7 @@ using System.Globalization;
 using KalTerm.Contracts;
 using KalTerm.Data;
 using KalTerm.Data.Auth;
+using KalTerm.Data.Candles;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -53,6 +54,7 @@ public static class ApiEndpoints
 {
     private const int MarketsMax = 500;
     private const int RowsMax = 1_000;
+    private const int CandlesMax = 5_000;
     private const int DepthDefault = 10;
     private const int DepthMax = 100;
 
@@ -71,6 +73,13 @@ public static class ApiEndpoints
         services.AddSingleton<ITradeReader>(new TradeReader(source, options));
         services.AddSingleton<IGapReader>(new GapReader(source, options));
         services.AddSingleton<IBookReader>(new BookReader(source, options));
+        services.AddSingleton<ICandleReader>(new CandleReader(source));
+        services.AddSingleton<ICandleComputer>(new CandleBuilder(source));
+        services.AddSingleton<ICandleService>(provider => new CandleService(
+            provider.GetRequiredService<ICandleReader>(),
+            provider.GetRequiredService<ICandleComputer>(),
+            provider.GetRequiredService<IBookReader>(),
+            provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IStatusReader>(new StatusReader(source, options));
         services.AddSingleton<IReadinessProbe>(new DatabaseReadinessProbe(source));
         services.AddSingleton<IUserStore>(new UserStore(source));
@@ -155,6 +164,40 @@ public static class ApiEndpoints
             return page is null
                 ? NotFound()
                 : Json(new TickPage([.. page.Rows.Select(Mapping.ToDto)], page.Next is null ? null : ApiFormat.EncodeCursor(string.Create(CultureInfo.InvariantCulture, $"{ApiFormat.Moment(page.Next.Ts)}|{page.Next.Skip}"))), ApiJson.Wire.TickPage);
+        });
+
+        app.MapGet("/v1/markets/{ticker}/candles", async (string ticker, HttpRequest request, ICandleService candles, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var query = new RequestParameters(request.Query);
+            var limit = query.Limit(200, CandlesMax);
+            var interval = query.Interval();
+            var (start, end) = Window(query, time);
+            if (query.CandleCursor() is { } cursor)
+            {
+                start = cursor;
+            }
+
+            if (!RequestParameters.IsTicker(ticker))
+            {
+                query.Reject("ticker");
+            }
+
+            if (!query.IsValid)
+            {
+                return Invalid(query);
+            }
+
+            try
+            {
+                var result = await candles.GetAsync(new CandleQuery(ticker, interval, start, end, limit), cancellationToken).ConfigureAwait(false);
+                return result is null
+                    ? NotFound()
+                    : Json(new CandlePage(CandleRules.IntervalText(interval), result.Source, [.. result.Candles.Select(Mapping.ToDto)], result.Next is null ? null : ApiFormat.EncodeCursor(ApiFormat.Moment(result.Next)!)), ApiJson.Wire.CandlePage);
+            }
+            catch (CandleRangeException)
+            {
+                return Invalid("start", "end", "interval");
+            }
         });
 
         app.MapGet("/v1/markets/{ticker}/trades", async (string ticker, HttpRequest request, ITradeReader reader, TimeProvider time, CancellationToken cancellationToken) =>

@@ -77,6 +77,26 @@ public class IngestHostOptionsTests
     }
 
     [Fact]
+    public void CandlesAreStoredByDefaultAsDaysAndHoursForEveryMarketAndMinutesForTheWatchList()
+    {
+        var options = new IngestHostOptions();
+
+        options.Validate();
+
+        Assert.Equal(["1d=all", "1h=all", "1m=watched"], options.ToCandleRules().Select(r => r.ToString()));
+        Assert.Empty(new IngestHostOptions { Candles = string.Empty }.ToCandleRules());
+    }
+
+    [Theory]
+    [InlineData("7m=all")]
+    [InlineData("1h")]
+    [InlineData("1h=whenever")]
+    public void CandleRulesThatCannotWorkAreRefusedAtStartUp(string rules)
+    {
+        Assert.Throws<InvalidOperationException>(new IngestHostOptions { Candles = rules }.Validate);
+    }
+
+    [Fact]
     public void TheTradeBackfillIsOnByDefault()
     {
         Assert.True(new IngestHostOptions().BackfillEnabled);

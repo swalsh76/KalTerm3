@@ -181,6 +181,37 @@ internal static class Views
         return new Rows(table.Render(width), Footer(page.Ticks.Count, page.NextCursor));
     }
 
+    public static IRenderable Candles(CandlePage page, int width)
+    {
+        var table = new TextTable()
+            .Column("Time (UTC)").Column("Open", right: true).Column("High", right: true).Column("Low", right: true).Column("Close", right: true)
+            .Column("Volume", right: true).Column("Trades", right: true).Column("Bid", right: true).Column("Ask", right: true).Column("Open interest", right: true).Column("Note");
+        foreach (var candle in page.Candles)
+        {
+            table.Row(
+                Moment(candle.Time, true),
+                Dollars(candle.Open),
+                Dollars(candle.High),
+                Dollars(candle.Low),
+                Dollars(candle.Close),
+                Count(candle.Volume),
+                candle.TradeCount.ToString(CultureInfo.InvariantCulture),
+                Dollars(candle.YesBid),
+                Dollars(candle.YesAsk),
+                Count(candle.OpenInterest),
+                candle.Partial ? new Cell(PartialNote(candle), "yellow") : string.Empty);
+        }
+
+        return new Rows(table.Render(width), new Markup($"[grey]{page.Candles.Count} shown, {Escape(page.Interval)} candles ({Escape(page.Source)}). Yellow marks a bucket that overlaps a data gap.{(page.NextCursor is null ? string.Empty : $" More available: --cursor {Escape(page.NextCursor)}")}[/]"));
+    }
+
+    private static string PartialNote(CandleDto candle)
+    {
+        var what = candle.TradesPartial && candle.BookPartial ? "trades+book" : candle.TradesPartial ? "trades" : "book";
+        var seconds = candle.GapSeconds is { } gap ? $" {gap.ToString(CultureInfo.InvariantCulture)}s" : string.Empty;
+        return $"partial: {what}, {candle.GapKind ?? "gap"}{seconds}";
+    }
+
     public static IRenderable Trades(TradePage page, int width) =>
         new Rows(TradesTable(page.Trades, width), Footer(page.Trades.Count, page.NextCursor));
 

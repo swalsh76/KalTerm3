@@ -55,6 +55,15 @@ public class ContractTests
     }
 
     [Fact]
+    public void ACandleAndItsPage()
+    {
+        var candle = new CandleDto("2026-10-18T22:00:00.000000+00:00", "0.400000", "0.550000", "0.390000", "0.450000", "400.00", 3, "0.440000", "0.460000", "123.00", false, false, false, null, null);
+
+        Pin(candle, """{"time":"2026-10-18T22:00:00.000000+00:00","open":"0.400000","high":"0.550000","low":"0.390000","close":"0.450000","volume":"400.00","trade_count":3,"yes_bid":"0.440000","yes_ask":"0.460000","open_interest":"123.00","partial":false,"trades_partial":false,"book_partial":false,"gap_kind":null,"gap_seconds":null}""");
+        Pin(new CandlePage("1h", "stored 1h", [candle with { Open = null, High = null, Low = null, Close = null, Partial = true, BookPartial = true, GapKind = "ws_lost", GapSeconds = 45 }], "Qw"), """{"interval":"1h","source":"stored 1h","candles":[{"time":"2026-10-18T22:00:00.000000+00:00","open":null,"high":null,"low":null,"close":null,"volume":"400.00","trade_count":3,"yes_bid":"0.440000","yes_ask":"0.460000","open_interest":"123.00","partial":true,"trades_partial":false,"book_partial":true,"gap_kind":"ws_lost","gap_seconds":45}],"next_cursor":"Qw"}""");
+    }
+
+    [Fact]
     public void AGapAndItsPage()
     {
         var gap = new GapDto(7, "ingest_down", "2026-10-19T04:33:49.000000+00:00", "2026-10-19T04:40:46.000000+00:00", "the previous run stopped cleanly", new BackfillDto("done", 120, 7, "2026-10-19T04:41:30.000000+00:00", "window recovered"));

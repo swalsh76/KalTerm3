@@ -9,6 +9,7 @@ using KalTerm.Data.State;
 using KalTerm.Data.Writing;
 using KalTerm.Ingest.Backfill;
 using KalTerm.Ingest.Books;
+using KalTerm.Ingest.Candles;
 using KalTerm.Kalshi.WebSocket;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -26,6 +27,9 @@ public sealed record IngestRunnerOptions
 
     /// <summary>How often the boundaries are topped up while running. Default 1 hour.</summary>
     public TimeSpan PartitionCheckInterval { get; init; } = TimeSpan.FromHours(1);
+
+    /// <summary>How often the candle job looks for buckets that have closed. Default 1 minute.</summary>
+    public TimeSpan CandleInterval { get; init; } = TimeSpan.FromMinutes(1);
 
     /// <summary>How often the backup schedule looks at the clock. Default 1 minute.</summary>
     public TimeSpan BackupCheckInterval { get; init; } = TimeSpan.FromMinutes(1);
@@ -57,7 +61,7 @@ public sealed record IngestRunnerOptions
     /// <summary>Throws <see cref="ArgumentOutOfRangeException"/> if a value cannot work.</summary>
     public void Validate()
     {
-        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || BackupCheckInterval <= TimeSpan.Zero || BackfillInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
+        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || BackupCheckInterval <= TimeSpan.Zero || CandleInterval <= TimeSpan.Zero || BackfillInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
             || StreamRetryBase <= TimeSpan.Zero || StopTimeout <= TimeSpan.Zero || BookPublishInterval <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(IngestRunnerOptions), "every interval and timeout must be positive");
@@ -119,6 +123,7 @@ public sealed partial class IngestRunner
     private readonly IStorageGovernor? _governor;
     private readonly ITradeBackfiller? _backfill;
     private readonly IBackupJob? _backup;
+    private readonly ICandleJob? _candles;
     private long _restarts;
     private long _discoveryFailures;
     private DateTimeOffset _startedAt;
@@ -144,6 +149,7 @@ public sealed partial class IngestRunner
     /// <param name="governor">Applies the retention and the size budget; <see langword="null"/> when none is kept.</param>
     /// <param name="backfiller">Recovers the trades of closed gaps from REST; <see langword="null"/> when none is kept.</param>
     /// <param name="backup">Takes the daily backup; <see langword="null"/> when backups are off.</param>
+    /// <param name="candles">Builds the stored candles; <see langword="null"/> when none are stored.</param>
     public IngestRunner(
         IMarketStore store,
         MarketIdMap ids,
@@ -161,7 +167,8 @@ public sealed partial class IngestRunner
         IBookKeeper? books = null,
         IStorageGovernor? governor = null,
         ITradeBackfiller? backfiller = null,
-        IBackupJob? backup = null)
+        IBackupJob? backup = null,
+        ICandleJob? candles = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(ids);
@@ -189,6 +196,7 @@ public sealed partial class IngestRunner
         _governor = governor;
         _backfill = backfiller;
         _backup = backup;
+        _candles = candles;
         _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger, books);
     }
 
@@ -247,6 +255,11 @@ public sealed partial class IngestRunner
         if (_backup is not null)
         {
             loops.Add(Guard(BackupLoopAsync, linked));
+        }
+
+        if (_candles is not null)
+        {
+            loops.Add(Guard(CandleLoopAsync, linked));
         }
 
         try
@@ -441,6 +454,16 @@ public sealed partial class IngestRunner
         {
             await TryAsync("backup", () => _backup!.RunIfDueAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
             await Task.Delay(_options.BackupCheckInterval, _time, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Builds the candles of buckets that have closed. Its own loop: a catch-up over many days must not hold up the heartbeat.</summary>
+    private async Task CandleLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await TryAsync("candles", () => _candles!.RunOnceAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(_options.CandleInterval, _time, cancellationToken).ConfigureAwait(false);
         }
     }
 

@@ -8,6 +8,7 @@ using KalTerm.Data.State;
 using KalTerm.Data.Writing;
 using KalTerm.Ingest.Backfill;
 using KalTerm.Ingest.Books;
+using KalTerm.Ingest.Candles;
 using KalTerm.Kalshi.Auth;
 using KalTerm.Kalshi.Configuration;
 using KalTerm.Kalshi.Models;
@@ -34,7 +35,8 @@ internal sealed record IngestOverrides(
     OrderBookKeeperOptions? Keeper = null,
     ITradeSource? Trades = null,
     BackfillOptions? Backfill = null,
-    IBackupJob? Backup = null);
+    IBackupJob? Backup = null,
+    ICandleJob? Candles = null);
 
 /// <summary>Builds the real ingest process from its settings and runs it: database ready, then the <see cref="IngestRunner"/> over real storage and the Kalshi feed.</summary>
 public static class IngestComposition
@@ -98,6 +100,10 @@ public static class IngestComposition
                 ? new TradeBackfiller(new BackfillStore(data), overrides?.Trades ?? new RestTradeSource(rest!), tradeWriter, ids, overrides?.Backfill, time, loggerFactory.CreateLogger<TradeBackfiller>())
                 : null;
             var backup = overrides?.Backup ?? CreateBackupJob(options, data, state, time, loggerFactory);
+            var candleRules = options.ToCandleRules();
+            var candles = overrides?.Candles ?? (candleRules.Count == 0
+                ? null
+                : new CandleJob(new Data.Candles.CandleBuilder(data), new Data.Candles.CandleJobStore(data), candleRules, CandleJob.WatchedIds(options.WatchList, ids), null, time, loggerFactory.CreateLogger<CandleJob>()));
             var runner = new IngestRunner(
                 store,
                 ids,
@@ -115,7 +121,8 @@ public static class IngestComposition
                 keeper,
                 new StorageGovernor(new GovernorStore(data), state, new GovernorOptions { RawRetentionDays = options.RetentionDays }, time, loggerFactory.CreateLogger<StorageGovernor>()),
                 backfiller,
-                backup);
+                backup,
+                candles);
             try
             {
                 await runner.RunAsync(cancellationToken).ConfigureAwait(false);

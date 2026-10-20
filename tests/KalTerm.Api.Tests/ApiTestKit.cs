@@ -2,6 +2,7 @@ using KalTerm.Contracts;
 using KalTerm.Data;
 using KalTerm.Data.Auth;
 using KalTerm.Data.Books;
+using KalTerm.Data.Candles;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -103,6 +104,21 @@ internal sealed class FakeBooks : IBookReader
         Task.FromResult(Books.FirstOrDefault(b => b.Ticker == ticker));
 }
 
+internal sealed class FakeCandles : ICandleService
+{
+    public List<CandleQuery> Queries { get; } = [];
+
+    public CandleResult? Result { get; set; } = new([], "stored 1h", null);
+
+    public Exception? Throw { get; set; }
+
+    public Task<CandleResult?> GetAsync(CandleQuery query, CancellationToken cancellationToken = default)
+    {
+        Queries.Add(query);
+        return Throw is null ? Task.FromResult(Result) : Task.FromException<CandleResult?>(Throw);
+    }
+}
+
 internal sealed class FakeStatus : IStatusReader
 {
     public StatusSnapshot Snapshot { get; set; } = new(null, null, null, 1_000, null, null, new Dictionary<string, long>(), new Dictionary<string, long>());
@@ -136,6 +152,8 @@ internal sealed class FakeReaders
 
     public FakeBooks Books { get; } = new();
 
+    public FakeCandles Candles { get; } = new();
+
     public FakeStatus Status { get; } = new();
 
     public FakeReadiness Readiness { get; } = new();
@@ -147,6 +165,7 @@ internal sealed class FakeReaders
         services.AddSingleton<ITradeReader>(Trades);
         services.AddSingleton<IGapReader>(Gaps);
         services.AddSingleton<IBookReader>(Books);
+        services.AddSingleton<ICandleService>(Candles);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
         services.AddSingleton(new ApiAuthOptions(false));

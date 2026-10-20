@@ -66,6 +66,46 @@ public sealed record TickDto(
 /// <param name="NextCursor">Pass as <c>cursor</c> for the next page; <see langword="null"/> on the last page.</param>
 public sealed record TickPage(IReadOnlyList<TickDto> Ticks, string? NextCursor);
 
+/// <summary>One candle: a market's trades and last book state over one bucket of time. Prices are the yes price.</summary>
+/// <param name="Time">The start of the bucket (UTC).</param>
+/// <param name="Open">The first trade's price, dollars; <see langword="null"/> when nothing traded in the bucket.</param>
+/// <param name="High">The highest trade price.</param>
+/// <param name="Low">The lowest trade price.</param>
+/// <param name="Close">The last trade's price.</param>
+/// <param name="Volume">Contracts traded.</param>
+/// <param name="TradeCount">Number of trades.</param>
+/// <param name="YesBid">Best yes bid at the last ticker update of the bucket, dollars.</param>
+/// <param name="YesAsk">Best yes ask at the last ticker update.</param>
+/// <param name="OpenInterest">Open interest at the last ticker update, contracts.</param>
+/// <param name="Partial">Whether any part of the candle may be incomplete because data is missing (see the gap fields).</param>
+/// <param name="TradesPartial">Whether trades may be missing (a trade backfill has not yet filled the gap).</param>
+/// <param name="BookPartial">Whether ticker updates may be missing for good.</param>
+/// <param name="GapKind">The kind of the gap that covers the most of the bucket.</param>
+/// <param name="GapSeconds">Seconds of the bucket covered by gaps.</param>
+public sealed record CandleDto(
+    string Time,
+    string? Open,
+    string? High,
+    string? Low,
+    string? Close,
+    string Volume,
+    int TradeCount,
+    string? YesBid,
+    string? YesAsk,
+    string? OpenInterest,
+    bool Partial,
+    bool TradesPartial,
+    bool BookPartial,
+    string? GapKind,
+    int? GapSeconds);
+
+/// <summary>A page of candles, oldest first.</summary>
+/// <param name="Interval">The bucket length as asked, for example <c>15m</c>.</param>
+/// <param name="Source">How the candles were obtained: stored, rolled up from a stored shorter interval, or computed from raw rows.</param>
+/// <param name="Candles">The candles.</param>
+/// <param name="NextCursor">Pass as <c>cursor</c> for the next page; <see langword="null"/> on the last page.</param>
+public sealed record CandlePage(string Interval, string Source, IReadOnlyList<CandleDto> Candles, string? NextCursor);
+
 /// <summary>One executed trade.</summary>
 /// <param name="Time">When it executed.</param>
 /// <param name="TradeId">Kalshi's trade id.</param>
