@@ -1532,3 +1532,22 @@ Measured with the read-only production key, GET only, names and kinds of fields 
   no price of a dollar and ordered = filled + remaining; 20 fills on the first page, each with prices adding to a dollar, a positive count and a fee of zero or more; one order read by its id equals the same
   order in the list; 6 settlements; no resting orders. That closes open question 3 of 8.1 for the fields seen.
 - Still open: the keyless questions of 8.1 (list route, private WebSocket shapes) belong to 6.4 and 6.5; no trading key exists yet (the owner creates one at Kalshi before 6.7).
+
+### 8.4 Slice 6.4: the write transport (2026-10-20)
+
+- New `KalTerm.Trading/Transport`. `KalshiTradingClient` is a separate client from the read client (which stays GET-only), built only from a `TradingSigner`. It refuses production unless `TradingClientOptions.AllowProduction`
+  is set (the order service will set it only when `risk.json` enables production) and refuses a key for the other environment. Its HTTP pipeline starts with `RouteGuardHandler`, which allows exactly the routes of
+  `TradingRoutes` (the reference's list: create, cancel all, batch cancel, cancel one, amend, decrease, the shard transfer, and `GET /portfolio/orders` for lookups) and throws `TradingRefusedException` for anything
+  else before anything is sent.
+- Payloads are built from integers: `FixedPointText.Count` (two decimals) and `Price` (four; a finer price is refused, never rounded). `OrderRequest.From(ApprovedOrder, clientOrderId)` is the only mapping from the
+  risk layer: every order goes on the YES book (buy YES is a bid, sell YES an ask, buy NO an ask at the complement price, sell NO a bid at it). A client order id is required; reduce-only needs IOC; an expiration is for GTC only.
+- Retry rules, from the reference: a 429 is waited out (0.5, 1, 2 s, then an API error) for every write. A create is sent once; after a transport error, a timeout or a 500, 502, 503 or 504 (or a 409) the order is looked
+  up by `client_order_id` (`GET /portfolio/orders`, `min_ts` five seconds before the attempt, limit 1000, cursors followed) now and after each pause, and returned with `Recovered = true` if found, otherwise
+  `WriteOutcomeUnknownException` (a 409 with no order found stays a 409). A definite 4xx is final. Cancel, batch cancel and cancel-all are idempotent and are retried after unclear answers (a 404 on a retry means done); amend, decrease and
+  the transfer are never resent (unknown outcome). The transfer is in centicents and a positive whole number of them, source and destination must differ.
+- Costs: each attempt spends its tokens from the write bucket (default 10, cancel 2, batch cancel 2 per order, chunked to what the bucket holds). The figures are options; reading them and the tier's rate from
+  `/account/endpoint_costs` and `/account/limits` belongs to the order service (6.5), which knows the account.
+- Audit: every attempt and its answer goes to an `ITradingAudit` (`JsonLinesAudit`: one JSON line per event, written through to disk). It carries times, routes, ids and statuses, never a key or a signature.
+- Tests (about 100 new, all against a scripted fake, nothing sent anywhere): route allow and refuse tables, construction guards, exact payloads, the mapping of intents, every ambiguous-answer path, cursors, 429, cancels,
+  amend, decrease, transfer, token costs from the bucket, the audit. `KalTerm.Trading` is at 96.8% lines.
+- Nothing in 6.4 reaches the real Kalshi; no rollout is needed (the server does not run trading code).

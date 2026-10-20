@@ -15,5 +15,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="KalTerm.Kalshi.Tests" />
     <InternalsVisibleTo Include="KalTerm.Ingest.Tests" />
+    <InternalsVisibleTo Include="KalTerm.Trading" />
   </ItemGroup>
 </Project>
