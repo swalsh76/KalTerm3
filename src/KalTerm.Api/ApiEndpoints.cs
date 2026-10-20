@@ -75,6 +75,7 @@ public static class ApiEndpoints
         services.AddSingleton<IGapReader>(new GapReader(source, options));
         services.AddSingleton<IBookReader>(new BookReader(source, options));
         services.AddSingleton<IMetricsReader>(new MetricsReader(source));
+        services.AddSingleton<IScreenerReader>(new ScreenerReader(source));
         services.AddSingleton<ICandleReader>(new CandleReader(source));
         services.AddSingleton<ICandleComputer>(new CandleBuilder(source));
         services.AddSingleton<ICandleService>(provider => new CandleService(
@@ -234,6 +235,33 @@ public static class ApiEndpoints
             return page is null
                 ? NotFound()
                 : Json(new TradePage([.. page.Rows.Select(Mapping.ToDto)], page.Next is null ? null : ApiFormat.EncodeCursor($"{ApiFormat.Moment(page.Next.Ts)}|{page.Next.TradeId}")), ApiJson.Wire.TradePage);
+        });
+
+        app.MapGet("/v1/screener", async (HttpRequest request, IScreenerReader reader, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var query = new RequestParameters(request.Query);
+            var limit = query.Limit(50, RowsMax);
+            var sort = query.Sort();
+            var descending = query.Descending();
+            var status = query.Status();
+            var minVolume = query.MinVolume();
+            var after = query.ScreenerCursor();
+            if (!query.IsValid)
+            {
+                return Invalid(query);
+            }
+
+            var page = await reader.ReadAsync(new ScreenerQuery(sort, descending, status, minVolume, after, limit), cancellationToken).ConfigureAwait(false);
+            var now = time.GetUtcNow().UtcDateTime;
+            return Json(
+                new ScreenerPage(
+                    RequestParameters.SortName(sort),
+                    descending ? "desc" : "asc",
+                    ApiFormat.Moment(page.RefreshedAt),
+                    page.RefreshedAt is { } refreshed ? (long)Math.Max(0, (now - refreshed).TotalSeconds) : null,
+                    [.. page.Rows.Select(Mapping.ToDto)],
+                    page.Next is null ? null : ApiFormat.EncodeCursor(string.Create(CultureInfo.InvariantCulture, $"{page.Next.Key}|{page.Next.MarketId}"))),
+                ApiJson.Wire.ScreenerPage);
         });
 
         app.MapGet("/v1/orderbooks", async (HttpRequest request, IBookReader reader, TimeProvider time, CancellationToken cancellationToken) =>

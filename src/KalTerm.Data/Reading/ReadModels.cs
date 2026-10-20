@@ -98,6 +98,7 @@ public sealed record MarketFilter(string? Status = null, string? EventTicker = n
 /// <param name="GovernorLast">The storage governor's last check; <see langword="null"/> if it never ran.</param>
 /// <param name="Backfill">Gaps waiting for or failing their trade backfill; <see langword="null"/> when the database predates schema v3.</param>
 /// <param name="BackupRecord">What the backup job has recorded; <see langword="null"/> when nothing was.</param>
+/// <param name="Analytics">The metrics analyzer's recent runs; <see langword="null"/> when the database predates schema v6.</param>
 public sealed record StatusSnapshot(
     IngestStateEntry? Run,
     DateTime? LastTickerAt,
@@ -112,7 +113,8 @@ public sealed record StatusSnapshot(
     string? OldestDataDay = null,
     IngestStateEntry? GovernorLast = null,
     BackfillCounts? Backfill = null,
-    BackupRecord? BackupRecord = null);
+    BackupRecord? BackupRecord = null,
+    AnalyticsRecord? Analytics = null);
 
 /// <summary>One market's published order book (a row of <c>dbo.orderbook_state</c>), levels best first.</summary>
 /// <param name="Ticker">The market.</param>
@@ -130,6 +132,19 @@ public sealed record StoredBook(string Ticker, DateTime UpdatedAt, DateTime Publ
 /// <param name="LastGood">The newest finished backup.</param>
 /// <param name="LastVerify">The last proof by restore.</param>
 public sealed record BackupRecord(IngestStateEntry? Configured, IngestStateEntry? Last, IngestStateEntry? LastGood, IngestStateEntry? LastVerify);
+
+/// <summary>One run of an analyzer, from <c>dbo.analyzer_run</c>.</summary>
+/// <param name="Status">running, ok, failed or timeout.</param>
+/// <param name="StartedAt">When it started (UTC).</param>
+/// <param name="FinishedAt">When it ended (UTC); <see langword="null"/> while it runs.</param>
+/// <param name="Rows">How many rows it looked at.</param>
+/// <param name="Message">A few words from the run.</param>
+public sealed record AnalyzerRunRecord(string Status, DateTime StartedAt, DateTime? FinishedAt, int? Rows, string? Message);
+
+/// <summary>What the metrics analyzer has done lately.</summary>
+/// <param name="Last">The newest run of any status; <see langword="null"/> if it never ran.</param>
+/// <param name="LastOk">The newest successful run; <see langword="null"/> if none.</param>
+public sealed record AnalyticsRecord(AnalyzerRunRecord? Last, AnalyzerRunRecord? LastOk);
 
 /// <summary>The published order books in total.</summary>
 /// <param name="Watched">How many books are published.</param>

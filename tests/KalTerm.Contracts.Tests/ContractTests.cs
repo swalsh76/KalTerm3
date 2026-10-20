@@ -72,6 +72,16 @@ public class ContractTests
     }
 
     [Fact]
+    public void AScreenerRowItsPageAndTheAnalyticsStatus()
+    {
+        var row = new ScreenerRowDto("KX-1", "EV-1", "active", "Yes", "2026-10-18T22:55:00.000000+00:00", "2026-10-18T22:59:00.000000+00:00", "0.560000", "0.020000", "4.00", 2, "99.00", "0.550000", "0.570000", "0.020000", "0.550000", "0.540000", "0.500000", "0.012000", false);
+
+        Pin(row, """{"ticker":"KX-1","event_ticker":"EV-1","status":"active","yes_label":"Yes","changed_at":"2026-10-18T22:55:00.000000+00:00","last_time":"2026-10-18T22:59:00.000000+00:00","last":"0.560000","change24h":"0.020000","volume24h":"4.00","trade_count24h":2,"open_interest":"99.00","yes_bid":"0.550000","yes_ask":"0.570000","spread":"0.020000","vwap24h":"0.550000","sma20":"0.540000","sma50":"0.500000","volatility24h":"0.012000","partial":false}""");
+        Pin(new ScreenerPage("volume", "desc", "2026-10-18T22:55:00.000000+00:00", 300, [row with { Last = null, Partial = true }], "Qw"), """{"sort":"volume","order":"desc","refreshed_at":"2026-10-18T22:55:00.000000+00:00","age_seconds":300,"rows":[{"ticker":"KX-1","event_ticker":"EV-1","status":"active","yes_label":"Yes","changed_at":"2026-10-18T22:55:00.000000+00:00","last_time":"2026-10-18T22:59:00.000000+00:00","last":null,"change24h":"0.020000","volume24h":"4.00","trade_count24h":2,"open_interest":"99.00","yes_bid":"0.550000","yes_ask":"0.570000","spread":"0.020000","vwap24h":"0.550000","sma20":"0.540000","sma50":"0.500000","volatility24h":"0.012000","partial":true}],"next_cursor":"Qw"}""");
+        Pin(new AnalyticsStatusDto("ok", "5 written", "2026-10-18T22:55:00.000000+00:00", "2026-10-18T22:55:00.000000+00:00", 300, 11, 201000), """{"last":"ok","last_message":"5 written","last_at":"2026-10-18T22:55:00.000000+00:00","last_ok_at":"2026-10-18T22:55:00.000000+00:00","last_ok_age_seconds":300,"last_ok_seconds":11,"last_ok_rows":201000}""");
+    }
+
+    [Fact]
     public void AGapAndItsPage()
     {
         var gap = new GapDto(7, "ingest_down", "2026-10-19T04:33:49.000000+00:00", "2026-10-19T04:40:46.000000+00:00", "the previous run stopped cleanly", new BackfillDto("done", 120, 7, "2026-10-19T04:41:30.000000+00:00", "window recovered"));
@@ -95,7 +105,7 @@ public class ContractTests
 
         Pin(
             status,
-            """{"time":"2026-10-18T22:53:13.000000+00:00","problems":["ingest heartbeat is 95 s old"],"ingest":{"state":"running","last_heartbeat":"2026-10-18T22:51:38.000000+00:00","heartbeat_age_seconds":95},"streams":{"ticker":{"last_time":"2026-10-18T22:53:12.500000+00:00","age_seconds":1},"trade":{"last_time":null,"age_seconds":null}},"storage":{"data_file_bytes":142606336,"max_bytes":107374182400,"disk_free_bytes":988000000000,"used_bytes":120000000,"used_percent":0,"oldest_data_day":"2026-10-17","governor_last":"ok used=0% dropped=","governor_age_seconds":12},"markets":{"active":120146,"unlisted":342},"gaps":{"window_hours":24,"count":2,"by_kind":{"ingest_down":2},"note":"ticker data in a gap is not recoverable; trades are backfilled","backfill_pending":1,"backfill_failed":0},"books":{"watched":3,"stale":1,"approximate":0,"published_age_seconds":4},"backup":null}""");
+            """{"time":"2026-10-18T22:53:13.000000+00:00","problems":["ingest heartbeat is 95 s old"],"ingest":{"state":"running","last_heartbeat":"2026-10-18T22:51:38.000000+00:00","heartbeat_age_seconds":95},"streams":{"ticker":{"last_time":"2026-10-18T22:53:12.500000+00:00","age_seconds":1},"trade":{"last_time":null,"age_seconds":null}},"storage":{"data_file_bytes":142606336,"max_bytes":107374182400,"disk_free_bytes":988000000000,"used_bytes":120000000,"used_percent":0,"oldest_data_day":"2026-10-17","governor_last":"ok used=0% dropped=","governor_age_seconds":12},"markets":{"active":120146,"unlisted":342},"gaps":{"window_hours":24,"count":2,"by_kind":{"ingest_down":2},"note":"ticker data in a gap is not recoverable; trades are backfilled","backfill_pending":1,"backfill_failed":0},"books":{"watched":3,"stale":1,"approximate":0,"published_age_seconds":4},"backup":null,"analytics":null}""");
     }
 
     [Fact]

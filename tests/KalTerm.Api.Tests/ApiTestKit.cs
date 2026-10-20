@@ -133,6 +133,19 @@ internal sealed class FakeMetrics : IMetricsReader
     }
 }
 
+internal sealed class FakeScreener : IScreenerReader
+{
+    public List<ScreenerQuery> Queries { get; } = [];
+
+    public ScreenerResult Result { get; set; } = new([], null, null);
+
+    public Task<ScreenerResult> ReadAsync(ScreenerQuery query, CancellationToken cancellationToken = default)
+    {
+        Queries.Add(query);
+        return Task.FromResult(Result);
+    }
+}
+
 internal sealed class FakeStatus : IStatusReader
 {
     public StatusSnapshot Snapshot { get; set; } = new(null, null, null, 1_000, null, null, new Dictionary<string, long>(), new Dictionary<string, long>());
@@ -170,6 +183,8 @@ internal sealed class FakeReaders
 
     public FakeMetrics Metrics { get; } = new();
 
+    public FakeScreener Screener { get; } = new();
+
     public FakeStatus Status { get; } = new();
 
     public FakeReadiness Readiness { get; } = new();
@@ -183,6 +198,7 @@ internal sealed class FakeReaders
         services.AddSingleton<IBookReader>(Books);
         services.AddSingleton<ICandleService>(Candles);
         services.AddSingleton<IMetricsReader>(Metrics);
+        services.AddSingleton<IScreenerReader>(Screener);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
         services.AddSingleton(new ApiAuthOptions(false));

@@ -34,6 +34,7 @@ internal static class Views
         rows.Add(new Markup($"[bold]Markets[/]   {Escape(MarketCounts(status.Markets))}"));
         rows.Add(new Markup($"[bold]Books[/]     {Books(status.Books)}"));
         rows.Add(new Markup($"[bold]Backup[/]    {BackupLine(status.Backup)}"));
+        rows.Add(new Markup($"[bold]Analytics[/] {AnalyticsLine(status.Analytics)}"));
         rows.Add(new Markup($"[bold]Gaps[/]      {status.Gaps.Count} in the last {status.Gaps.WindowHours} h{GapKinds(status.Gaps.ByKind)}{BackfillCounts(status.Gaps)}"));
         rows.Add(new Markup($"[grey]{Escape(status.Gaps.Note)}[/]"));
         return new Rows(rows);
@@ -181,6 +182,31 @@ internal static class Views
         return new Rows(table.Render(width), Footer(page.Ticks.Count, page.NextCursor));
     }
 
+    public static IRenderable Screener(ScreenerPage page, int width)
+    {
+        var table = new TextTable()
+            .Column("Ticker").Column("Status").Column("Last", right: true).Column("Change 24h", right: true).Column("Volume 24h", right: true).Column("Trades", right: true)
+            .Column("Spread", right: true).Column("Open interest", right: true).Column("Volatility", right: true).Column("Note");
+        foreach (var row in page.Rows)
+        {
+            table.Row(
+                row.Ticker,
+                new Cell(row.Status, StatusStyle(row.Status)),
+                Dollars(row.Last),
+                Signed(row.Change24h),
+                Count(row.Volume24h),
+                row.TradeCount24h.ToString("N0", CultureInfo.InvariantCulture),
+                Dollars(row.Spread),
+                Count(row.OpenInterest),
+                Dollars(row.Volatility24h),
+                row.Partial ? new Cell("partial", "yellow") : string.Empty);
+        }
+
+        var age = page.RefreshedAt is null ? "[red]the metrics analyzer has not finished a run yet[/]" : $"figures from {MomentWithZone(page.RefreshedAt)}, {Age(page.AgeSeconds)}";
+        var more = page.NextCursor is null ? string.Empty : $" More available: --cursor {Escape(page.NextCursor)}";
+        return new Rows(table.Render(width), new Markup($"[grey]{page.Rows.Count} shown, ranked by {Escape(page.Sort)} ({Escape(page.Order)}); {age}.{more}[/]"));
+    }
+
     public static IRenderable Metrics(MetricsDto metrics)
     {
         var rows = new List<IRenderable>
@@ -313,6 +339,20 @@ internal static class Views
 
     private static string MarketCounts(IReadOnlyDictionary<string, long> byStatus) =>
         byStatus.Count == 0 ? "none" : string.Join("  |  ", byStatus.OrderByDescending(p => p.Value).ThenBy(p => p.Key, StringComparer.Ordinal).Select(p => $"{p.Key} {p.Value.ToString("N0", CultureInfo.InvariantCulture)}"));
+
+    private static string AnalyticsLine(AnalyticsStatusDto? analytics)
+    {
+        if (analytics?.Last is null)
+        {
+            return analytics is null ? "not reported" : "no run yet";
+        }
+
+        var last = analytics.Last is "failed" or "timeout" ? $"[red]last run {Escape(analytics.Last)}:[/] {Escape(analytics.LastMessage)}" : $"last run {Escape(analytics.Last)}";
+        var ok = analytics.LastOkAt is null
+            ? "  |  no successful run yet"
+            : $"  |  screener figures {Age(analytics.LastOkAgeSeconds)}, {analytics.LastOkRows?.ToString("N0", CultureInfo.InvariantCulture) ?? "-"} markets in {analytics.LastOkSeconds?.ToString(CultureInfo.InvariantCulture) ?? "-"} s";
+        return last + ok;
+    }
 
     private static string BackupLine(BackupStatusDto? backup)
     {

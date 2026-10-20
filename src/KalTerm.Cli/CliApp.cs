@@ -103,6 +103,27 @@ internal static partial class CliApp
         root.Subcommands.Add(WindowCommand("trades", "Trades of a market, oldest first (the latest ones unless --since or --start is given)", env, Run,
             (client, ticker, query, asJson, ct) => ReadTrades(env, client, ticker, query, asJson, ct)));
 
+        // ---- screen ----
+        var screenSort = new Option<string>("--sort") { Description = "Rank by volume, trades, change, last, spread, open_interest or volatility", DefaultValueFactory = _ => "volume" };
+        var screenAscending = new Option<bool>("--asc") { Description = "Smallest first (default: largest first); markets without a value are last either way" };
+        var screenStatus = new Option<string?>("--status") { Description = "Only markets with this status, for example active" };
+        var screenMinVolume = new Option<string?>("--min-volume") { Description = "Only markets with at least this many contracts traded in 24 hours, for example 1000" };
+        var screenTop = new Option<int>("--top") { Description = "How many to show", DefaultValueFactory = _ => 20 };
+        var screenCursor = new Option<string?>("--cursor") { Description = "Continue after the previous page (the cursor it printed)" };
+        var screen = new Command("screen", "Markets ranked by their metrics (24-hour volume by default)");
+        foreach (var option in new Option[] { screenSort, screenAscending, screenStatus, screenMinVolume, screenTop, screenCursor })
+        {
+            screen.Options.Add(option);
+        }
+
+        screen.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var page = await client.GetScreenerAsync(new ScreenQuery(parsed.GetValue(screenSort), parsed.GetValue(screenAscending) ? "asc" : "desc", parsed.GetValue(screenStatus), parsed.GetValue(screenMinVolume), parsed.GetValue(screenTop), parsed.GetValue(screenCursor)), ct).ConfigureAwait(false);
+            Print(env, asJson, page, Views.Screener(page, env.Out.Profile.Width));
+            return Ok;
+        }));
+        root.Subcommands.Add(screen);
+
         // ---- metrics ----
         var metricsTicker = new Argument<string>("ticker") { Description = "The market ticker" };
         var metrics = new Command("metrics", "Metrics of a market: last, 24-hour change, volume, VWAP, spread, averages and volatility");

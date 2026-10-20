@@ -55,6 +55,10 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public CandlePage Candles { get; set; } = new("1h", "stored 1h", [], null);
 
+    public ScreenerPage Screener { get; set; } = new("volume", "desc", "2026-10-18T22:55:00.000000+00:00", 300, [], null);
+
+    public List<ScreenQuery> ScreenQueries { get; } = [];
+
     public MetricsDto Metrics { get; set; } = new("A-1", "2026-10-18T23:00:00.000000+00:00", "2026-10-18T22:59:59.250000+00:00", "0.560000", "0.020000", "1234.00", 7, "99.00", "0.550000", "0.570000", "0.020000", "0.555000", "0.540000", "0.500000", "0.012000", false);
 
     public GapPage Gaps { get; set; } = new([]);
@@ -108,6 +112,12 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
     {
         CandleQueries.Add((ticker, interval, query));
         return Answer(Candles);
+    }
+
+    public Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default)
+    {
+        ScreenQueries.Add(query);
+        return Answer(Screener);
     }
 
     public Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default) => Answer(Metrics);

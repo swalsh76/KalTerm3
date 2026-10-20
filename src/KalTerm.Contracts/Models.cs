@@ -141,6 +141,56 @@ public sealed record MetricsDto(
     string? Volatility24h,
     bool Partial);
 
+/// <summary>One market in the screener: what it is and its metrics (see <see cref="MetricsDto"/>).</summary>
+/// <param name="Ticker">The market.</param>
+/// <param name="EventTicker">Its event.</param>
+/// <param name="Status">Its status.</param>
+/// <param name="YesLabel">The yes outcome's label.</param>
+/// <param name="ChangedAt">When these figures last changed.</param>
+/// <param name="LastTime">When the latest ticker update (within the last hour) was.</param>
+/// <param name="Last">The last traded price, dollars.</param>
+/// <param name="Change24h">The last price minus the close 24 hours ago, dollars.</param>
+/// <param name="Volume24h">Contracts traded in 24 hours.</param>
+/// <param name="TradeCount24h">Trades in 24 hours.</param>
+/// <param name="OpenInterest">Open interest, contracts.</param>
+/// <param name="YesBid">Best yes bid, dollars.</param>
+/// <param name="YesAsk">Best yes ask, dollars.</param>
+/// <param name="Spread">Ask minus bid, dollars.</param>
+/// <param name="Vwap24h">The 24-hour volume-weighted average price, dollars.</param>
+/// <param name="Sma20">The mean of the last 20 hourly closes, dollars.</param>
+/// <param name="Sma50">The mean of the last 50 hourly closes, dollars.</param>
+/// <param name="Volatility24h">The standard deviation of hourly changes, dollars.</param>
+/// <param name="Partial">Whether a gap may have left a figure incomplete.</param>
+public sealed record ScreenerRowDto(
+    string Ticker,
+    string EventTicker,
+    string Status,
+    string YesLabel,
+    string ChangedAt,
+    string? LastTime,
+    string? Last,
+    string? Change24h,
+    string Volume24h,
+    long TradeCount24h,
+    string? OpenInterest,
+    string? YesBid,
+    string? YesAsk,
+    string? Spread,
+    string? Vwap24h,
+    string? Sma20,
+    string? Sma50,
+    string? Volatility24h,
+    bool Partial);
+
+/// <summary>A page of the screener.</summary>
+/// <param name="Sort">What the list is ranked by.</param>
+/// <param name="Order">asc or desc; markets without a value for the sort are last either way.</param>
+/// <param name="RefreshedAt">The moment the figures describe (when the newest successful run started); <see langword="null"/> when none has finished.</param>
+/// <param name="AgeSeconds">How long ago that was; a stalled runner shows here.</param>
+/// <param name="Rows">The markets.</param>
+/// <param name="NextCursor">Pass as <c>cursor</c> for the next page; <see langword="null"/> on the last page.</param>
+public sealed record ScreenerPage(string Sort, string Order, string? RefreshedAt, long? AgeSeconds, IReadOnlyList<ScreenerRowDto> Rows, string? NextCursor);
+
 /// <summary>One executed trade.</summary>
 /// <param name="Time">When it executed.</param>
 /// <param name="TradeId">Kalshi's trade id.</param>
@@ -231,6 +281,7 @@ public sealed record GapSummaryDto(int WindowHours, long Count, IReadOnlyDiction
 /// <param name="Gaps">Recent gaps.</param>
 /// <param name="Books">The published order books.</param>
 /// <param name="Backup">The backups; <see langword="null"/> from a server that predates them.</param>
+/// <param name="Analytics">The metrics analyzer; <see langword="null"/> from a server that predates it.</param>
 public sealed record StatusDto(
     string Time,
     IReadOnlyList<string> Problems,
@@ -240,7 +291,25 @@ public sealed record StatusDto(
     IReadOnlyDictionary<string, long> Markets,
     GapSummaryDto Gaps,
     BooksStatusDto Books,
-    BackupStatusDto? Backup = null);
+    BackupStatusDto? Backup = null,
+    AnalyticsStatusDto? Analytics = null);
+
+/// <summary>The state of the analyzer that keeps the screener's table.</summary>
+/// <param name="Last">What the last run did: <c>ok</c>, <c>failed</c>, <c>timeout</c> or <c>running</c>; <see langword="null"/> if it never ran.</param>
+/// <param name="LastMessage">A few words from that run.</param>
+/// <param name="LastAt">When that run started.</param>
+/// <param name="LastOkAt">When the newest successful run started, which is the moment the screener's figures describe.</param>
+/// <param name="LastOkAgeSeconds">How long ago that was.</param>
+/// <param name="LastOkSeconds">How long that run took.</param>
+/// <param name="LastOkRows">How many markets that run covered.</param>
+public sealed record AnalyticsStatusDto(
+    string? Last,
+    string? LastMessage,
+    string? LastAt,
+    string? LastOkAt,
+    long? LastOkAgeSeconds,
+    long? LastOkSeconds,
+    int? LastOkRows);
 
 /// <summary>The state of the backups.</summary>
 /// <param name="Configured">Whether a backup target is set, so backups are expected.</param>

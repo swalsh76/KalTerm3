@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using KalTerm.Contracts;
 using KalTerm.Data.Candles;
+using KalTerm.Data.Metrics;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Http;
 
@@ -180,6 +181,95 @@ internal sealed partial class RequestParameters(IQueryCollection query)
         return null;
     }
 
+    /// <summary>What the screener ranks by: <c>volume</c> (default), <c>trades</c>, <c>change</c>, <c>last</c>, <c>spread</c>, <c>open_interest</c> or <c>volatility</c>.</summary>
+    public ScreenerSort Sort()
+    {
+        if (Single("sort") is not { } text)
+        {
+            return ScreenerSort.Volume;
+        }
+
+        switch (text)
+        {
+            case "volume": return ScreenerSort.Volume;
+            case "trades": return ScreenerSort.Trades;
+            case "change": return ScreenerSort.Change;
+            case "last": return ScreenerSort.Last;
+            case "spread": return ScreenerSort.Spread;
+            case "open_interest": return ScreenerSort.OpenInterest;
+            case "volatility": return ScreenerSort.Volatility;
+            default:
+                _invalid.Add("sort");
+                return ScreenerSort.Volume;
+        }
+    }
+
+    /// <summary>The name a sort has on the wire.</summary>
+    /// <param name="sort">The sort.</param>
+    /// <returns>The name.</returns>
+    public static string SortName(ScreenerSort sort) => sort switch
+    {
+        ScreenerSort.Trades => "trades",
+        ScreenerSort.Change => "change",
+        ScreenerSort.Last => "last",
+        ScreenerSort.Spread => "spread",
+        ScreenerSort.OpenInterest => "open_interest",
+        ScreenerSort.Volatility => "volatility",
+        _ => "volume",
+    };
+
+    /// <summary>The direction: <c>desc</c> (default, largest first) or <c>asc</c>.</summary>
+    public bool Descending()
+    {
+        switch (Single("order"))
+        {
+            case null or "desc":
+                return true;
+            case "asc":
+                return false;
+            default:
+                _invalid.Add("order");
+                return true;
+        }
+    }
+
+    /// <summary>A minimum volume in contracts, up to two decimals (<c>1000</c>, <c>12.5</c>), as a count at 10^-2.</summary>
+    public long? MinVolume()
+    {
+        if (Single("min_volume") is not { } text)
+        {
+            return null;
+        }
+
+        var match = MinVolumeShape().Match(text);
+        if (!match.Success)
+        {
+            _invalid.Add("min_volume");
+            return null;
+        }
+
+        var cents = match.Groups["f"].Success ? match.Groups["f"].Value.PadRight(2, '0') : "00";
+        return (long.Parse(match.Groups["w"].Value, NumberStyles.None, CultureInfo.InvariantCulture) * 100) + long.Parse(cents, NumberStyles.None, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>The position a screener page continues from (<c>key|market id</c>), or <see langword="null"/> when there is no cursor.</summary>
+    public ScreenerPosition? ScreenerCursor()
+    {
+        if (Cursor() is not { } text)
+        {
+            return null;
+        }
+
+        var parts = text.Split('|');
+        if (parts.Length == 2 && long.TryParse(parts[0], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var key) && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var id))
+        {
+            return new ScreenerPosition(key, id);
+        }
+
+        _invalid.Add("cursor");
+        return null;
+    }
+
     /// <summary>The candle interval in seconds (<c>5m</c>, <c>4h</c>, <c>1d</c>, <c>1w</c> or whole minutes); the default is one hour. An interval that cannot be served is invalid.</summary>
     public int Interval()
     {
@@ -264,6 +354,9 @@ internal sealed partial class RequestParameters(IQueryCollection query)
                 return null;
         }
     }
+
+    [GeneratedRegex("^(?<w>[0-9]{1,12})(\\.(?<f>[0-9]{1,2}))?$", RegexOptions.CultureInvariant)]
+    private static partial Regex MinVolumeShape();
 
     [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", RegexOptions.CultureInvariant)]
     private static partial Regex Ticker();

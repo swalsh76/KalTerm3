@@ -26,6 +26,9 @@ public static class StatusBuilder
     /// <summary>The storage governor checks every 15 minutes; an hour without a check while ingest runs is a problem.</summary>
     public static readonly TimeSpan GovernorStale = TimeSpan.FromHours(1);
 
+    /// <summary>The metrics analyzer runs every 5 minutes; 15 minutes without a finished run while ingest runs is a problem.</summary>
+    public static readonly TimeSpan AnalyticsStale = TimeSpan.FromMinutes(15);
+
     /// <summary>The data disk is flagged below this much free space.</summary>
     public const long DiskFreeWarningBytes = 50L * 1024 * 1024 * 1024;
 
@@ -65,6 +68,8 @@ public static class StatusBuilder
         CheckGovernor(snapshot.GovernorLast, now, running, problems);
         var backup = Backup(snapshot.BackupRecord, now, problems);
 
+        var analytics = Analytics(snapshot.Analytics, now, running, problems);
+
         if (snapshot.Backfill is { Failed: > 0 } backfill)
         {
             problems.Add($"{backfill.Failed} gap(s) could not have their trades recovered (see kterm gaps)");
@@ -84,7 +89,37 @@ public static class StatusBuilder
             new Dictionary<string, long>(snapshot.MarketsByStatus, StringComparer.Ordinal),
             new GapSummaryDto((int)GapWindow.TotalHours, snapshot.GapsByKind.Values.Sum(), new Dictionary<string, long>(snapshot.GapsByKind, StringComparer.Ordinal), GapNote, snapshot.Backfill?.Pending ?? 0, snapshot.Backfill?.Failed ?? 0),
             books,
-            backup);
+            backup,
+            analytics);
+    }
+
+    private static AnalyticsStatusDto? Analytics(AnalyticsRecord? record, DateTime now, bool ingestRunning, List<string> problems)
+    {
+        if (record?.Last is null)
+        {
+            return record is null ? null : new AnalyticsStatusDto(null, null, null, null, null, null, null);
+        }
+
+        var last = record.Last;
+        var ok = record.LastOk;
+        var dto = new AnalyticsStatusDto(
+            last.Status,
+            last.Message,
+            ApiFormat.Moment(last.StartedAt),
+            ApiFormat.Moment(ok?.StartedAt),
+            ok is null ? null : AgeSeconds(ok.StartedAt, now),
+            ok?.FinishedAt is { } finished ? (long)(finished - ok.StartedAt).TotalSeconds : null,
+            ok?.Rows);
+        if (last.Status is "failed" or "timeout")
+        {
+            problems.Add($"the metrics analyzer's last run {last.Status}: {last.Message}");
+        }
+        else if (ingestRunning && (ok is null || now - ok.StartedAt > AnalyticsStale))
+        {
+            problems.Add(ok is null ? "the metrics analyzer has not finished a run" : $"the metrics analyzer has not finished a run for {AgeSeconds(ok.StartedAt, now) / 60} min");
+        }
+
+        return dto;
     }
 
     private static BackupStatusDto Backup(BackupRecord? record, DateTime now, List<string> problems)
