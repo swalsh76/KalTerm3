@@ -1,6 +1,7 @@
 using KalTerm.Contracts;
 using KalTerm.Data.Books;
 using KalTerm.Data.Candles;
+using KalTerm.Data.Metrics;
 using KalTerm.Data.Reading;
 
 namespace KalTerm.Api;
@@ -71,6 +72,32 @@ public static class Mapping
             candle.BookPartial,
             candle.GapKind,
             candle.GapSeconds);
+    }
+
+    /// <summary>The metrics of a market.</summary>
+    /// <param name="ticker">The market.</param>
+    /// <param name="metrics">The computed metrics.</param>
+    /// <returns>The model.</returns>
+    public static MetricsDto ToDto(string ticker, MarketMetrics metrics)
+    {
+        ArgumentNullException.ThrowIfNull(metrics);
+        return new MetricsDto(
+            ticker,
+            ApiFormat.Moment(metrics.AsOf),
+            ApiFormat.Moment(metrics.LastTime),
+            ApiFormat.Dollars(metrics.LastE6),
+            ApiFormat.Dollars(metrics.Change24hE6),
+            ApiFormat.Count(metrics.VolumeE2)!,
+            metrics.TradeCount,
+            ApiFormat.Count(metrics.OpenInterestE2),
+            ApiFormat.Dollars(metrics.YesBidE6),
+            ApiFormat.Dollars(metrics.YesAskE6),
+            ApiFormat.Dollars(metrics.SpreadE6),
+            ApiFormat.Dollars(metrics.Vwap24hE6),
+            ApiFormat.Dollars(metrics.Sma20E6),
+            ApiFormat.Dollars(metrics.Sma50E6),
+            ApiFormat.Dollars(metrics.Volatility24hE6),
+            metrics.Partial);
     }
 
     /// <summary>A trade.</summary>

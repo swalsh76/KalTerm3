@@ -103,6 +103,18 @@ internal static partial class CliApp
         root.Subcommands.Add(WindowCommand("trades", "Trades of a market, oldest first (the latest ones unless --since or --start is given)", env, Run,
             (client, ticker, query, asJson, ct) => ReadTrades(env, client, ticker, query, asJson, ct)));
 
+        // ---- metrics ----
+        var metricsTicker = new Argument<string>("ticker") { Description = "The market ticker" };
+        var metrics = new Command("metrics", "Metrics of a market: last, 24-hour change, volume, VWAP, spread, averages and volatility");
+        metrics.Arguments.Add(metricsTicker);
+        metrics.SetAction((parsed, ct) => Run(parsed, ct, async (client, asJson) =>
+        {
+            var found = await client.GetMetricsAsync(parsed.GetRequiredValue(metricsTicker), ct).ConfigureAwait(false);
+            Print(env, asJson, found, Views.Metrics(found));
+            return Ok;
+        }));
+        root.Subcommands.Add(metrics);
+
         // ---- candles ----
         var candleTicker = new Argument<string>("ticker") { Description = "The market ticker" };
         var candleInterval = new Option<string>("--interval") { Description = "Bucket length: whole minutes up to a day, or a week, for example 5m, 15m, 4h, 1d or 1w", DefaultValueFactory = _ => "1h" };

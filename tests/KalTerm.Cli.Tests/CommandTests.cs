@@ -331,6 +331,31 @@ public sealed class CommandTests : IDisposable
     }
 
     [Fact]
+    public async Task MetricsShowEveryFigureAndASignedChange()
+    {
+        var exit = await _cli.RunAsync("metrics", "A-1");
+
+        Assert.Equal(CliApp.Ok, exit);
+        Assert.Contains("change 24h +0.02", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("VWAP 0.555", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("volume 24h 1,234 in 7 trades", _cli.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task MetricsOfAMarketWithGapsOrNoDataSaySoAndTimesFollowTheZone()
+    {
+        _cli.Api.Metrics = _cli.Api.Metrics with { Partial = true, LastTime = null, Last = null, Change24h = "-0.010000", Vwap24h = null };
+
+        await _cli.RunAsync("metrics", "A-1", "--tz", "America/Denver");
+
+        Assert.Contains("change 24h -0.01", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("no ticker update in the last 7 days", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("partial: a gap overlaps", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("as of 2026-10-18 17:00:00 -06:00", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task TradesShowBothPricesTheTakerAndBlocks()
     {
         _cli.Api.Trades = new TradePage([Trade("t-1", "yes"), Trade("t-2", "no", true)], null);

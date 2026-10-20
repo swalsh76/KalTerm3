@@ -106,6 +106,41 @@ public sealed record CandleDto(
 /// <param name="NextCursor">Pass as <c>cursor</c> for the next page; <see langword="null"/> on the last page.</param>
 public sealed record CandlePage(string Interval, string Source, IReadOnlyList<CandleDto> Candles, string? NextCursor);
 
+/// <summary>The metrics of one market, computed when asked from the stored ticker, trade and candle rows. A metric without enough data is <see langword="null"/>.</summary>
+/// <param name="Ticker">The market.</param>
+/// <param name="AsOf">The moment described (UTC).</param>
+/// <param name="LastTime">When the latest ticker update was.</param>
+/// <param name="Last">The last traded price, dollars.</param>
+/// <param name="Change24h">The last price minus the close 24 hours ago, dollars.</param>
+/// <param name="Volume24h">Contracts traded in the last 24 hours.</param>
+/// <param name="TradeCount24h">Trades in the last 24 hours.</param>
+/// <param name="OpenInterest">Open interest, contracts.</param>
+/// <param name="YesBid">Best yes bid, dollars.</param>
+/// <param name="YesAsk">Best yes ask, dollars.</param>
+/// <param name="Spread">Ask minus bid, dollars.</param>
+/// <param name="Vwap24h">The volume-weighted average price of the last 24 hours of trades, dollars.</param>
+/// <param name="Sma20">The mean of the last 20 hourly closes, dollars.</param>
+/// <param name="Sma50">The mean of the last 50 hourly closes, dollars.</param>
+/// <param name="Volatility24h">The standard deviation of hourly close-to-close changes (last 24 hourly closes), dollars.</param>
+/// <param name="Partial">Whether a gap overlaps the 24 hours or a candle used is flagged partial, so a figure may be incomplete.</param>
+public sealed record MetricsDto(
+    string Ticker,
+    string AsOf,
+    string? LastTime,
+    string? Last,
+    string? Change24h,
+    string Volume24h,
+    long TradeCount24h,
+    string? OpenInterest,
+    string? YesBid,
+    string? YesAsk,
+    string? Spread,
+    string? Vwap24h,
+    string? Sma20,
+    string? Sma50,
+    string? Volatility24h,
+    bool Partial);
+
 /// <summary>One executed trade.</summary>
 /// <param name="Time">When it executed.</param>
 /// <param name="TradeId">Kalshi's trade id.</param>

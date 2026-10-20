@@ -3,6 +3,7 @@ using KalTerm.Contracts;
 using KalTerm.Data;
 using KalTerm.Data.Auth;
 using KalTerm.Data.Candles;
+using KalTerm.Data.Metrics;
 using KalTerm.Data.Reading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -73,6 +74,7 @@ public static class ApiEndpoints
         services.AddSingleton<ITradeReader>(new TradeReader(source, options));
         services.AddSingleton<IGapReader>(new GapReader(source, options));
         services.AddSingleton<IBookReader>(new BookReader(source, options));
+        services.AddSingleton<IMetricsReader>(new MetricsReader(source));
         services.AddSingleton<ICandleReader>(new CandleReader(source));
         services.AddSingleton<ICandleComputer>(new CandleBuilder(source));
         services.AddSingleton<ICandleService>(provider => new CandleService(
@@ -198,6 +200,18 @@ public static class ApiEndpoints
             {
                 return Invalid("start", "end", "interval");
             }
+        });
+
+        app.MapGet("/v1/markets/{ticker}/metrics", async (string ticker, IMetricsReader reader, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            if (!RequestParameters.IsTicker(ticker))
+            {
+                return Invalid("ticker");
+            }
+
+            return await reader.ReadAsync(ticker, time.GetUtcNow().UtcDateTime, cancellationToken).ConfigureAwait(false) is { } inputs
+                ? Json(Mapping.ToDto(ticker, MetricsCalculator.Compute(inputs)), ApiJson.Wire.MetricsDto)
+                : NotFound();
         });
 
         app.MapGet("/v1/markets/{ticker}/trades", async (string ticker, HttpRequest request, ITradeReader reader, TimeProvider time, CancellationToken cancellationToken) =>

@@ -236,7 +236,7 @@ Rules (checked against System.CommandLine and PowerShell 2026-10-19: no clashes)
 
 Approved by the owner 2026-10-20. Gate: per-user alerts fire. Each slice gets its own plan for approval before code.
 
-1. **5.1 Metrics:** last, change over 24 hours, volume, open interest, spread, VWAP, simple moving averages and volatility, computed from the stored candles and the latest tick in SQL and integer
+1. **5.1 Metrics** (built, BUILD-LOG 5.16): last, change over 24 hours, volume, open interest, spread, VWAP, simple moving averages and volatility, computed from the stored candles and the latest tick in SQL and integer
    arithmetic (money stays fixed-point `long`). `GET /v1/markets/{ticker}/metrics` and `kterm metrics TICKER`.
 2. **5.2 Screener:** results in a result table; `GET /v1/screener` ranks and filters markets by a metric; `kterm screen`.
 3. **5.3 Runner:** an analyzer takes a window and a market universe and returns typed rows into result tables; the runner owns scheduling, locking and change signalling. It runs **inside the ingest

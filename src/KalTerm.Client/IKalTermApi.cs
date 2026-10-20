@@ -41,6 +41,13 @@ public interface IKalTermApi
     /// <exception cref="ApiException">The API refused or has no such market (<c>not_found</c>).</exception>
     Task<MarketDto> GetMarketAsync(string ticker, CancellationToken cancellationToken = default);
 
+    /// <summary>The metrics of one market (last, 24-hour change, volume, VWAP, spread, averages, volatility).</summary>
+    /// <param name="ticker">The ticker.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The metrics.</returns>
+    /// <exception cref="ApiException">The API has no such market (<c>not_found</c>).</exception>
+    Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default);
+
     /// <summary>Ticker updates of one market, oldest first (or the latest ones when no start is given).</summary>
     /// <param name="ticker">The ticker.</param>
     /// <param name="query">Window and paging.</param>

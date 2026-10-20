@@ -76,6 +76,10 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
         GetAsync($"v1/markets/{Segment(ticker)}", [], ApiJson.Wire.MarketDto, cancellationToken);
 
     /// <inheritdoc/>
+    public Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default) =>
+        GetAsync($"v1/markets/{Segment(ticker)}/metrics", [], ApiJson.Wire.MetricsDto, cancellationToken);
+
+    /// <inheritdoc/>
     public Task<TickPage> GetTicksAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);

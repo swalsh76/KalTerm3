@@ -64,6 +64,14 @@ public class ContractTests
     }
 
     [Fact]
+    public void TheMetricsOfAMarket()
+    {
+        var metrics = new MetricsDto("KX-1", "2026-10-18T23:00:00.000000+00:00", "2026-10-18T22:59:59.250000+00:00", "0.560000", "0.020000", "4.00", 2, "99.00", "0.550000", "0.570000", "0.020000", "0.550000", "0.540000", "0.500000", "0.012000", false);
+
+        Pin(metrics, """{"ticker":"KX-1","as_of":"2026-10-18T23:00:00.000000+00:00","last_time":"2026-10-18T22:59:59.250000+00:00","last":"0.560000","change24h":"0.020000","volume24h":"4.00","trade_count24h":2,"open_interest":"99.00","yes_bid":"0.550000","yes_ask":"0.570000","spread":"0.020000","vwap24h":"0.550000","sma20":"0.540000","sma50":"0.500000","volatility24h":"0.012000","partial":false}""");
+    }
+
+    [Fact]
     public void AGapAndItsPage()
     {
         var gap = new GapDto(7, "ingest_down", "2026-10-19T04:33:49.000000+00:00", "2026-10-19T04:40:46.000000+00:00", "the previous run stopped cleanly", new BackfillDto("done", 120, 7, "2026-10-19T04:41:30.000000+00:00", "window recovered"));

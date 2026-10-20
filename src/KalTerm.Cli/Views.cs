@@ -181,6 +181,27 @@ internal static class Views
         return new Rows(table.Render(width), Footer(page.Ticks.Count, page.NextCursor));
     }
 
+    public static IRenderable Metrics(MetricsDto metrics)
+    {
+        var rows = new List<IRenderable>
+        {
+            new Markup($"[bold]{Escape(metrics.Ticker)}[/]  as of {MomentWithZone(metrics.AsOf)}"),
+            new Markup($"  last {Dollars(metrics.Last)}  ({(metrics.LastTime is null ? "no ticker update in the last 7 days" : $"at {MomentWithZone(metrics.LastTime, true)}")})"),
+            new Markup($"  change 24h {Signed(metrics.Change24h)}   bid {Dollars(metrics.YesBid)}  ask {Dollars(metrics.YesAsk)}  spread {Dollars(metrics.Spread)}"),
+            new Markup($"  volume 24h {Count(metrics.Volume24h)} in {metrics.TradeCount24h.ToString("N0", CultureInfo.InvariantCulture)} trades   VWAP {Dollars(metrics.Vwap24h)}   open interest {Count(metrics.OpenInterest)}"),
+            new Markup($"  SMA 20h {Dollars(metrics.Sma20)}   SMA 50h {Dollars(metrics.Sma50)}   volatility 24h {Dollars(metrics.Volatility24h)}"),
+        };
+        if (metrics.Partial)
+        {
+            rows.Add(new Markup("[yellow]  partial: a gap overlaps the last 24 hours (or a candle used), so a figure may be incomplete[/]"));
+        }
+
+        return new Rows(rows);
+    }
+
+    /// <summary>A change with its sign: <c>+0.02</c>, <c>-0.01</c>, <c>0.00</c>.</summary>
+    private static string Signed(string? value) => value is null ? None : value.StartsWith('-') || Dollars(value) is "0.00" ? Dollars(value) : "+" + Dollars(value);
+
     public static IRenderable Candles(CandlePage page, int width)
     {
         var table = new TextTable()
