@@ -13,5 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KalTerm.Data\KalTerm.Data.csproj" />
+    <ProjectReference Include="..\..\src\KalTerm.Trading\KalTerm.Trading.csproj" />
   </ItemGroup>
 </Project>

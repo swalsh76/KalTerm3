@@ -11,189 +11,6 @@ using KalTerm.Trading.Transport;
 
 namespace KalTerm.Trading.Tests.Orders;
 
-/// <summary>A clock that stands still: reads give the same moment, waits are recorded and end at once. The service's time in these tests, like the reference's fixed NOW.</summary>
-internal sealed class InstantTimeProvider : TimeProvider
-{
-    private readonly List<TimeSpan> _delays = [];
-
-    public IReadOnlyList<TimeSpan> Delays
-    {
-        get
-        {
-            lock (_delays)
-            {
-                return [.. _delays];
-            }
-        }
-    }
-
-    public override DateTimeOffset GetUtcNow() => AccountTests.T0;
-
-    public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
-    {
-        if (dueTime != Timeout.InfiniteTimeSpan)
-        {
-            lock (_delays)
-            {
-                _delays.Add(dueTime);
-            }
-
-            ThreadPool.QueueUserWorkItem(_ => callback(state));
-        }
-
-        return new Inert();
-    }
-
-    private sealed class Inert : ITimer
-    {
-        public bool Change(TimeSpan dueTime, TimeSpan period) => true;
-
-        public void Dispose()
-        {
-        }
-
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-    }
-}
-
-/// <summary>Kalshi's market side, scripted: two markets (shard 0 and shard 3), a quadratic fee series.</summary>
-internal sealed class FakeMarketRest(FakeAccountRest rest) : IMarketRest
-{
-    public Dictionary<string, Market> Markets { get; } = new()
-    {
-        ["KXA-1"] = MarketOf("KXA-1", 0),
-        ["KXT-1"] = MarketOf("KXT-1", 3),
-    };
-
-    public string? FeeType { get; set; } = "quadratic";
-
-    public FeeMultiplier? FeeMultiplier { get; set; } = KalTerm.Core.Fees.FeeMultiplier.One;
-
-    public int SeriesCalls { get; private set; }
-
-    public Func<IAsyncEnumerable<Order>>? Listing { get; set; }
-
-    public static Market MarketOf(string ticker, int? shard, string status = "active") => new(ticker, "EV-" + ticker, "binary", status, ExchangeIndex: shard);
-
-    public Task<Market> MarketAsync(string ticker, CancellationToken cancellationToken) => Task.FromResult(Markets[ticker]);
-
-    public Task<KalshiEvent> EventAsync(string eventTicker, CancellationToken cancellationToken) => Task.FromResult(new KalshiEvent(eventTicker, "KXSERIES", "t", false));
-
-    public Task<Series> SeriesAsync(string seriesTicker, CancellationToken cancellationToken)
-    {
-        SeriesCalls++;
-        return Task.FromResult(new Series(seriesTicker, "t", "daily", "c", null, FeeType, FeeMultiplier));
-    }
-
-    public Task<Order> OrderAsync(string orderId, CancellationToken cancellationToken) =>
-        Task.FromResult(rest.Orders.FirstOrDefault(o => o.OrderId == orderId) ?? throw new KalshiApiException(404, "not found"));
-
-    public IAsyncEnumerable<Order> RestingOrdersAsync(CancellationToken cancellationToken) => Listing?.Invoke() ?? rest.RestingOrdersAsync(cancellationToken);
-}
-
-/// <summary>Records every write and moves money and orders in the fake exchange as Kalshi would.</summary>
-internal sealed class FakeTrading(FakeAccountRest rest, TradingState state) : ITradingApi
-{
-    public List<(string Name, object? Arg)> Calls { get; } = [];
-
-    public Exception? TransferError { get; set; }
-
-    public Exception? CreateError { get; set; }
-
-    public Exception? AmendError { get; set; }
-
-    public Exception? CancelAllError { get; set; }
-
-    public Exception? CancelOrdersError { get; set; }
-
-    public bool? HaltedWhenCancelAll { get; private set; }
-
-    public List<Order> LateOrders { get; set; } = [];
-
-    public bool CancelAllClears { get; set; } = true;
-
-    public bool CancelNothing { get; set; }
-
-    public Func<int, int, long, string, Task<string>>? TransferOverride { get; set; }
-
-    public List<string> Names => [.. Calls.Select(c => c.Name)];
-
-    public Task<string> TransferAsync(int sourceShard, int destinationShard, long amountE6, string transferId, CancellationToken cancellationToken = default)
-    {
-        Calls.Add(("transfer", (sourceShard, destinationShard, amountE6, transferId)));
-        if (TransferOverride is not null)
-        {
-            return TransferOverride(sourceShard, destinationShard, amountE6, transferId);
-        }
-
-        if (TransferError is not null)
-        {
-            throw TransferError;
-        }
-
-        var rows = rest.Balance.BalanceBreakdown!.ToDictionary(r => r.ExchangeIndex, r => r.Balance.Micros);
-        rows[sourceShard] -= amountE6;
-        rows[destinationShard] += amountE6;
-        rest.Balance = AccountTests.Balance([.. rows.OrderBy(r => r.Key).Select(r => Dollars.FromMicros(r.Value).ToString())]);
-        return Task.FromResult("tr-ok");
-    }
-
-    public Task<CreatedOrder> CreateOrderAsync(OrderRequest order, CancellationToken cancellationToken = default)
-    {
-        Calls.Add(("create", order));
-        return CreateError is not null ? throw CreateError : Task.FromResult(new CreatedOrder("o-new", order.ClientOrderId, 0, order.CountE2));
-    }
-
-    public Task<ChangedOrder> AmendOrderAsync(string orderId, string ticker, BookSide side, long priceE6, long countE2, int exchangeIndex, CancellationToken cancellationToken = default)
-    {
-        Calls.Add(("amend", (orderId, ticker, side, priceE6, countE2, exchangeIndex)));
-        return AmendError is not null ? throw AmendError : Task.FromResult(new ChangedOrder(orderId, countE2));
-    }
-
-    public Task<CancelResult> CancelOrderAsync(CancelTarget target, CancellationToken cancellationToken = default)
-    {
-        Calls.Add(("cancel", target));
-        return Task.FromResult(new CancelResult(target.OrderId, 100));
-    }
-
-    public Task<IReadOnlyList<CancelResult>> CancelOrdersAsync(IReadOnlyList<CancelTarget> targets, CancellationToken cancellationToken = default)
-    {
-        Calls.Add(("cancel_batch", targets.Select(t => t.OrderId).ToList()));
-        if (CancelOrdersError is not null)
-        {
-            throw CancelOrdersError;
-        }
-
-        if (CancelNothing)
-        {
-            return Task.FromResult<IReadOnlyList<CancelResult>>([]);
-        }
-
-        var gone = targets.Select(t => t.OrderId).ToHashSet();
-        rest.Orders = [.. rest.Orders.Where(o => !gone.Contains(o.OrderId))];
-        return Task.FromResult<IReadOnlyList<CancelResult>>([.. targets.Select(t => new CancelResult(t.OrderId, null))]);
-    }
-
-    public Task CancelAllAsync(CancellationToken cancellationToken = default)
-    {
-        HaltedWhenCancelAll = state.Halted;
-        Calls.Add(("cancel_all", null));
-        if (CancelAllError is not null)
-        {
-            throw CancelAllError;
-        }
-
-        if (CancelAllClears)
-        {
-            rest.Orders = [];
-        }
-
-        rest.Orders = [.. rest.Orders, .. LateOrders];
-        LateOrders = [];
-        return Task.CompletedTask;
-    }
-}
-
 internal sealed class ServiceFixture : IAsyncDisposable
 {
     private readonly TrackerFixture _tracker;
@@ -201,7 +18,7 @@ internal sealed class ServiceFixture : IAsyncDisposable
 
     public ServiceFixture(RiskPolicy? policy = null, bool production = false, FakeAccountRest? rest = null)
     {
-        Rest = rest ?? new FakeAccountRest { Balance = AccountTests.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
+        Rest = rest ?? new FakeAccountRest { Balance = AccountData.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
         _tracker = new TrackerFixture(Rest);
         Markets = new FakeMarketRest(Rest);
         Trading = new FakeTrading(Rest, _tracker.State);
@@ -246,7 +63,7 @@ public class OrderServiceTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static Order Resting(string id, string ticker = "KXA-1") => AccountTests.Order(id, ticker);
+    private static Order Resting(string id, string ticker = "KXA-1") => AccountData.Order(id, ticker);
 
     [Theory]
     [InlineData(TradeOutcome.Yes, TradeAction.Buy, 400_000, BookSide.Bid, 400_000)]
@@ -424,7 +241,7 @@ public class OrderServiceTests
         await using var fixture = await ServiceFixture.StartAsync();
         var prepared = await fixture.Service.PrepareAsync(Buy("KXT-1"), Ct);
         Assert.NotEmpty(prepared.Verdict.Funding);
-        fixture.Rest.Balance = AccountTests.Balance("0.0000", "10.3490", "0.0000", "0.0000");   // the money moved while the person read the prompt
+        fixture.Rest.Balance = AccountData.Balance("0.0000", "10.3490", "0.0000", "0.0000");   // the money moved while the person read the prompt
 
         await Assert.ThrowsAsync<PlanChangedException>(() => fixture.Service.ExecuteAsync(prepared, Ct));
 
@@ -480,7 +297,7 @@ public class OrderServiceTests
         // seen live 2026-10-13: the read right after a transfer still showed the old shard balance
         await using var fixture = await ServiceFixture.StartAsync();
         var prepared = await fixture.Service.PrepareAsync(Buy("KXT-1", count: 100, price: 10_000), Ct);
-        var after = AccountTests.Balance("10.3290", "0.0000", "0.0000", "0.0200");
+        var after = AccountData.Balance("10.3290", "0.0000", "0.0000", "0.0200");
         var before = fixture.Rest.BalanceCalls;
         fixture.Trading.TransferOverride = (s, d, a, id) =>
         {
@@ -547,7 +364,7 @@ public class OrderServiceTests
     [Fact]
     public async Task AHaltedAccountRefusesNewOrdersButNotCancels()
     {
-        var rest = new FakeAccountRest { Balance = AccountTests.Balance("10.3490", "0.0000", "0.0000", "0.0000"), Orders = [Resting("o-1")] };
+        var rest = new FakeAccountRest { Balance = AccountData.Balance("10.3490", "0.0000", "0.0000", "0.0000"), Orders = [Resting("o-1")] };
         await using var fixture = await ServiceFixture.StartAsync(rest: rest);
         fixture.State.Halt("kill switch");
 
@@ -574,7 +391,7 @@ public class OrderServiceTests
     public async Task EveryVerdictAndKillIsWrittenToTheAuditWithoutSecrets()
     {
         var recorded = new List<string>();
-        var rest = new FakeAccountRest { Balance = AccountTests.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
+        var rest = new FakeAccountRest { Balance = AccountData.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
         var tracker = new TrackerFixture(rest);
         await tracker.Tracker.StartAsync(Ct);
         var markets = new FakeMarketRest(rest);
@@ -745,7 +562,7 @@ public class OrderServiceTests
     [Fact]
     public async Task TheGuardFiresTheKillSwitchOnceTheLossLimitIsReached()
     {
-        var rest = new FakeAccountRest { Positions = [AccountTests.Position("KXA-1", "0")] };
+        var rest = new FakeAccountRest { Positions = [AccountData.Position("KXA-1", "0")] };
         await using var fixture = await ServiceFixture.StartAsync(rest: rest);
         Assert.False(await fixture.Service.GuardOnceAsync(Ct));
 
@@ -763,7 +580,7 @@ public class OrderServiceTests
     [Fact]
     public async Task AnOrderAttemptedOverTheLossLimitTripsTheKillSwitch()
     {
-        var rest = new FakeAccountRest { Positions = [AccountTests.Position("KXA-1", "0")], Balance = AccountTests.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
+        var rest = new FakeAccountRest { Positions = [AccountData.Position("KXA-1", "0")], Balance = AccountData.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
         await using var fixture = await ServiceFixture.StartAsync(rest: rest);
         var prepared = await fixture.Service.PrepareAsync(Buy(), Ct);
         Assert.True(prepared.Verdict.Ok);
@@ -804,7 +621,7 @@ public class OrderServiceTests
     // --- amend ---------------------------------------------------------------------------------
 
     private static FakeAccountRest OneResting(string ticker = "KXA-1", string book = "bid", string yesPrice = "0.4000") =>
-        new() { Balance = AccountTests.Balance("10.3490", "0.0000", "0.0000", "0.0000"), Orders = [AccountTests.Order("o-1", ticker, book, yesPrice)] };
+        new() { Balance = AccountData.Balance("10.3490", "0.0000", "0.0000", "0.0000"), Orders = [AccountData.Order("o-1", ticker, book, yesPrice)] };
 
     [Fact]
     public async Task AnAmendIsCheckedAsTheReplacementWithoutCountingTheOldOrder()
@@ -894,7 +711,7 @@ public class OrderServiceTests
     public async Task BadAmendsAreRefusedBeforeAnythingIsSent()
     {
         var rest = OneResting();
-        rest.Orders.Add(AccountTests.Order("o-done", "KXA-1", status: "executed"));
+        rest.Orders.Add(AccountData.Order("o-done", "KXA-1", status: "executed"));
         await using var fixture = await ServiceFixture.StartAsync(rest: rest);
 
         await Assert.ThrowsAsync<ArgumentException>(() => fixture.Service.PrepareAmendAsync("o-1", cancellationToken: Ct));
@@ -926,7 +743,7 @@ public class OrderServiceTests
     [Fact]
     public async Task CancelByIdsUsesKalshisRecordAndOneFailureDoesNotStopTheRest()
     {
-        var rest = new FakeAccountRest { Orders = [AccountTests.Order("o-1", "KXT-1"), AccountTests.Order("o-done", "KXA-1", status: "executed"), AccountTests.Order("o-2", "KXA-1")] };
+        var rest = new FakeAccountRest { Orders = [AccountData.Order("o-1", "KXT-1"), AccountData.Order("o-done", "KXA-1", status: "executed"), AccountData.Order("o-2", "KXA-1")] };
         var markets = new FakeMarketRest(rest);
         var trading = new FakeTrading(rest, new TradingState(Path.Combine(Path.GetTempPath(), "kalterm-x-" + Guid.NewGuid().ToString("N") + ".json")));
 
@@ -941,7 +758,7 @@ public class OrderServiceTests
     [Fact]
     public async Task CancelByIdsReportsAnUnknownOutcomeAndCarriesOn()
     {
-        var rest = new FakeAccountRest { Orders = [AccountTests.Order("o-1", "KXT-1"), AccountTests.Order("o-2", "KXA-1")] };
+        var rest = new FakeAccountRest { Orders = [AccountData.Order("o-1", "KXT-1"), AccountData.Order("o-2", "KXA-1")] };
         var markets = new FakeMarketRest(rest);
         var inner = new FakeTrading(rest, new TradingState(Path.Combine(Path.GetTempPath(), "kalterm-y-" + Guid.NewGuid().ToString("N") + ".json")));
 
@@ -972,7 +789,7 @@ public class OrderServiceTests
     [Fact]
     public async Task CancelEverythingClearsTheOrdersButDoesNotHalt()
     {
-        var rest = new FakeAccountRest { Orders = [Resting("o-1"), Resting("o-2")], Balance = AccountTests.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
+        var rest = new FakeAccountRest { Orders = [Resting("o-1"), Resting("o-2")], Balance = AccountData.Balance("10.3490", "0.0000", "0.0000", "0.0000") };
         await using var fixture = await ServiceFixture.StartAsync(rest: rest);
 
         var report = await fixture.Service.CancelEverythingAsync(Ct);

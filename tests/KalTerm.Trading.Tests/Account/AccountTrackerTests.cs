@@ -10,86 +10,6 @@ using KalTerm.Trading.Tests.Transport;
 
 namespace KalTerm.Trading.Tests.Account;
 
-/// <summary>Kalshi's REST side, scripted: four shards, shard 2 not trading.</summary>
-internal sealed class FakeAccountRest : IAccountRest
-{
-    public List<MarketPosition> Positions { get; set; } = [];
-
-    public List<Order> Orders { get; set; } = [];
-
-    public AccountBalance Balance { get; set; } = AccountTests.Balance("10.3490", "0.0000", "0.0000", "2.5000");
-
-    public ExchangeStatus Status { get; set; } = AccountTests.StatusOf(transfers: true);
-
-    public int BalanceCalls { get; set; }
-
-    public Action<int>? OnBalanceRead { get; set; }
-
-    public int FailBalance { get; set; }
-
-    public int FailPositions { get; set; }
-
-    public Task<ExchangeStatus> ExchangeStatusAsync(CancellationToken cancellationToken) => Task.FromResult(Status);
-
-    public Task<AccountBalance> BalanceAsync(CancellationToken cancellationToken)
-    {
-        BalanceCalls++;
-        OnBalanceRead?.Invoke(BalanceCalls);
-        if (FailBalance != 0)
-        {
-            FailBalance--;
-            throw new HttpRequestException("network down");
-        }
-
-        return Task.FromResult(Balance);
-    }
-
-    public async IAsyncEnumerable<MarketPosition> PositionsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        await Task.Yield();
-        if (FailPositions != 0)
-        {
-            FailPositions--;
-            throw new HttpRequestException("network down");
-        }
-
-        foreach (var position in Positions)
-        {
-            yield return position;
-        }
-    }
-
-    public async IAsyncEnumerable<Order> RestingOrdersAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        await Task.Yield();
-        foreach (var order in Orders.Where(o => o.Status == "resting"))
-        {
-            yield return order;
-        }
-    }
-}
-
-/// <summary>The private WebSocket, scripted: messages are pushed by the test; completing the stream is the socket closing for good.</summary>
-internal sealed class FakeAccountSocket : IAccountSocket
-{
-    private readonly Channel<WsMessage> _queue = Channel.CreateUnbounded<WsMessage>();
-
-    public List<string> Subscribed { get; } = [];
-
-    public Task SubscribeAsync(string channel, CancellationToken cancellationToken)
-    {
-        Subscribed.Add(channel);
-        return Task.CompletedTask;
-    }
-
-    public IAsyncEnumerable<WsMessage> Messages(CancellationToken cancellationToken) => _queue.Reader.ReadAllAsync(cancellationToken);
-
-    public void Push(string type, string? json = null) =>
-        _queue.Writer.TryWrite(new WsMessage(type, Msg: json is null ? null : JsonDocument.Parse(json).RootElement.Clone()));
-
-    public void Close() => _queue.Writer.Complete();
-}
-
 internal sealed class TrackerFixture : IAsyncDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "kalterm-tracker-" + Guid.NewGuid().ToString("N"));
@@ -97,7 +17,7 @@ internal sealed class TrackerFixture : IAsyncDisposable
     public TrackerFixture(FakeAccountRest? rest = null, TradingState? state = null, bool autoFireTime = false)
     {
         Rest = rest ?? new FakeAccountRest();
-        Time = new AutoAdvanceTimeProvider(autoFireTime, AccountTests.T0);
+        Time = new AutoAdvanceTimeProvider(autoFireTime, AccountData.T0);
         State = state ?? new TradingState(Path.Combine(_folder, "state.json"));
         Tracker = new AccountTracker(Rest, Socket, State, Time, TimeSpan.FromSeconds(5));
     }
@@ -134,39 +54,6 @@ internal sealed class TrackerFixture : IAsyncDisposable
             Directory.Delete(_folder, recursive: true);
         }
     }
-}
-
-internal static class AccountTests
-{
-    public static readonly DateTimeOffset T0 = new(2026, 10, 13, 12, 0, 0, TimeSpan.Zero);
-
-    public static AccountBalance Balance(params string[] amounts)
-    {
-        var rows = amounts.Select((a, i) => new ShardBalance(i, Dollars.Parse(a))).ToList();
-        var total = rows.Aggregate(Dollars.Zero, (sum, r) => sum + r.Balance);
-        return new AccountBalance(total.Micros / 10_000, total, 0, null, rows);
-    }
-
-    public static ExchangeStatus StatusOf(bool? transfers)
-    {
-        var rows = Enumerable.Range(0, 4).Select(i => new ExchangeIndexStatus(i, "s" + i, true, i != 2, transfers ?? false)).ToList();
-        return new ExchangeStatus(true, true, null, rows);
-    }
-
-    public static MarketPosition Position(string ticker, string count, string exposure = "0", string realized = "0") =>
-        new(ticker, 0, Contracts.Parse(count), null, Dollars.Parse(exposure), Dollars.Parse(realized));
-
-    public static Order Order(string id = "o-1", string ticker = "KXA-1", string book = "bid", string yesPrice = "0.4000", string remaining = "2.00", string status = "resting")
-    {
-        var yes = Dollars.Parse(yesPrice);
-        return new Order(id, ticker, status, book == "bid" ? "buy" : "sell", "yes", yes, Dollars.One - yes, Contracts.Parse("2.00"), Contracts.Zero, Contracts.Parse(remaining), BookSide: book);
-    }
-
-    public static string UserOrder(string id = "o-1", string status = "resting", string remaining = "2.00", string filled = "0.00", long updated = 1000, string book = "bid", string price = "0.4000") =>
-        $$"""
-        {"order_id":"{{id}}","client_order_id":"c-1","ticker":"KXA-1","exchange_index":0,"status":"{{status}}","side":"yes","outcome_side":"yes","book_side":"{{book}}",
-         "yes_price_dollars":"{{price}}","initial_count_fp":"2.00","fill_count_fp":"{{filled}}","remaining_count_fp":"{{remaining}}","last_updated_ts_ms":{{updated}}}
-        """;
 }
 
 public class KalshiAccountRestTests
@@ -228,8 +115,8 @@ public class AccountTrackerTests
     {
         var rest = new FakeAccountRest
         {
-            Positions = [AccountTests.Position("KXA-1", "3.00", "1.20", "-0.25"), AccountTests.Position("KXB-1", "-1.00", "0.40")],
-            Orders = [AccountTests.Order("o-1", "KXA-1", "bid", "0.4000", "2.00"), AccountTests.Order("o-2", "KXB-1", "ask", "0.3000", "1.00"), AccountTests.Order("o-3", status: "canceled")],
+            Positions = [AccountData.Position("KXA-1", "3.00", "1.20", "-0.25"), AccountData.Position("KXB-1", "-1.00", "0.40")],
+            Orders = [AccountData.Order("o-1", "KXA-1", "bid", "0.4000", "2.00"), AccountData.Order("o-2", "KXB-1", "ask", "0.3000", "1.00"), AccountData.Order("o-3", status: "canceled")],
         };
         await using var fixture = new TrackerFixture(rest);
 
@@ -248,13 +135,13 @@ public class AccountTrackerTests
         Assert.Equal((-100L, 0L, 100L), (snap.Markets["KXB-1"].PositionE2, snap.Markets["KXB-1"].RestingYesE2, snap.Markets["KXB-1"].RestingNoE2));
         // positions 1.20 + 0.40, the bid 2 x 0.40, and the ask at 0.30 (selling YES that is not held: (1 - 0.30) of collateral)
         Assert.Equal(1_200_000 + 400_000 + 800_000 + 700_000, snap.ExposureE6);
-        Assert.Equal(AccountTests.T0, snap.AsOf);
+        Assert.Equal(AccountData.T0, snap.AsOf);
     }
 
     [Fact]
     public async Task MissingTransferFlagsMeanFundingIsNotAllowed()
     {
-        await using var fixture = new TrackerFixture(new FakeAccountRest { Status = AccountTests.StatusOf(transfers: null) });
+        await using var fixture = new TrackerFixture(new FakeAccountRest { Status = AccountData.StatusOf(transfers: null) });
 
         await fixture.Tracker.StartAsync(TestContext.Current.CancellationToken);
 
@@ -267,15 +154,15 @@ public class AccountTrackerTests
         await using var fixture = new TrackerFixture();
         await fixture.Tracker.StartAsync(TestContext.Current.CancellationToken);
 
-        fixture.Socket.Push("user_order", AccountTests.UserOrder(updated: 1000));
+        fixture.Socket.Push("user_order", AccountData.UserOrder(updated: 1000));
         await TrackerFixture.UntilAsync(() => fixture.Tracker.Orders.Count == 1);
-        fixture.Socket.Push("user_order", AccountTests.UserOrder(remaining: "1.00", filled: "1.00", updated: 2000));
-        fixture.Socket.Push("user_order", AccountTests.UserOrder(updated: 1500));   // stale: arrived late
-        fixture.Socket.Push("user_order", AccountTests.UserOrder(id: "marker", status: "canceled", updated: 1));
+        fixture.Socket.Push("user_order", AccountData.UserOrder(remaining: "1.00", filled: "1.00", updated: 2000));
+        fixture.Socket.Push("user_order", AccountData.UserOrder(updated: 1500));   // stale: arrived late
+        fixture.Socket.Push("user_order", AccountData.UserOrder(id: "marker", status: "canceled", updated: 1));
         await TrackerFixture.UntilAsync(() => fixture.Tracker.Orders.Count == 2);
 
         Assert.Equal([(100L, 100L)], fixture.Tracker.Orders.Where(o => o.OrderId == "o-1").Select(o => (o.RemainingE2, o.FillE2)));
-        fixture.Socket.Push("user_order", AccountTests.UserOrder(status: "canceled", updated: 3000));
+        fixture.Socket.Push("user_order", AccountData.UserOrder(status: "canceled", updated: 3000));
         await TrackerFixture.UntilAsync(() => fixture.Tracker.Snapshot()!.OpenOrders == 0);
     }
 
@@ -287,12 +174,12 @@ public class AccountTrackerTests
 
         for (var n = 0; n < 3; n++)
         {
-            fixture.Tracker.Apply(Message("user_order", AccountTests.UserOrder(id: "live-" + n, updated: 1)));
+            fixture.Tracker.Apply(Message("user_order", AccountData.UserOrder(id: "live-" + n, updated: 1)));
         }
 
         for (var n = 0; n < 1200; n++)
         {
-            fixture.Tracker.Apply(Message("user_order", AccountTests.UserOrder(id: "done-" + n, status: "canceled", remaining: "0.00", updated: 2 + n)));
+            fixture.Tracker.Apply(Message("user_order", AccountData.UserOrder(id: "done-" + n, status: "canceled", remaining: "0.00", updated: 2 + n)));
         }
 
         Assert.Equal(["live-0", "live-1", "live-2"], fixture.Tracker.Orders.Where(o => o.IsResting).Select(o => o.OrderId).Order());
@@ -305,8 +192,8 @@ public class AccountTrackerTests
         await using var fixture = new TrackerFixture();
         await fixture.Tracker.StartAsync(TestContext.Current.CancellationToken);
 
-        fixture.Tracker.Apply(Message("user_order", AccountTests.UserOrder(id: "live", updated: 1)));
-        fixture.Tracker.Apply(Message("user_order", AccountTests.UserOrder(id: "spent", remaining: "0.00", filled: "2.00", updated: 1)));
+        fixture.Tracker.Apply(Message("user_order", AccountData.UserOrder(id: "live", updated: 1)));
+        fixture.Tracker.Apply(Message("user_order", AccountData.UserOrder(id: "spent", remaining: "0.00", filled: "2.00", updated: 1)));
 
         Assert.Equal(200, fixture.Tracker.Snapshot()!.Markets["KXA-1"].RestingYesE2);
     }
@@ -314,7 +201,7 @@ public class AccountTrackerTests
     [Fact]
     public async Task PositionMessagesReplaceTheMarketsPositionKeepingFiguresNotSent()
     {
-        await using var fixture = new TrackerFixture(new FakeAccountRest { Positions = [AccountTests.Position("KXA-1", "1.00", "0.40", "0.10")] });
+        await using var fixture = new TrackerFixture(new FakeAccountRest { Positions = [AccountData.Position("KXA-1", "1.00", "0.40", "0.10")] });
         await fixture.Tracker.StartAsync(TestContext.Current.CancellationToken);
 
         fixture.Tracker.Apply(Message("market_position", """{"market_ticker":"KXA-1","position_fp":"-4.00","position_cost_dollars":"1.9"}"""));
@@ -345,17 +232,17 @@ public class AccountTrackerTests
     [Fact]
     public async Task AfterAReconnectTheStreamIsNotOkUntilEverythingIsReadAgain()
     {
-        var rest = new FakeAccountRest { Positions = [AccountTests.Position("KXA-1", "1.00")] };
+        var rest = new FakeAccountRest { Positions = [AccountData.Position("KXA-1", "1.00")] };
         await using var fixture = new TrackerFixture(rest);
         await fixture.Tracker.StartAsync(TestContext.Current.CancellationToken);
         Assert.True(fixture.Tracker.Snapshot()!.StreamOk);
 
         // while the link was down the world changed: a fill moved the position, an order went
-        rest.Positions = [AccountTests.Position("KXA-1", "5.00")];
-        rest.Orders = [AccountTests.Order("o-9")];
+        rest.Positions = [AccountData.Position("KXA-1", "5.00")];
+        rest.Orders = [AccountData.Order("o-9")];
         rest.FailPositions = 2;   // the re-reads fail for a while; the tracker keeps trying
         fixture.Socket.Push("reconnected", """{"resubscribed":[],"failed":[],"reason":"connection_lost","dropped":0}""");
-        fixture.Socket.Push("user_order", AccountTests.UserOrder(id: "o-9", remaining: "1.00", updated: 5000));   // sent right after the reconnect: applied after the re-read
+        fixture.Socket.Push("user_order", AccountData.UserOrder(id: "o-9", remaining: "1.00", updated: 5000));   // sent right after the reconnect: applied after the re-read
         await TrackerFixture.UntilAsync(() =>
         {
             if (fixture.Time.PendingTimers > 0)
@@ -424,7 +311,7 @@ public class AccountTrackerTests
         await TrackerFixture.UntilAsync(() => fixture.Tracker.Fault.Contains("balance poll failed", StringComparison.Ordinal));
 
         var snap = fixture.Tracker.Snapshot()!;
-        Assert.Equal(AccountTests.T0, snap.AsOf);   // the last good read
+        Assert.Equal(AccountData.T0, snap.AsOf);   // the last good read
         var verdict = RiskChecker.Check(RiskTestKit.Order(), snap, new RiskPolicy(), fixture.Time.GetUtcNow(), production: false);
         Assert.Contains(RiskCode.StaleSnapshot, verdict.Refusals.Select(r => r.Code));
     }
@@ -432,7 +319,7 @@ public class AccountTrackerTests
     [Fact]
     public async Task TheDaysLossIsMeasuredFromTheBaselineAndSurvivesARestart()
     {
-        var rest = new FakeAccountRest { Positions = [AccountTests.Position("KXA-1", "2.00", realized: "1.00")] };
+        var rest = new FakeAccountRest { Positions = [AccountData.Position("KXA-1", "2.00", realized: "1.00")] };
         var path = Path.Combine(Path.GetTempPath(), "kalterm-loss-" + Guid.NewGuid().ToString("N"), "state.json");
         try
         {
@@ -447,7 +334,7 @@ public class AccountTrackerTests
             }
 
             // restarted later the same day: the baseline is not taken again from the new total
-            rest.Positions = [AccountTests.Position("KXA-1", "0.00", realized: "-0.75")];
+            rest.Positions = [AccountData.Position("KXA-1", "0.00", realized: "-0.75")];
             await using var again = new TrackerFixture(rest, TradingState.Load(path));
             await again.Tracker.StartAsync(TestContext.Current.CancellationToken);
 
@@ -462,7 +349,7 @@ public class AccountTrackerTests
     [Fact]
     public async Task ANewDayStartsFromZero()
     {
-        var rest = new FakeAccountRest { Positions = [AccountTests.Position("KXA-1", "0.00", realized: "-3.00")] };
+        var rest = new FakeAccountRest { Positions = [AccountData.Position("KXA-1", "0.00", realized: "-3.00")] };
         var path = Path.Combine(Path.GetTempPath(), "kalterm-day-" + Guid.NewGuid().ToString("N"), "state.json");
         try
         {
@@ -510,14 +397,14 @@ public class AccountTrackerTests
     [Fact]
     public async Task TheChangeHookFiresWhenTheViewMayDifferAndABrokenListenerIsHarmless()
     {
-        await using var fixture = new TrackerFixture(new FakeAccountRest { Positions = [AccountTests.Position("KXA-1", "1.00")] });
+        await using var fixture = new TrackerFixture(new FakeAccountRest { Positions = [AccountData.Position("KXA-1", "1.00")] });
         var calls = 0;
         fixture.Tracker.Changed += () => Interlocked.Increment(ref calls);
         await fixture.Tracker.StartAsync(TestContext.Current.CancellationToken);
         var afterStart = Volatile.Read(ref calls);
         Assert.True(afterStart >= 2);   // the balance read and the full read
 
-        fixture.Tracker.Apply(Message("user_order", AccountTests.UserOrder()));
+        fixture.Tracker.Apply(Message("user_order", AccountData.UserOrder()));
         fixture.Tracker.Apply(Message("market_position", """{"market_ticker":"KXA-1","position_fp":"2.00"}"""));
         fixture.Tracker.Apply(Message("fill", """{"trade_id":"t-1","order_id":"o-1","market_ticker":"KXA-1","yes_price_dollars":"0.4","count_fp":"1.00"}"""));
         Assert.True(Volatile.Read(ref calls) >= afterStart + 3);
@@ -527,7 +414,7 @@ public class AccountTrackerTests
         Assert.Equal(before, Volatile.Read(ref calls));
 
         fixture.Tracker.Changed += () => throw new InvalidOperationException("a listener's own bug");
-        fixture.Tracker.Apply(Message("user_order", AccountTests.UserOrder(id: "o-2", updated: 5000)));
+        fixture.Tracker.Apply(Message("user_order", AccountData.UserOrder(id: "o-2", updated: 5000)));
         Assert.Contains(fixture.Tracker.Orders, o => o.OrderId == "o-2");
     }
 

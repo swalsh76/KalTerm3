@@ -35,7 +35,7 @@ internal static partial class CliApp
         var utc = new Option<bool>("--utc") { Description = "Show times in UTC", Recursive = true };
         var zone = new Option<string?>("--tz") { Description = $"Show times in this time zone, for example America/Denver or UTC (default: {CliEnvironment.TimeZoneVariable}, else this computer's zone)", Recursive = true };
 
-        var root = new RootCommand("kterm: a read-only view of a KalTerm server");
+        var root = new RootCommand("kterm: a view of a KalTerm server, and your own trading on Kalshi (buy, sell, cancel, kill, balance, positions, orders, fills)");
         foreach (var option in new Option[] { api, json, width, noColor, utc, zone })
         {
             root.Options.Add(option);
@@ -440,6 +440,8 @@ internal static partial class CliApp
             return Ok;
         }));
         root.Subcommands.Add(gaps);
+
+        TradingCommands.Add(root, env, json);
 
         return root;
     }

@@ -1,5 +1,9 @@
 using System.Globalization;
 using KalTerm.Client;
+using KalTerm.Kalshi.Configuration;
+using KalTerm.Trading.Account;
+using KalTerm.Trading.Keys;
+using KalTerm.Trading.Session;
 using Spectre.Console;
 
 namespace KalTerm.Cli;
@@ -56,6 +60,15 @@ internal sealed class CliEnvironment
 
     public required Func<string, string?> GetVariable { get; init; }
 
+    /// <summary>Opens what a trading command needs. Trading talks to Kalshi directly and never to the KalTerm server.</summary>
+    public Func<TradingMode, CancellationToken, Task<TradingSession>> OpenTrading { get; init; } = (_, _) => throw new InvalidOperationException("trading is not available here");
+
+    /// <summary>Where the trading keys are kept (opened only when a command needs them).</summary>
+    public Func<ITradingKeyVault> OpenVault { get; init; } = () => new CredentialManagerKeyVault();
+
+    /// <summary>Reads the trading state file (for <c>resume</c>).</summary>
+    public Func<TradingState> LoadTradingState { get; init; } = () => TradingState.Load();
+
     /// <summary>The real thing: the process's console, the real client, the system clock and the real environment.</summary>
     public static CliEnvironment Real()
     {
@@ -89,6 +102,7 @@ internal sealed class CliEnvironment
             Time = TimeProvider.System,
             SystemZone = TimeZoneInfo.Local,
             GetVariable = Environment.GetEnvironmentVariable,
+            OpenTrading = (mode, ct) => TradingSessions.OpenAsync(mode, new TradingSessionOptions { Settings = KalshiSettings.FromEnvironment() }, ct),
         };
     }
 
