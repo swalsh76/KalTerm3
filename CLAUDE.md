@@ -17,7 +17,7 @@ oracle. No code is shared.
 
 ## Status
 
-M0, **M2 Core, M3 and M4 are done** (BUILD-LOG §4, §5 and §6; M5 Analytics is next and needs a plan for approval first). All M1 spikes are done (BUILD-LOG 2.1 to 2.7); S-1d (real power cuts) passed on the target server, so M3 may start. The
+M0, **M2 Core, M3, M4 and M5 are done** (BUILD-LOG §4 to §7; M6 Trading is next: it needs a plan for approval first, and **no real order is sent without the owner's go-ahead**). All M1 spikes are done (BUILD-LOG 2.1 to 2.7); S-1d (real power cuts) passed on the target server, so M3 may start. The
 spike proposals in PLAN.md 6.3 and the M3 decisions D1 to D8 (6.4) are approved; M3 reads production market data with the
 read-only key, and a long ingest soak needs the owner's fresh go-ahead. S-1a found that this workstation's consumer NVMe acknowledges write-through writes
 from volatile cache (BUILD-LOG §2.2).

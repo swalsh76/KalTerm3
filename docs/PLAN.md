@@ -70,7 +70,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M2 Core** | Fixed-point types, fees, Ed25519 signer, REST (GET-only) and WebSocket clients, rate limiter; verified against Python fixtures | parity tests green; may start once S-1a and S-1b have passed (M2 never touches SQL). **Met 2026-10-17** (BUILD-LOG §4) |
 | **M3 Vertical slice** | Ingest to SQL Server, minimal API, CLI market view | demo feed ingests and the CLI reads it; **may start only after S-1d has passed on the target server** (**met 2026-10-18**, BUILD-LOG 2.7). **Done 2026-10-19** (BUILD-LOG 5.9: production feed ingesting on `kaldb`, CLI reading ticks, trades, gaps and order books) |
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green (**met 2026-10-20**, BUILD-LOG §6) |
-| **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire |
+| **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire (**met 2026-10-20**, BUILD-LOG §7) |
 | **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead |
 | **M7 UI** | WPF terminal | decided later |
 | **M8 Host layer and verification** | Installer, services, reboot and power-cut tests, 48 h soak | all pass |
@@ -234,7 +234,7 @@ Rules (checked against System.CommandLine and PowerShell 2026-10-19: no clashes)
 
 ### 6.6 M5 Analytics: decisions and slices
 
-Approved by the owner 2026-10-20. Gate: per-user alerts fire. Each slice gets its own plan for approval before code.
+Approved by the owner 2026-10-20. Gate: per-user alerts fire. **All done 2026-10-20** (BUILD-LOG §7). Each slice gets its own plan for approval before code.
 
 1. **5.1 Metrics** (built, BUILD-LOG 5.16): last, change over 24 hours, volume, open interest, spread, VWAP, simple moving averages and volatility, computed from the stored candles and the latest tick in SQL and integer
    arithmetic (money stays fixed-point `long`). `GET /v1/markets/{ticker}/metrics` and `kterm metrics TICKER`.
