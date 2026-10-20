@@ -1425,3 +1425,46 @@ items stay in PLAN.md section 9.
 - CLI: `kterm alert watch [--after ID]` prints one line per fire (`--json`: one object per line) on standard output and its notices (reconnecting) on standard error, until Ctrl+C.
 - Tests: the hub (limits, wake-up, timeout, failed reads, cancellation); the stream over a test server (ready event, a fire after open, `after`, `Last-Event-ID`, keep-alive, limit and release, 401, bad `after`, a revoked
   token ending the stream); the event parser and the client against a stub; the watcher's resume, backoff and refusals; the CLI command.
+
+## 8. M6 Trading (started 2026-10-20)
+
+Plan: PLAN.md section 6.7 (approved 2026-10-20). Nothing in this milestone has sent, or can yet send, a write: the transport stays GET-only until slice 6.4, and slices 6.1 to 6.6 are built and tested
+without touching the real account except to read it.
+
+### 8.1 Slice 6.1: what the account looks like (2026-10-20)
+
+Measured with the read-only production key, GET only, names and kinds of fields only (the live test `LiveAccountShapeTests` prints no balance, price, count or id), and checked against Kalshi's docs.
+
+**Docs facts re-verified today** (all agree with the reference's 2026-10-13 findings):
+- Create Order V2 is `POST /portfolio/events/orders`; body `ticker`, `side` (`bid` buys YES, `ask` sells YES; there is no yes or no field), `count` (fixed-point string, 0 to 2 decimals), `price` (fixed-point dollars,
+  2 to 4 decimals), `time_in_force` (`fill_or_kill`, `good_till_canceled`, `immediate_or_cancel`; required), `self_trade_prevention_type` (`taker_at_cross`, `maker`; required), optional `client_order_id`,
+  `expiration_time` (good-till-cancelled only), `post_only`, `cancel_order_on_pause`, `reduce_only` (rejected unless immediate-or-cancel), `subaccount`, `order_group_id`, `exchange_index`. Default cost 10 tokens;
+  non-default costs come from `GET /account/endpoint_costs`. The 201 reply has `order_id`, `fill_count`, `remaining_count`, `ts_ms`, optional `client_order_id`, `average_fill_price`, `average_fee_paid`.
+- New since the reference: **`exchange_index` is optional and auto-routes by ticker** when omitted (`-1` requires auto-routing). Whether a shard that holds no collateral then accepts the order or rejects it
+  is not documented: a question for the live slice (6.7), asked of the real account only with the owner's go.
+- Balance: `GET /portfolio/balance` takes optional `exchange_index` and `subaccount`; `balance` and `portfolio_value` are cents (int64), `balance_dollars` a string, `updated_ts`, and `balance_breakdown` one row per
+  shard with `balance` as a dollar string (no per-shard portfolio value). One call a second on the Basic tier: react to fills, do not poll.
+- Positions: `market_positions` items have `ticker`, `exchange_index`, `total_traded_dollars`, `position_fp` (negative means NO), `market_exposure_dollars`, `realized_pnl_dollars`, `fees_paid_dollars`,
+  `last_updated_ts`; `event_positions` items have `event_ticker`, `total_cost_dollars`, `total_cost_shares_fp`, `event_exposure_dollars`, `realized_pnl_dollars`, `fees_paid_dollars`; query `settlement_status`
+  (`unsettled` default, `settled`, `all`), `count_filter`, `ticker`, `event_ticker`, `exchange_index`, `limit` up to 1000, `cursor`.
+
+**Shapes seen on the account** (HTTP 200 unless noted):
+- `/portfolio/balance`: `balance`, `balance_dollars`, `portfolio_value`, `updated_ts`, and a `balance_breakdown` of **four** shards (`exchange_index`, `balance` as a string).
+- `/portfolio/positions`: `cursor`, `market_positions`, `event_positions`; both lists are empty on this account (no open positions), so the populated shape is the docs' above.
+- `/portfolio/orders`: `cursor` and `orders`; an order has `order_id`, `client_order_id`, `ticker`, `exchange_index`, `status`, `type`, `action`, `side`, `book_side`, `outcome_side`, `yes_price_dollars`,
+  `no_price_dollars`, `initial_count_fp`, `fill_count_fp`, `remaining_count_fp`, `maker_fees_dollars`, `taker_fees_dollars`, `maker_fill_cost_dollars`, `taker_fill_cost_dollars`, `self_trade_prevention_type`,
+  `created_time`, `last_update_time`, `subaccount_number`, `user_id`.
+- `/portfolio/fills`: a fill has `fill_id`, `trade_id`, `order_id`, `ticker` and `market_ticker`, `exchange_index`, `action`, `side`, `book_side`, `outcome_side`, `yes_price_dollars`, `no_price_dollars`,
+  `count_fp`, `fee_cost` (a string), `is_taker`, `created_time`, `ts`, `subaccount_number`.
+- `/portfolio/settlements`: `ticker`, `event_ticker`, `exchange_index`, `market_result`, `yes_count_fp`, `no_count_fp`, `yes_total_cost_dollars`, `no_total_cost_dollars`, `revenue`, `value`, `fee_cost`, `settled_time`.
+- `/account/endpoint_costs`: `default_cost` and 17 entries of `method`, `path`, `cost`. `/account/limits`: `usage_tier`, `read` and `write` each with `bucket_capacity` and `refill_rate`, and `grants`.
+  The write bucket is therefore read from the account at run time, not assumed.
+- **`GET /portfolio/events/orders` is HTTP 404**: the V2 create route has no V2 list route. Orders are listed with the older `GET /portfolio/orders` (the docs call that path deprecated no earlier than
+  2026-05-06; it still answers). The lookup after an unclear create answer depends on this list route.
+
+**Open questions for the slices that follow.**
+1. 6.4: how to find an order by `client_order_id` after an unclear answer if the list route changes or goes. (The list answers with `client_order_id` per order; whether it can be filtered by it is to be measured, so
+   the lookup may have to page by time as the reference does.)
+2. 6.2 and 6.7: whether auto-routing by ticker makes the shard transfers unnecessary, or whether an unfunded shard rejects the order (and how the rejection looks).
+3. 6.3: the populated positions shape is taken from the docs; the first real position (slice 6.7) confirms it.
+4. 6.5: the private WebSocket channel names and message shapes are not measured yet (they need a signed WebSocket and, to see data, activity on the account); 6.5 reads them from the docs and checks them in 6.7.
