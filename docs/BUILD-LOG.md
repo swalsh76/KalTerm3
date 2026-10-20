@@ -1693,3 +1693,6 @@ markets is slice 7.2b; in 7.2 a client reconnects to change what it watches.
   a revoked token), the client and the watcher (including the reconnect and dedupe rules), `kterm watch`, the new readers on real tables, and one end-to-end test over a real database through the real watcher. Run on kaldb: Data 388, API 344.
 - Rollout: the API only (no migration, the ingest is not touched). A live check after it measures what a fake cannot: that no tick is missed behind the 2-second margin (the stream's ticks against the same window read over REST) and how
   soon after being written a tick arrives.
+
+Rolled out 2026-10-20 (API release host-def745a on kaldb; ingest untouched; API and ingest tasks running, `/readyz` 200). Live check: `kterm watch` on all 50 watched markets for 60 s over the LAN address. The stream carried 236 ticks in a
+window of 57 s that ended 5 s before the end of the watch; the same window read over REST (`kterm ticks --start --end`, per market) held 236. So the 2-second margin lost no tick in this run. Arrival delay was not measured.
