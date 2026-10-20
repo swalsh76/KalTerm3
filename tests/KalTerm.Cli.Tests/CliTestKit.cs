@@ -140,6 +140,8 @@ internal sealed class Harness : IDisposable
     private readonly string _profile = Path.Combine(Path.GetTempPath(), "kalterm-cli-test-" + Guid.NewGuid().ToString("N"));
     private readonly Queue<string> _typed = new();
 
+    public TimeZoneInfo SystemZone { get; set; } = TimeZoneInfo.Utc;
+
     public Harness(Dictionary<string, string>? variables = null)
     {
         Variables = variables ?? [];
@@ -215,6 +217,7 @@ internal sealed class Harness : IDisposable
             ReadSecret = () => Secret,
             Time = new AutoAdvanceTimeProvider(autoFire: false, utcStart: Samples.Now),
             GetVariable = name => Variables.GetValueOrDefault(name),
+            SystemZone = SystemZone,
         };
         return await CliApp.RunAsync(args, env, TestContext.Current.CancellationToken);
     }

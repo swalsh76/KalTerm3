@@ -54,7 +54,19 @@ internal static partial class Display
         return fraction.TrimEnd('0').Length == 0 ? $"{match.Groups["sign"].Value}{whole}" : $"{match.Groups["sign"].Value}{whole}.{fraction}";
     }
 
-    /// <summary>An API time (always UTC) as <c>2026-10-18 22:30:15</c>, with milliseconds when asked.</summary>
+    private static readonly AsyncLocal<TimeZoneInfo?> CurrentZone = new();
+
+    /// <summary>The time zone times are shown in for the command being run (UTC until a command chooses one; flows with the command, so parallel commands do not share it).</summary>
+    public static TimeZoneInfo Zone
+    {
+        get => CurrentZone.Value ?? TimeZoneInfo.Utc;
+        set => CurrentZone.Value = value;
+    }
+
+    /// <summary>The zone's name for a column header: <c>UTC</c> or the zone's id.</summary>
+    public static string ZoneName => Zone.Equals(TimeZoneInfo.Utc) ? "UTC" : Zone.Id;
+
+    /// <summary>An API time (sent in UTC) shown in <see cref="Zone"/> as <c>2026-10-18 22:30:15</c>, with milliseconds when asked.</summary>
     public static string Moment(string? iso, bool milliseconds = false)
     {
         if (iso is null)
@@ -67,7 +79,20 @@ internal static partial class Display
             return iso;
         }
 
-        return parsed.UtcDateTime.ToString(milliseconds ? "yyyy-MM-dd HH:mm:ss.fff" : "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        return TimeZoneInfo.ConvertTime(parsed, Zone).DateTime.ToString(milliseconds ? "yyyy-MM-dd HH:mm:ss.fff" : "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Like <see cref="Moment"/>, followed by the zone: <c>UTC</c>, or the offset that applied at that moment, for example <c>-06:00</c>.</summary>
+    public static string MomentWithZone(string? iso, bool milliseconds = false)
+    {
+        if (iso is null || !DateTimeOffset.TryParse(iso, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+        {
+            return Moment(iso, milliseconds);
+        }
+
+        var local = TimeZoneInfo.ConvertTime(parsed, Zone);
+        var zone = Zone.Equals(TimeZoneInfo.Utc) ? "UTC" : local.ToString("zzz", CultureInfo.InvariantCulture);
+        return $"{Moment(iso, milliseconds)} {zone}";
     }
 
     /// <summary>How long ago, coarsely: <c>45s ago</c>, <c>12m ago</c>, <c>5h ago</c>, <c>3d ago</c>.</summary>

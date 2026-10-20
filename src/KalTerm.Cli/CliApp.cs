@@ -32,15 +32,17 @@ internal static partial class CliApp
         var json = new Option<bool>("--json") { Description = "Print the API's JSON instead of a table", Recursive = true };
         var width = new Option<int?>("--width") { Description = "Output width in characters", Recursive = true };
         var noColor = new Option<bool>("--no-color") { Description = "No colors or styles", Recursive = true };
+        var utc = new Option<bool>("--utc") { Description = "Show times in UTC", Recursive = true };
+        var zone = new Option<string?>("--tz") { Description = $"Show times in this time zone, for example America/Denver or UTC (default: {CliEnvironment.TimeZoneVariable}, else this computer's zone)", Recursive = true };
 
         var root = new RootCommand("kterm: a read-only view of a KalTerm server");
-        foreach (var option in new Option[] { api, json, width, noColor })
+        foreach (var option in new Option[] { api, json, width, noColor, utc, zone })
         {
             root.Options.Add(option);
         }
 
         Task<int> Run(ParseResult parsed, CancellationToken ct, Func<IKalTermApi, bool, Task<int>> body) =>
-            Execute(env, parsed.GetValue(api), parsed.GetValue(width), parsed.GetValue(noColor), parsed.GetValue(json), body, ct);
+            Execute(env, new Choices(parsed.GetValue(api), parsed.GetValue(width), parsed.GetValue(noColor), parsed.GetValue(utc), parsed.GetValue(zone)), parsed.GetValue(json), body, ct);
 
         // ---- status ----
         var status = new Command("status", "Health of the server: problems first, then ingest, streams, storage, markets and gaps");
@@ -312,8 +314,17 @@ internal static partial class CliApp
         return true;
     }
 
-    private static async Task<int> Execute(CliEnvironment env, string? apiOption, int? width, bool noColor, bool asJson, Func<IKalTermApi, bool, Task<int>> body, CancellationToken cancellationToken)
+    private sealed record Choices(string? Api, int? Width, bool NoColor, bool Utc, string? Zone);
+
+    private static async Task<int> Execute(CliEnvironment env, Choices choices, bool asJson, Func<IKalTermApi, bool, Task<int>> body, CancellationToken cancellationToken)
     {
+        var (apiOption, width, noColor) = (choices.Api, choices.Width, choices.NoColor);
+        if (!TryResolveZone(env, choices.Utc, choices.Zone, out var shown, out var zoneProblem))
+        {
+            return Fail(env, zoneProblem!);
+        }
+
+        Zone = shown;
         if (width is { } columns)
         {
             env.Out.Profile.Width = Math.Clamp(columns, 40, 400);
@@ -364,6 +375,35 @@ internal static partial class CliApp
         else
         {
             env.Out.Write(view);
+        }
+    }
+
+    /// <summary>The time zone to show times in: <c>--utc</c>, else <c>--tz</c>, else <c>KALTERM_TZ</c>, else the computer's zone.</summary>
+    internal static bool TryResolveZone(CliEnvironment env, bool utc, string? option, out TimeZoneInfo zone, out string? problem)
+    {
+        problem = null;
+        zone = TimeZoneInfo.Utc;
+        if (utc)
+        {
+            return true;
+        }
+
+        var name = !string.IsNullOrWhiteSpace(option) ? option : env.GetVariable(CliEnvironment.TimeZoneVariable);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            zone = env.SystemZone;
+            return true;
+        }
+
+        try
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById(name.Trim());
+            return true;
+        }
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException or ArgumentException)
+        {
+            problem = $"'{name}' is not a time zone this computer knows; use a name such as America/Denver, Europe/London or UTC{(option is null ? $" (it came from {CliEnvironment.TimeZoneVariable})" : string.Empty)}";
+            return false;
         }
     }
 
