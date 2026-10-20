@@ -248,7 +248,10 @@ Approved by the owner 2026-10-20. Gate: per-user alerts fire. Each slice gets it
 3. **5.3 Screener** (built, BUILD-LOG 5.18): `GET /v1/screener` ranks and filters markets by a metric from `dbo.market_metrics`, with the refresh age shown so a stalled runner cannot pass for live data; `kterm screen`.
 4. **5.4 Per-user watchlists and alerts** (built, BUILD-LOG 5.19; owner 2026-10-20: the alerts analyzer runs every **10 seconds**, the default cooldown is **1 minute**, single-market alerts, windows as below): a user's own watchlists and alert definitions; alert kinds in v1 are price above or below, spread, volume spike (a window against a baseline) and open-interest
    change. Evaluation ignores candles flagged `partial`. Fires are stored. The stored per-user time zone setting goes in here (precedence: `--utc`, `--tz`, `KALTERM_TZ`, stored setting, system zone).
-5. **5.5 Push:** alert fires reach clients as **Server-Sent Events** over the existing HTTPS listener (same token and certificate pinning); `kterm alerts`.
+5. **5.5 Push** (built, BUILD-LOG 5.20; owner 2026-10-20): alert fires reach clients as **Server-Sent Events** over the existing HTTPS listener (same token and certificate pinning). `GET /v1/alerts/stream`: one event per fire
+   (`id` is the fire id, `data` the fire as JSON), a keep-alive comment every 15 s, resume by `?after=` or `Last-Event-ID`, new fires only by default. One watcher in the API reads the `analyzer.alerts.version`
+   counter once a second and wakes the streams only when it changes. At most **10 streams per user and 250 in total**; a stream rechecks its token about every 30 s. `kterm alert watch [--after ID]` prints fires as
+   they arrive and reconnects on its own, resuming from the last id. No desktop notification or sound before the UI (M7).
 
 Decisions: per-user watchlists only filter views; **the ingest watch list stays configuration** (live add/remove of watched markets stays in the parking lot). WebSocket push stays parked until a UI
 needs two-way traffic.

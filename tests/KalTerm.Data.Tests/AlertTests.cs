@@ -516,3 +516,20 @@ public class AlertEvaluationStoreTests(DatabaseFixture db) : IClassFixture<Datab
         Assert.Equal(0, await Engine().ApplyAsync([], Now, TestContext.Current.CancellationToken));
     }
 }
+
+public class AlertVersionReaderTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+{
+    [Fact]
+    public async Task TheCounterIsZeroUntilTheRunnerRaisesItAndThenWhatItSays()
+    {
+        db.Require();
+        var reader = new AlertVersionReader(new DataSource(db.Options));
+        Assert.Equal(0, await reader.ReadAsync(TestContext.Current.CancellationToken));
+
+        await db.ExecuteAsync("INSERT dbo.ingest_state (name, value, updated_at) VALUES ('analyzer.alerts.version', '12', SYSUTCDATETIME())");
+        Assert.Equal(12, await reader.ReadAsync(TestContext.Current.CancellationToken));
+
+        await db.ExecuteAsync("UPDATE dbo.ingest_state SET value = 'not a number' WHERE name = 'analyzer.alerts.version'");
+        Assert.Equal(0, await reader.ReadAsync(TestContext.Current.CancellationToken));
+    }
+}

@@ -1410,3 +1410,18 @@ items stay in PLAN.md section 9.
 - Found by the live check after the rollout: the first alerts analyzer took 34 to 39 seconds a run for three alerts. The cause was how the newest tick of each market was looked up: ids taken from a joined temporary
   table made SQL Server scan the ordered columnstore for every market (about 10 s a lookup, measured), while the same lookup with the ids written into the statement takes about 0.2 s. The reader now writes the ids
   (in chunks of 500) into the statement and widens the window step by step (1 minute, 10 minutes, 1 hour, 24 hours), so busy markets are found at once and only quiet ones need the longer looks.
+
+### 5.20 Slice 5.5: pushing alert fires to clients (2026-10-20)
+
+- `GET /v1/alerts/stream` is a Server-Sent Events stream of the caller's own fires over the same HTTPS listener, token and pinned certificate. It opens with `id: N / event: ready` (N is where it stands: the newest
+  fire id, or the id asked for), then one `event: fire` per fire (`id` is the fire id, `data` the same JSON as `GET /v1/alerts/fires`), and a `: keep-alive` comment every 15 s while quiet. `?after=ID` or a
+  `Last-Event-ID` header replays what came after that id first; by default only new fires are sent. Fires are read in batches of 100, so a client far behind catches up in steps.
+- How a fire reaches a stream: one watcher in the API (`AlertStreamWatcher`) reads the `analyzer.alerts.version` counter once a second; the streams wait on it (`AlertStreamHub`) and query their own new fires only
+  when it moves, so idle streams cost one small read a second in all. A stream reads the counter before it reads its fires, so a fire between the two still wakes it.
+- Limits (owner 2026-10-20): 10 streams per user and 250 in total; over a limit the answer is `429 too_many_streams` with `Retry-After: 30`. A stream rechecks its token about every 30 s (at its next wake-up after
+  that), and ends if the token was revoked, expired or its user disabled; the next connect is then refused. Without a user (a server that does not require tokens) the stream is a 401.
+- Client: `IKalTermApi.StreamAlertFiresAsync` yields what the stream says (the `ready` event and the fires); `AlertWatcher` keeps it going: it reopens after a drop, an unreachable server or a closed stream from the
+  last id it saw (waits of 1 s doubling to 30 s, starting over when something arrives; 30 s after `too_many_streams`) and gives up only on a refusal waiting cannot cure, such as an unaccepted token.
+- CLI: `kterm alert watch [--after ID]` prints one line per fire (`--json`: one object per line) on standard output and its notices (reconnecting) on standard error, until Ctrl+C.
+- Tests: the hub (limits, wake-up, timeout, failed reads, cancellation); the stream over a test server (ready event, a fire after open, `after`, `Last-Event-ID`, keep-alive, limit and release, 401, bad `after`, a revoked
+  token ending the stream); the event parser and the client against a stub; the watcher's resume, backoff and refusals; the CLI command.

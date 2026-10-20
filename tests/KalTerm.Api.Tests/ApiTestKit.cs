@@ -243,7 +243,8 @@ internal sealed class FakeUserData : IUserDataStore
     public Task<IReadOnlyList<UserFire>> ReadFiresAsync(int userId, long? afterFireId, int limit, CancellationToken cancellationToken = default)
     {
         Calls.Add($"fires {userId} {afterFireId} {limit}");
-        return Task.FromResult(Fires);
+        IEnumerable<UserFire> matching = afterFireId is { } after ? Fires.Where(f => f.FireId > after) : Fires.TakeLast(limit);
+        return Task.FromResult<IReadOnlyList<UserFire>>([.. matching.Take(limit)]);
     }
 
     public Task<string?> GetSettingAsync(int userId, string name, CancellationToken cancellationToken = default)
@@ -258,6 +259,15 @@ internal sealed class FakeUserData : IUserDataStore
         Setting = value;
         return Task.CompletedTask;
     }
+}
+
+internal sealed class FakeVersion : IAlertVersionReader
+{
+    public long Value { get; set; }
+
+    public Exception? Fails { get; set; }
+
+    public Task<long> ReadAsync(CancellationToken cancellationToken = default) => Fails is null ? Task.FromResult(Value) : Task.FromException<long>(Fails);
 }
 
 internal sealed class FakeStatus : IStatusReader
@@ -283,6 +293,8 @@ internal sealed class FakeReadiness : IReadinessProbe
 /// <summary>All the fake readers, registered together.</summary>
 internal sealed class FakeReaders
 {
+    public FakeReaders() => Hub = new AlertStreamHub(Version, new AlertStreamOptions { MaxPerUser = 2, MaxTotal = 3, KeepAlive = TimeSpan.FromMilliseconds(150) });
+
     public FakeMarkets Markets { get; } = new();
 
     public FakeTicks Ticks { get; } = new();
@@ -301,6 +313,10 @@ internal sealed class FakeReaders
 
     public FakeUserData UserData { get; } = new();
 
+    public FakeVersion Version { get; } = new();
+
+    public AlertStreamHub Hub { get; }
+
     public FakeStatus Status { get; } = new();
 
     public FakeReadiness Readiness { get; } = new();
@@ -316,6 +332,8 @@ internal sealed class FakeReaders
         services.AddSingleton<IMetricsReader>(Metrics);
         services.AddSingleton<IScreenerReader>(Screener);
         services.AddSingleton<IUserDataStore>(UserData);
+        services.AddSingleton<IAlertVersionReader>(Version);
+        services.AddSingleton(Hub);
         services.AddSingleton<IStatusReader>(Status);
         services.AddSingleton<IReadinessProbe>(Readiness);
         services.AddSingleton(new ApiAuthOptions(false));

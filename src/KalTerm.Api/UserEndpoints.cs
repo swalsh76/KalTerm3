@@ -286,6 +286,8 @@ internal static partial class UserEndpoints
             return await store.DeleteAlertAsync(user.UserId, alertId, cancellationToken).ConfigureAwait(false) == StoreOutcome.Ok ? Results.NoContent() : ApiEndpoints.NotFound();
         });
 
+        app.MapGet("/v1/alerts/stream", AlertStreamEndpoint.HandleAsync);
+
         app.MapGet("/v1/alerts/fires", async (HttpContext context, IUserDataStore store, CancellationToken cancellationToken) =>
         {
             if (User(context) is not { } user)
