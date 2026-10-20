@@ -23,6 +23,13 @@ namespace KalTerm.Kalshi.Models.Json;
         typeof(FeeMultiplierJsonConverter),
     ])]
 [JsonSerializable(typeof(ExchangeStatus))]
+[JsonSerializable(typeof(AccountBalance))]
+[JsonSerializable(typeof(PositionsPage))]
+[JsonSerializable(typeof(OrdersPage))]
+[JsonSerializable(typeof(OrderEnvelope))]
+[JsonSerializable(typeof(FillsPage))]
+[JsonSerializable(typeof(SettlementsPage))]
+[JsonSerializable(typeof(QueuePositionsReply))]
 [JsonSerializable(typeof(Market))]
 [JsonSerializable(typeof(KalshiEvent))]
 [JsonSerializable(typeof(Series))]

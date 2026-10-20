@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>KalTerm.Trading</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KalTerm.Core\KalTerm.Core.csproj" />
+    <ProjectReference Include="..\KalTerm.Kalshi\KalTerm.Kalshi.csproj" />
   </ItemGroup>
 </Project>

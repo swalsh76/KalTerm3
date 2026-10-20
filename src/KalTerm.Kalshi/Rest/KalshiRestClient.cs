@@ -190,6 +190,150 @@ public sealed partial class KalshiRestClient : IDisposable
             await GetStringAsync($"/markets/{Segment(ticker)}/orderbook", KalshiQuery.Empty.With("depth", depth), cancellationToken).ConfigureAwait(false));
     }
 
+    // --- account (portfolio) reads ---------------------------------------------------------------------------------------------------
+    // These need a signed client and a key with read scope. They are plain GETs through the same guarded path as everything else: this client still cannot send anything else.
+
+    /// <summary>The account balance, per exchange shard unless <paramref name="exchangeIndex"/> narrows it. Use the dollar fields: the cents field is truncated.</summary>
+    /// <param name="exchangeIndex">Only this shard.</param>
+    /// <param name="subaccount">A subaccount (0 is the primary).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The balance.</returns>
+    public async Task<AccountBalance> BalanceAsync(int? exchangeIndex = null, int? subaccount = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/balance");
+        return KalshiJson.Parse(
+            await GetStringAsync("/portfolio/balance", KalshiQuery.Empty.With("exchange_index", exchangeIndex).With("subaccount", subaccount), cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.AccountBalance,
+            "balance");
+    }
+
+    /// <summary>One page of positions (market and event). Filters: <c>ticker</c>, <c>event_ticker</c>, <c>settlement_status</c>, <c>count_filter</c>, <c>exchange_index</c>, <c>limit</c>, <c>cursor</c>.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The page.</returns>
+    public async Task<PositionsPage> PositionsPageAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/positions");
+        return KalshiJson.Parse(
+            await GetStringAsync("/portfolio/positions", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.PositionsPage,
+            "positions");
+    }
+
+    /// <summary>Every market position matching the query, following the cursor.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    /// <returns>The positions.</returns>
+    public IAsyncEnumerable<MarketPosition> IteratePositionsAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/positions");
+        return IterateAsync("/portfolio/positions", query, KalshiJsonContext.Default.PositionsPage, page => page.MarketPositions ?? [], page => page.Cursor, cancellationToken);
+    }
+
+    /// <summary>One page of orders. Filters: <c>ticker</c>, <c>status</c>, <c>min_ts</c>, <c>max_ts</c>, <c>limit</c>, <c>cursor</c>.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The page.</returns>
+    public async Task<OrdersPage> OrdersPageAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/orders");
+        return KalshiJson.Parse(
+            await GetStringAsync("/portfolio/orders", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.OrdersPage,
+            "orders");
+    }
+
+    /// <summary>Every order matching the query, following the cursor.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    /// <returns>The orders.</returns>
+    public IAsyncEnumerable<Order> IterateOrdersAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/orders");
+        return IterateAsync("/portfolio/orders", query, KalshiJsonContext.Default.OrdersPage, page => page.Orders ?? [], page => page.Cursor, cancellationToken);
+    }
+
+    /// <summary>One order by its id.</summary>
+    /// <param name="orderId">The order.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The order.</returns>
+    public async Task<Order> OrderAsync(string orderId, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/orders/{id}");
+        return KalshiJson.Parse(
+            await GetStringAsync($"/portfolio/orders/{Segment(orderId)}", null, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.OrderEnvelope,
+            $"order {orderId}").Order;
+    }
+
+    /// <summary>One page of fills. Filters: <c>ticker</c>, <c>order_id</c>, <c>min_ts</c>, <c>max_ts</c>, <c>limit</c>, <c>cursor</c>.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The page.</returns>
+    public async Task<FillsPage> FillsPageAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/fills");
+        return KalshiJson.Parse(
+            await GetStringAsync("/portfolio/fills", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.FillsPage,
+            "fills");
+    }
+
+    /// <summary>Every fill matching the query, following the cursor.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    /// <returns>The fills.</returns>
+    public IAsyncEnumerable<Fill> IterateFillsAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/fills");
+        return IterateAsync("/portfolio/fills", query, KalshiJsonContext.Default.FillsPage, page => page.Fills ?? [], page => page.Cursor, cancellationToken);
+    }
+
+    /// <summary>One page of settlements. Filters: <c>ticker</c>, <c>event_ticker</c>, <c>min_ts</c>, <c>max_ts</c>, <c>limit</c>, <c>cursor</c>.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The page.</returns>
+    public async Task<SettlementsPage> SettlementsPageAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/settlements");
+        return KalshiJson.Parse(
+            await GetStringAsync("/portfolio/settlements", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.SettlementsPage,
+            "settlements");
+    }
+
+    /// <summary>Every settlement matching the query, following the cursor.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the listing.</param>
+    /// <returns>The settlements.</returns>
+    public IAsyncEnumerable<Settlement> IterateSettlementsAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/settlements");
+        return IterateAsync("/portfolio/settlements", query, KalshiJsonContext.Default.SettlementsPage, page => page.Settlements ?? [], page => page.Cursor, cancellationToken);
+    }
+
+    /// <summary>Where resting orders stand in the queue. Filters: <c>market_tickers</c> (comma-separated) or <c>event_ticker</c>.</summary>
+    /// <param name="query">The filters.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The queue positions.</returns>
+    public async Task<IReadOnlyList<QueuePosition>> QueuePositionsAsync(KalshiQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        RequireSigner("/portfolio/orders/queue_positions");
+        return KalshiJson.Parse(
+            await GetStringAsync("/portfolio/orders/queue_positions", query, cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.QueuePositionsReply,
+            "queue positions").Positions ?? [];
+    }
+
+    /// <summary>An account endpoint without a signature would only be refused; saying so here names the mistake and spends no request.</summary>
+    private void RequireSigner(string path)
+    {
+        if (_signer is null)
+        {
+            throw new AuthException($"{path} is an account endpoint: the client needs a signer (a key) to read it");
+        }
+    }
+
     /// <summary>
     /// Estimates how far this machine's clock is from Kalshi's. Signed requests embed a timestamp, so a badly skewed clock makes every
     /// request fail. Kalshi publishes no time endpoint, so this takes <paramref name="samples"/> readings of the HTTP <c>Date</c>
