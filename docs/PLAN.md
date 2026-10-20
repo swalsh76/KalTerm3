@@ -40,7 +40,7 @@ One installer and one code base; a `deployment.mode` setting differs.
 | Data access | `Microsoft.Data.SqlClient` (async, `SqlBulkCopy`), Dapper on hot paths, DbUp or SSDT migrations |
 | Server | ASP.NET Core (Kestrel, self-signed TLS, TOFU pinning); one Windows service per role: ingest, api, analyze, backup |
 | Supervision | `UseWindowsService`, `sc failure` recovery, virtual service accounts, ACLs |
-| Client | CLI (`System.CommandLine`, `Spectre.Console`) first; WPF UI later (decision pending: WPF vs WinUI 3) |
+| Client | CLI (`System.CommandLine`, `Spectre.Console`) first; WPF UI in M7 (decided 2026-10-20: WPF, not WinUI 3) |
 | Secrets | DPAPI and ACL'd files for the server; Credential Manager for the trading key |
 | Install | PowerShell: `check`, `install`, `verify`, `uninstall`, `-WhatIf` |
 | Tests | xUnit; LocalDB or a Developer instance; golden fixtures exported from the Python line |
@@ -72,7 +72,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M4 Server** | Storage governor, retention, candles, status, auth, TLS and pinning, backup and restore | API contract tests green (**met 2026-10-20**, BUILD-LOG §6) |
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire (**met 2026-10-20**, BUILD-LOG §7) |
 | **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead (plan: section 6.7). **Met 2026-10-20** (BUILD-LOG §8) |
-| **M7 UI** | WPF terminal | decided later |
+| **M7 UI** | WPF terminal | starts, connects, shows live data from push streams, alerts notify, layouts persist, trading panel works under tiny limits with the owner's go (plan: section 6.8) |
 | **M8 Host layer and verification** | Installer, services, reboot and power-cut tests, 48 h soak | all pass |
 
 ### 6.1 S-1 stages
@@ -316,6 +316,36 @@ run only after the exact order is shown and the owner says go.
 | 6.6 (built, BUILD-LOG 8.7) | CLI: `buy`, `sell`, `cancel`, `amend`, `orders`, `positions`, `balance`, `fills`, `kill`, `--dry-run`, the risk verdict before sending, the typed production confirmation |
 | 6.7 (done, BUILD-LOG 8.8) | Live end to end on the real account under the tiny limits, each write after the owner's go: far-from-market resting orders, amend, cancel, the kill switch; then one deliberate minimal fill to check fills, positions and fees; the server-offline test; as-built notes |
 | 6.8 (done, BUILD-LOG 8.9) | Close-out: what the live checks showed, risk defaults revisited with the owner, docs |
+
+### 6.8 M7 UI: decisions and slices
+
+Owner decisions 2026-10-20: **WPF** (not WinUI 3: a terminal is grids, charts, docking and saved layouts, where WPF is deep, and it builds, tests and covers on the plain `windows-latest` runner with no packaging); **live data by server
+push streams**; **read-only views first, the trading panel last**; **the 90% line-coverage gate applies to the whole app** (no exemption for views).
+
+**What it is.** A desktop terminal for the owner's workstation (project `KalTerm.Terminal`, `net10.0-windows`). It reads the KalTerm server through `KalTerm.Client` (pinned HTTPS and the user's token, stored as `kterm` stores
+them) and shows times in the user's time zone setting. Trading goes straight to Kalshi through `KalTerm.Trading` and never through the server; the trading key stays in Credential Manager; the UI holds no secrets of its own.
+Money and counts are shown from the exact fixed-point values (never a float). No Kalshi or server address is hard-coded outside configuration.
+
+**Rules for every slice.** Each slice gets its own plan for approval before code. Logic lives in view-models and services that unit-test without a screen; views are thin XAML with minimal code-behind, so the 90% gate is met
+honestly (generated XAML code is excluded by its `GeneratedCode` attribute; slice 7.1 proves this before anything depends on it, and if the gate cannot be met honestly the question comes back to the owner, the gate is not relaxed
+quietly). Any new third-party package is named in its slice plan, must be permissively licensed (the repository is MIT and public), and is approved there. Candidates, none decided: MVVM helpers (CommunityToolkit.Mvvm), docking
+(AvalonDock), charts (ScottPlot), toast notifications (a Microsoft community package).
+
+| # | Slice |
+|---|---|
+| 7.1 | Shell: the `KalTerm.Terminal` project and its test project, the main window, connecting (server address, trust the certificate, store the token; the same pin and token stores as `kterm`), the status page (a view of `/v1/status`), the time-zone choice; proves the coverage approach for XAML |
+| 7.2 | Server push streams: SSE streams beside the alert stream for ticks and order books of the markets a client names (same token and certificate, per-user and total stream limits, resume, keep-alive, a watcher reading the existing change counters), `KalTerm.Client` stream readers, and a `kterm` reader so the contract is tested without a UI. A server change: needs its own rollout to kaldb, asked for at the end of the slice |
+| 7.3 | Markets: a searchable, sortable market list (live), and a market detail with ticks, trades and metrics updating from the streams |
+| 7.4 | Charts and book: candle charts with intervals and the live order book |
+| 7.5 | Screener and watchlists: the ranked screener with its refresh age, per-user watchlists, filtering the market list by a watchlist |
+| 7.6 | Alerts: manage alerts, and desktop notification and sound when one fires (the alert stream); the notification text follows the time-zone setting |
+| 7.7 | Layouts: saved per user on the server (a migration and endpoints, like watchlists), restored on start; the stored time-zone setting edited in the UI. A server change: its own rollout |
+| 7.8 | Trading panel: balance, positions, orders and fills; an order ticket that shows the risk verdict and any shard funding before sending; the typed production confirmation as a dialog; cancel, amend, and a kill-switch button; the live check follows the 6.7 rules (each real write after the owner's go, under the tiny limits) |
+| 7.9 | Close-out: the live checks, docs |
+
+**Gate.** The terminal starts, connects with a pinned certificate and token, shows live data from the push streams, alerts notify, layouts persist, and the trading panel works under the tiny limits with the owner's go-ahead.
+
+**Not in M7 (parking lot if raised).** Mobile or web clients, multiple trading accounts, strategy automation, a built-in order-book replay, themes beyond the system light and dark.
 
 ## 7. Risks
 
