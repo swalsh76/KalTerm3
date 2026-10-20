@@ -1425,6 +1425,29 @@ items stay in PLAN.md section 9.
 - CLI: `kterm alert watch [--after ID]` prints one line per fire (`--json`: one object per line) on standard output and its notices (reconnecting) on standard error, until Ctrl+C.
 - Tests: the hub (limits, wake-up, timeout, failed reads, cancellation); the stream over a test server (ready event, a fire after open, `after`, `Last-Event-ID`, keep-alive, limit and release, 401, bad `after`, a revoked
   token ending the stream); the event parser and the client against a stub; the watcher's resume, backoff and refusals; the CLI command.
+- Rollout and live check of 5.5 (2026-10-20): API redeployed (`host-327d431`). `kterm alert watch` from the owner's workstation over HTTPS, with price alerts on a 15-minute BTC market, received two fires 1.95 s and
+  1.27 s after the server committed them (including the one-second counter poll and any clock difference between the machines). The reconnect and resume path is covered by tests only.
+
+## 7. M5 Analytics summary (2026-10-20): done
+
+Gate "per-user alerts fire": met. A user makes an alert from the command line; the analyzer judges it every 10 seconds against live data; the fire is stored and reaches the user's terminal about one to two seconds
+later; all of it scoped to the user's token. Every slice was rolled out on `kaldb` and checked against the production feed.
+
+| Slice | What | Notes |
+|---|---|---|
+| 5.1 | Market metrics | last, 24-hour change, volume, VWAP, spread, averages and volatility, integer arithmetic only; volume and VWAP matched Kalshi's trades exactly (5.16) |
+| 5.2 | Analyzer runner and `market_metrics` | due check, per-analyzer lock, timeout, run history, change counter; 204,000 markets refreshed in 10 to 15 s, only changed rows written (5.17) |
+| 5.3 | Screener | `GET /v1/screener`, keyset paging, refresh age, `status` analytics line; top markets agreed with Kalshi's volumes (5.18) |
+| 5.4 | Watchlists, alerts, stored time zone | five alert kinds, edge-triggered with cooldown, gaps skip; first writing endpoints, scoped to the token's user (5.19) |
+| 5.5 | Push | Server-Sent Events, resume by id, 10 streams per user and 250 in all, reconnecting client (5.20) |
+
+Found only by the live checks, none by the fakes: the alerts analyzer took 34 to 39 s a run until the tick lookups were written with the ids in the statement (0.5 s after); a temporary table made by a command with
+parameters is dropped when the command ends; two tests of one class shared rows (CI ordering). The standing question for each slice stays "what would the real service do that my fake cannot?".
+
+Running on `kaldb` at close: ingest `host-84f4848`, API `host-327d431`; status reports no problems; the analyzers run every 5 minutes (metrics) and 10 seconds (alerts).
+
+Carried forward, none in M5: persisted deltas, live add/remove of watched markets, WebSocket push (for two-way needs), a desktop notification or sound (with the UI, M7), per-user layouts (M7), mDNS discovery. Parked items
+stay in PLAN.md section 9.
 
 ## 8. M6 Trading (started 2026-10-20)
 
