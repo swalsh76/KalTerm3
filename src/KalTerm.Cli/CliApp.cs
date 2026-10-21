@@ -111,7 +111,7 @@ internal static partial class CliApp
         var screenTop = new Option<int>("--top") { Description = "How many to show", DefaultValueFactory = _ => 20 };
         var screenCursor = new Option<string?>("--cursor") { Description = "Continue after the previous page (the cursor it printed)" };
         var screenWatchlist = new Option<string?>("--watchlist") { Description = "Only the markets of one of your watchlists" };
-        var screenSearch = new Option<string?>("--search") { Description = "Only markets whose ticker or yes label contains this text (2 to 64 characters, any case)" };
+        var screenSearch = new Option<string?>("--search") { Description = "Only markets whose ticker, yes label, title or event title contains this text (2 to 64 characters, any case)" };
         var screen = new Command("screen", "Markets ranked by their metrics (24-hour volume by default)");
         foreach (var option in new Option[] { screenSort, screenAscending, screenStatus, screenMinVolume, screenTop, screenCursor, screenWatchlist, screenSearch })
         {

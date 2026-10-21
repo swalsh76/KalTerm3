@@ -30,7 +30,7 @@
             <DockPanel DockPanel.Dock="Top" LastChildFill="False">
                 <TextBlock Text="Search" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <TextBox Width="200" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="Part of the ticker or the yes label (two characters or more)" />
+                         ToolTip="Part of the event or market name, the yes label or the ticker (two characters or more)" />
                 <ComboBox Width="120" Margin="8,0,0,0" ItemsSource="{Binding Statuses}" SelectedItem="{Binding StatusFilter}" DisplayMemberPath="Text" />
                 <TextBlock Text="Min volume" VerticalAlignment="Center" Margin="12,0,0,0" />
                 <TextBox Style="{StaticResource MinVolume}" Text="{Binding MinVolumeText, UpdateSourceTrigger=PropertyChanged}" />
@@ -75,7 +75,17 @@
                         <KeyBinding Key="Return" Command="{Binding OpenCommand}" />
                     </DataGrid.InputBindings>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Ticker" Binding="{Binding Ticker}" Width="2*" MinWidth="200" />
+                        <DataGridTemplateColumn Header="Market" Width="2*" MinWidth="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,2">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Under}" Foreground="Gray" FontSize="11" TextTrimming="CharacterEllipsis"
+                                                   Visibility="{Binding HasUnder, Converter={StaticResource Visible}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="Yes" Binding="{Binding YesLabel}" Width="*" MinWidth="110" />
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80" />
                         <DataGridTextColumn Header="Last" Binding="{Binding Last}" ElementStyle="{StaticResource Right}" Width="70" />
@@ -85,6 +95,7 @@
                         <DataGridTextColumn Header="24h change" Binding="{Binding Change}" ElementStyle="{StaticResource Right}" Width="110" />
                         <DataGridTextColumn Header="24h volume" Binding="{Binding Volume}" ElementStyle="{StaticResource Right}" Width="120" />
                         <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" ElementStyle="{StaticResource Right}" Width="130" />
+                        <DataGridTextColumn Header="Ticker" Binding="{Binding Ticker}" Width="190" />
                     </DataGrid.Columns>
                 </DataGrid>
                 <TextBlock Text="No markets match." Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"

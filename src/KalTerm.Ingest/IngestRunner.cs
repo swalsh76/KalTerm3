@@ -38,6 +38,9 @@ public sealed record IngestRunnerOptions
     /// <summary>How often the backup schedule looks at the clock. Default 1 minute.</summary>
     public TimeSpan BackupCheckInterval { get; init; } = TimeSpan.FromMinutes(1);
 
+    /// <summary>How often the event titles are brought up to date (the open events are read again hourly inside this). Default 5 minutes.</summary>
+    public TimeSpan EventInterval { get; init; } = TimeSpan.FromMinutes(5);
+
     /// <summary>How long the trade backfill waits when no gap is waiting. Default 30 seconds.</summary>
     public TimeSpan BackfillInterval { get; init; } = TimeSpan.FromSeconds(30);
 
@@ -65,7 +68,7 @@ public sealed record IngestRunnerOptions
     /// <summary>Throws <see cref="ArgumentOutOfRangeException"/> if a value cannot work.</summary>
     public void Validate()
     {
-        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || BackupCheckInterval <= TimeSpan.Zero || CandleInterval <= TimeSpan.Zero || AnalyzerCheckInterval <= TimeSpan.Zero || BackfillInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
+        if (HeartbeatInterval <= TimeSpan.Zero || PartitionCheckInterval <= TimeSpan.Zero || GovernorCheckInterval <= TimeSpan.Zero || BackupCheckInterval <= TimeSpan.Zero || CandleInterval <= TimeSpan.Zero || EventInterval <= TimeSpan.Zero || AnalyzerCheckInterval <= TimeSpan.Zero || BackfillInterval <= TimeSpan.Zero || StatusInterval <= TimeSpan.Zero
             || StreamRetryBase <= TimeSpan.Zero || StopTimeout <= TimeSpan.Zero || BookPublishInterval <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(IngestRunnerOptions), "every interval and timeout must be positive");
@@ -128,6 +131,7 @@ public sealed partial class IngestRunner
     private readonly ITradeBackfiller? _backfill;
     private readonly IBackupJob? _backup;
     private readonly ICandleJob? _candles;
+    private readonly IEventCatalog? _events;
     private readonly IReadOnlyList<IAnalyzerRunner> _analyzers;
     private long _restarts;
     private long _discoveryFailures;
@@ -175,7 +179,8 @@ public sealed partial class IngestRunner
         ITradeBackfiller? backfiller = null,
         IBackupJob? backup = null,
         ICandleJob? candles = null,
-        IReadOnlyList<IAnalyzerRunner>? analyzers = null)
+        IReadOnlyList<IAnalyzerRunner>? analyzers = null,
+        IEventCatalog? events = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(ids);
@@ -204,6 +209,7 @@ public sealed partial class IngestRunner
         _backfill = backfiller;
         _backup = backup;
         _candles = candles;
+        _events = events;
         _analyzers = analyzers ?? [];
         _ingestor = new StreamIngestor(ids, tickers, trades, gaps, ingestorOptions, _time, _logger, books);
     }
@@ -268,6 +274,11 @@ public sealed partial class IngestRunner
         if (_candles is not null)
         {
             loops.Add(Guard(CandleLoopAsync, linked));
+        }
+
+        if (_events is not null)
+        {
+            loops.Add(Guard(EventLoopAsync, linked));
         }
 
         foreach (var analyzers in _analyzers)
@@ -477,6 +488,16 @@ public sealed partial class IngestRunner
         {
             await TryAsync("candles", () => _candles!.RunOnceAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
             await Task.Delay(_options.CandleInterval, _time, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Keeps the event titles current. Its own loop: reading every open event is dozens of requests and must not hold up the market passes.</summary>
+    private async Task EventLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await TryAsync("event titles", () => _events!.RunAsync(cancellationToken), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(_options.EventInterval, _time, cancellationToken).ConfigureAwait(false);
         }
     }
 

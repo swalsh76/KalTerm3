@@ -18,7 +18,7 @@ public sealed record MarketsQuery(string? Status = null, string? Event = null, s
 /// <param name="Limit">Page size.</param>
 /// <param name="Cursor">The <c>next_cursor</c> of the previous page.</param>
 /// <param name="Watchlist">Only the markets of this watchlist of the caller.</param>
-/// <param name="Search">Only markets whose ticker or yes label contains this text (2 to 64 characters, any case).</param>
+/// <param name="Search">Only markets whose ticker, yes label, title or event title contains this text (2 to 64 characters, any case).</param>
 public sealed record ScreenQuery(string? Sort = null, string? Order = null, string? Status = null, string? MinVolume = null, int? Limit = null, string? Cursor = null, string? Watchlist = null, string? Search = null);
 
 /// <summary>A time window and paging for ticks, trades and gaps. A <see langword="null"/> value is not sent; times are UTC.</summary>

@@ -72,10 +72,13 @@ internal static class ReaderSupport
 public sealed class MarketReader(DataSource source, ReaderOptions? options = null) : IMarketReader
 {
     private const string Columns = """
-        ticker AS Ticker, event_ticker AS EventTicker, market_type AS MarketType, status AS Status, yes_sub_title AS YesSubTitle, no_sub_title AS NoSubTitle,
-        open_time AS OpenTime, close_time AS CloseTime, latest_expiration_time AS LatestExpirationTime, settlement_ts AS SettlementTs, result AS Result,
-        settlement_value_e6 AS SettlementValueE6, first_seen_at AS FirstSeenAt, last_seen_at AS LastSeenAt
+        m.ticker AS Ticker, m.event_ticker AS EventTicker, m.market_type AS MarketType, m.status AS Status, m.yes_sub_title AS YesSubTitle, m.no_sub_title AS NoSubTitle,
+        m.open_time AS OpenTime, m.close_time AS CloseTime, m.latest_expiration_time AS LatestExpirationTime, m.settlement_ts AS SettlementTs, m.result AS Result,
+        m.settlement_value_e6 AS SettlementValueE6, m.first_seen_at AS FirstSeenAt, m.last_seen_at AS LastSeenAt,
+        m.title AS Title, ISNULL(e.title, N'') AS EventTitle, ISNULL(e.sub_title, N'') AS EventSubTitle
         """;
+
+    private const string From = "dbo.market m LEFT JOIN dbo.market_event e ON e.event_ticker = m.event_ticker";
 
     private readonly ReaderOptions _options = Checked(options);
 
@@ -87,12 +90,12 @@ public sealed class MarketReader(DataSource source, ReaderOptions? options = nul
         await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
         var rows = (await connection.QueryAsync<StoredMarket>(ReaderSupport.Command(
             $"""
-            SELECT TOP (@take) {Columns} FROM dbo.market
-            WHERE ticker > @after
-              AND (@status IS NULL OR status = @status)
-              AND (@event IS NULL OR event_ticker = @event)
-              AND (@pattern IS NULL OR ticker LIKE @pattern ESCAPE '\')
-            ORDER BY ticker
+            SELECT TOP (@take) {Columns} FROM {From}
+            WHERE m.ticker > @after
+              AND (@status IS NULL OR m.status = @status)
+              AND (@event IS NULL OR m.event_ticker = @event)
+              AND (@pattern IS NULL OR m.ticker LIKE @pattern ESCAPE '\')
+            ORDER BY m.ticker
             """,
             new
             {
@@ -116,7 +119,7 @@ public sealed class MarketReader(DataSource source, ReaderOptions? options = nul
         ArgumentException.ThrowIfNullOrWhiteSpace(ticker);
         await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
         return await connection.QuerySingleOrDefaultAsync<StoredMarket>(ReaderSupport.Command(
-            $"SELECT {Columns} FROM dbo.market WHERE ticker = @ticker",
+            $"SELECT {Columns} FROM {From} WHERE m.ticker = @ticker",
             new { ticker = ReaderSupport.Ansi(ticker, 128) },
             _options,
             cancellationToken)).ConfigureAwait(false);

@@ -50,6 +50,7 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     private MarketDto? _market;
     private MetricsDto? _metrics;
     private string _heading;
+    private string _subHeading = string.Empty;
     private bool _loading = true;
     private bool _disposed;
 
@@ -77,11 +78,18 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
 
     public RelayCommand BackCommand { get; }
 
-    /// <summary>The ticker and the yes label once known.</summary>
+    /// <summary>What the market is called (its event's title), the ticker until it is known.</summary>
     public string Heading
     {
         get => _heading;
         private set => Set(ref _heading, value);
+    }
+
+    /// <summary>Under the heading: the market's own title and its ticker.</summary>
+    public string SubHeading
+    {
+        get => _subHeading;
+        private set => Set(ref _subHeading, value);
     }
 
     public ObservableCollection<DetailLine> About { get; } = [];
@@ -184,7 +192,8 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     private async Task LoadMarketAsync()
     {
         _market = await _api.GetMarketAsync(Ticker, _loops?.Token ?? default).ConfigureAwait(true);
-        Heading = _market.YesLabel.Length > 0 ? $"{Ticker}  ·  {_market.YesLabel}" : Ticker;
+        Heading = MarketNames.Name(_market.EventTitle, _market.Title, _market.YesLabel, Ticker);
+        SubHeading = string.Join("  ·  ", new[] { MarketNames.Under(_market.EventTitle, _market.Title), Ticker }.Where(part => part.Length > 0 && !string.Equals(part, Heading, StringComparison.Ordinal)));
         RedrawLines();
     }
 
@@ -283,6 +292,11 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
         if (_market is { } market)
         {
             About.Add(new DetailLine("Event", market.EventTicker));
+            if (market.EventSubTitle.Length > 0)
+            {
+                About.Add(new DetailLine("Event sub-title", market.EventSubTitle));
+            }
+
             About.Add(new DetailLine("Status", market.Status));
             About.Add(new DetailLine("Yes / No", $"{market.YesLabel} / {market.NoLabel}"));
             About.Add(new DetailLine("Opens", _format.MomentWithZone(market.OpenTime)));

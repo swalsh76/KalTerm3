@@ -22,7 +22,7 @@ public class ContractTests
     {
         Pin(
             new MarketDto("KXHIGHNY-26OCT19-T70", "KXHIGHNY-26OCT19", "binary", "active", "Yes", "No", "2026-10-18T14:00:00.000000+00:00", "2026-10-19T23:00:00.000000+00:00", null, string.Empty, null, null, "2026-10-18T22:23:30.123000+00:00", "2026-10-18T22:53:30.000000+00:00"),
-            """{"ticker":"KXHIGHNY-26OCT19-T70","event_ticker":"KXHIGHNY-26OCT19","type":"binary","status":"active","yes_label":"Yes","no_label":"No","open_time":"2026-10-18T14:00:00.000000+00:00","close_time":"2026-10-19T23:00:00.000000+00:00","expiration_time":null,"result":"","settlement_value":null,"settlement_time":null,"first_seen_at":"2026-10-18T22:23:30.123000+00:00","last_seen_at":"2026-10-18T22:53:30.000000+00:00"}""");
+            """{"ticker":"KXHIGHNY-26OCT19-T70","event_ticker":"KXHIGHNY-26OCT19","type":"binary","status":"active","yes_label":"Yes","no_label":"No","open_time":"2026-10-18T14:00:00.000000+00:00","close_time":"2026-10-19T23:00:00.000000+00:00","expiration_time":null,"result":"","settlement_value":null,"settlement_time":null,"first_seen_at":"2026-10-18T22:23:30.123000+00:00","last_seen_at":"2026-10-18T22:53:30.000000+00:00","title":"","event_title":"","event_sub_title":""}""");
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class ContractTests
 
         Pin(
             new MarketPage([market], "QQ"),
-            """{"markets":[{"ticker":"A","event_ticker":"E","type":"binary","status":"active","yes_label":"Yes","no_label":"No","open_time":null,"close_time":null,"expiration_time":null,"result":"","settlement_value":null,"settlement_time":null,"first_seen_at":"2026-10-18T00:00:00.000000+00:00","last_seen_at":"2026-10-18T00:00:00.000000+00:00"}],"next_cursor":"QQ"}""");
+            """{"markets":[{"ticker":"A","event_ticker":"E","type":"binary","status":"active","yes_label":"Yes","no_label":"No","open_time":null,"close_time":null,"expiration_time":null,"result":"","settlement_value":null,"settlement_time":null,"first_seen_at":"2026-10-18T00:00:00.000000+00:00","last_seen_at":"2026-10-18T00:00:00.000000+00:00","title":"","event_title":"","event_sub_title":""}],"next_cursor":"QQ"}""");
         Pin(new MarketPage([], null), """{"markets":[],"next_cursor":null}""");
     }
 
@@ -76,8 +76,8 @@ public class ContractTests
     {
         var row = new ScreenerRowDto("KX-1", "EV-1", "active", "Yes", "2026-10-18T22:55:00.000000+00:00", "2026-10-18T22:59:00.000000+00:00", "0.560000", "0.020000", "4.00", 2, "99.00", "0.550000", "0.570000", "0.020000", "0.550000", "0.540000", "0.500000", "0.012000", false);
 
-        Pin(row, """{"ticker":"KX-1","event_ticker":"EV-1","status":"active","yes_label":"Yes","changed_at":"2026-10-18T22:55:00.000000+00:00","last_time":"2026-10-18T22:59:00.000000+00:00","last":"0.560000","change24h":"0.020000","volume24h":"4.00","trade_count24h":2,"open_interest":"99.00","yes_bid":"0.550000","yes_ask":"0.570000","spread":"0.020000","vwap24h":"0.550000","sma20":"0.540000","sma50":"0.500000","volatility24h":"0.012000","partial":false}""");
-        Pin(new ScreenerPage("volume", "desc", "2026-10-18T22:55:00.000000+00:00", 300, [row with { Last = null, Partial = true }], "Qw"), """{"sort":"volume","order":"desc","refreshed_at":"2026-10-18T22:55:00.000000+00:00","age_seconds":300,"rows":[{"ticker":"KX-1","event_ticker":"EV-1","status":"active","yes_label":"Yes","changed_at":"2026-10-18T22:55:00.000000+00:00","last_time":"2026-10-18T22:59:00.000000+00:00","last":null,"change24h":"0.020000","volume24h":"4.00","trade_count24h":2,"open_interest":"99.00","yes_bid":"0.550000","yes_ask":"0.570000","spread":"0.020000","vwap24h":"0.550000","sma20":"0.540000","sma50":"0.500000","volatility24h":"0.012000","partial":true}],"next_cursor":"Qw"}""");
+        Pin(row, """{"ticker":"KX-1","event_ticker":"EV-1","status":"active","yes_label":"Yes","changed_at":"2026-10-18T22:55:00.000000+00:00","last_time":"2026-10-18T22:59:00.000000+00:00","last":"0.560000","change24h":"0.020000","volume24h":"4.00","trade_count24h":2,"open_interest":"99.00","yes_bid":"0.550000","yes_ask":"0.570000","spread":"0.020000","vwap24h":"0.550000","sma20":"0.540000","sma50":"0.500000","volatility24h":"0.012000","partial":false,"title":"","event_title":"","event_sub_title":""}""");
+        Pin(new ScreenerPage("volume", "desc", "2026-10-18T22:55:00.000000+00:00", 300, [row with { Last = null, Partial = true }], "Qw"), """{"sort":"volume","order":"desc","refreshed_at":"2026-10-18T22:55:00.000000+00:00","age_seconds":300,"rows":[{"ticker":"KX-1","event_ticker":"EV-1","status":"active","yes_label":"Yes","changed_at":"2026-10-18T22:55:00.000000+00:00","last_time":"2026-10-18T22:59:00.000000+00:00","last":null,"change24h":"0.020000","volume24h":"4.00","trade_count24h":2,"open_interest":"99.00","yes_bid":"0.550000","yes_ask":"0.570000","spread":"0.020000","vwap24h":"0.550000","sma20":"0.540000","sma50":"0.500000","volatility24h":"0.012000","partial":true,"title":"","event_title":"","event_sub_title":""}],"next_cursor":"Qw"}""");
         Pin(new AnalyticsStatusDto("ok", "5 written", "2026-10-18T22:55:00.000000+00:00", "2026-10-18T22:55:00.000000+00:00", 300, 11, 201000), """{"last":"ok","last_message":"5 written","last_at":"2026-10-18T22:55:00.000000+00:00","last_ok_at":"2026-10-18T22:55:00.000000+00:00","last_ok_age_seconds":300,"last_ok_seconds":11,"last_ok_rows":201000}""");
     }
 

@@ -38,7 +38,8 @@ internal sealed record IngestOverrides(
     BackfillOptions? Backfill = null,
     IBackupJob? Backup = null,
     ICandleJob? Candles = null,
-    IReadOnlyList<IAnalyzerRunner>? Analyzers = null);
+    IReadOnlyList<IAnalyzerRunner>? Analyzers = null,
+    IEventCatalog? Events = null);
 
 /// <summary>Builds the real ingest process from its settings and runs it: database ready, then the <see cref="IngestRunner"/> over real storage and the Kalshi feed.</summary>
 public static class IngestComposition
@@ -76,12 +77,14 @@ public static class IngestComposition
             var listOpen = overrides?.ListOpenMarkets;
             var listUpdated = overrides?.ListUpdatedSince;
             var keepBooks = options.WatchList.Length > 0;
+            var events = overrides?.Events;
             if (listOpen is null || listUpdated is null || (keepBooks && overrides?.OrderBookRest is null) || (options.BackfillEnabled && overrides?.Trades is null))
             {
                 rest = new KalshiRestClient(settings, new KalshiRestClientOptions { Signer = signer, Logger = loggerFactory.CreateLogger<KalshiRestClient>() });
                 var client = rest;
                 listOpen ??= ct => client.IterateOpenMarketsAsync(ct);
                 listUpdated ??= (since, ct) => client.IterateMarketsUpdatedSinceAsync(since, ct);
+                events ??= overrides is null ? CreateEventCatalog(client, new EventStore(data), time, loggerFactory) : null;
             }
 
             OrderBookKeeper? keeper = keepBooks
@@ -133,7 +136,8 @@ public static class IngestComposition
                 backfiller,
                 backup,
                 candles,
-                analyzers);
+                analyzers,
+                events);
             try
             {
                 await runner.RunAsync(cancellationToken).ConfigureAwait(false);
@@ -149,6 +153,28 @@ public static class IngestComposition
             signer?.Dispose();
         }
     }
+
+    /// <summary>The event titles: all open events hourly, and the events markets mention one at a time (a 404 means Kalshi has none).</summary>
+    private static EventDiscovery CreateEventCatalog(KalshiRestClient client, IEventStore store, TimeProvider time, ILoggerFactory loggerFactory) =>
+        new(
+            store,
+            ct => client.IterateEventsAsync(KalshiQuery.Empty.With("status", "open").With("limit", EventPageSize), ct),
+            async (ticker, ct) =>
+            {
+                try
+                {
+                    return await client.EventAsync(ticker, ct).ConfigureAwait(false);
+                }
+                catch (KalshiApiException ex) when (ex.StatusCode == 404)
+                {
+                    return null;
+                }
+            },
+            time,
+            loggerFactory.CreateLogger<EventDiscovery>());
+
+    /// <summary>Kalshi's largest page of events.</summary>
+    private const int EventPageSize = 200;
 
     /// <summary>The daily backup job, or <see langword="null"/> when no backup target is configured.</summary>
     private static BackupSchedule? CreateBackupJob(IngestHostOptions options, DataSource data, IIngestState state, TimeProvider time, ILoggerFactory loggerFactory)

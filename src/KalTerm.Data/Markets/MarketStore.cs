@@ -18,6 +18,8 @@ public sealed class MarketStore(DataSource source) : IMarketStore
 
     private const int SubTitleLength = 256;
 
+    private const int TitleLength = 512;
+
     private const string CreateStage = """
         CREATE TABLE #market_stage (
             ticker varchar(128) NOT NULL PRIMARY KEY,
@@ -31,7 +33,8 @@ public sealed class MarketStore(DataSource source) : IMarketStore
             latest_expiration_time datetime2(3) NULL,
             settlement_ts datetime2(3) NULL,
             result varchar(16) NOT NULL,
-            settlement_value_e6 bigint NULL)
+            settlement_value_e6 bigint NULL,
+            title nvarchar(512) NOT NULL)
         """;
 
     private const string Merge = """
@@ -41,13 +44,13 @@ public sealed class MarketStore(DataSource source) : IMarketStore
             t.event_ticker = s.event_ticker, t.market_type = s.market_type, t.status = s.status,
             t.yes_sub_title = s.yes_sub_title, t.no_sub_title = s.no_sub_title,
             t.open_time = s.open_time, t.close_time = s.close_time, t.latest_expiration_time = s.latest_expiration_time,
-            t.settlement_ts = s.settlement_ts, t.result = s.result, t.settlement_value_e6 = s.settlement_value_e6,
+            t.settlement_ts = s.settlement_ts, t.result = s.result, t.settlement_value_e6 = s.settlement_value_e6, t.title = s.title,
             t.last_seen_at = @seen
         WHEN NOT MATCHED THEN INSERT
             (ticker, event_ticker, market_type, status, yes_sub_title, no_sub_title, open_time, close_time, latest_expiration_time,
-             settlement_ts, result, settlement_value_e6, first_seen_at, last_seen_at)
+             settlement_ts, result, settlement_value_e6, title, first_seen_at, last_seen_at)
             VALUES (s.ticker, s.event_ticker, s.market_type, s.status, s.yes_sub_title, s.no_sub_title, s.open_time, s.close_time,
-                    s.latest_expiration_time, s.settlement_ts, s.result, s.settlement_value_e6, @seen, @seen)
+                    s.latest_expiration_time, s.settlement_ts, s.result, s.settlement_value_e6, s.title, @seen, @seen)
         OUTPUT $action, inserted.market_id, inserted.ticker;
         """;
 
@@ -155,6 +158,7 @@ public sealed class MarketStore(DataSource source) : IMarketStore
         table.Columns.Add("settlement_ts", typeof(DateTime));
         table.Columns.Add("result", typeof(string));
         table.Columns.Add("settlement_value_e6", typeof(long));
+        table.Columns.Add("title", typeof(string));
 
         // A ticker may appear twice in one batch (a page boundary that shifted); the MERGE would refuse it, so the last record wins.
         var last = new Dictionary<string, MarketRecord>(records.Count, StringComparer.Ordinal);
@@ -177,7 +181,8 @@ public sealed class MarketStore(DataSource source) : IMarketStore
                 (object?)r.LatestExpirationTime ?? DBNull.Value,
                 (object?)r.SettlementTs ?? DBNull.Value,
                 r.Result,
-                (object?)r.SettlementValueE6 ?? DBNull.Value);
+                (object?)r.SettlementValueE6 ?? DBNull.Value,
+                r.Title.Length <= TitleLength ? r.Title : r.Title[..TitleLength]);
         }
 
         return table;

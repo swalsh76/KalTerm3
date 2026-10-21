@@ -90,7 +90,7 @@ public class ModelVectorTests
                 Assert.True(actual.ValueKind == JsonValueKind.Object, $"{path}: expected an object, got {actual.ValueKind}");
                 Assert.Equal(
                     expected.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal),
-                    actual.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal));
+                    actual.EnumerateObject().Select(p => p.Name).Where(n => !(PortOnlyMarketField(path) && n == "title")).Order(StringComparer.Ordinal));
                 foreach (var property in expected.EnumerateObject())
                 {
                     Compare(property.Value, actual.GetProperty(property.Name), $"{path}.{property.Name}", property.Name);
@@ -114,6 +114,12 @@ public class ModelVectorTests
                 break;
         }
     }
+
+    /// <summary>
+    /// A deliberate difference from the reference: KalTerm keeps a market's own <c>title</c> (slice 7.3b, the human-readable name), which the reference's Market model does not have. It is accepted on a market and
+    /// nowhere else (an event's <c>title</c> is in the reference too); <c>AMarketCarriesItsOwnTitleAndAMarketWithoutOneHasAnEmptyTitle</c> pins that it is read.
+    /// </summary>
+    private static bool PortOnlyMarketField(string path) => path == "Market" || System.Text.RegularExpressions.Regex.IsMatch(path, @"\.markets\[\d+\]$");
 
     private static void CompareLeaf(JsonElement expected, JsonElement actual, string path, string name)
     {

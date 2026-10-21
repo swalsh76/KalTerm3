@@ -56,7 +56,8 @@ public static class MarketMapper
             market.LatestExpirationTime?.UtcDateTime,
             market.SettlementTs?.UtcDateTime,
             market.Result,
-            market.SettlementValueDollars?.Micros);
+            market.SettlementValueDollars?.Micros,
+            market.Title);
     }
 }
 
