@@ -664,10 +664,12 @@ public sealed class MarketsViewModelTests : IDisposable
 
         Assert.NotNull(detail);
         Assert.True(_model.ShowingDetail);
+        Assert.False(_model.ShowingList);
         Assert.Equal("KX-A", detail.Ticker);
         detail.BackCommand.Execute(null);
         Assert.Null(_model.Detail);
         Assert.False(_model.ShowingDetail);
+        Assert.True(_model.ShowingList);
     }
 
     [Fact]
@@ -1084,6 +1086,37 @@ public sealed class MarketsViewTests : IDisposable
         Assert.Contains("2026-10-18 22:59:01.000", texts);
         Assert.Contains("0.56", texts);
         Assert.Contains("yes", texts);
+    }
+
+    [Fact]
+    public void AnOpenedMarketCoversTheListWithAnOpaqueBackgroundAndTheListCannotBeUsedUnderIt()
+    {
+        var (covered, listUsable, listUsableAgain) = Sta.Run(() =>
+        {
+            using var errors = BindingErrors.Listen();
+            using var model = Loaded(new Formatting(TimeZoneInfo.Utc));
+            var view = new MarketsView { DataContext = model };
+            VisualTreeKit.Realize(view);
+            var grids = VisualTreeKit.All<System.Windows.Controls.DataGrid>(view).ToList();
+            var list = grids[0];
+            var before = list.IsEnabled || System.Windows.Media.VisualTreeHelper.GetParent(list) is System.Windows.Controls.Panel { IsEnabled: true };
+
+            model.OpenAsync(model.Rows[0]).GetAwaiter().GetResult();
+            VisualTreeKit.Realize(view);
+            var border = VisualTreeKit.All<System.Windows.Controls.Border>(view).First(b => b.Child is System.Windows.Controls.ContentControl);
+            var opaque = border.Background is System.Windows.Media.SolidColorBrush { Color.A: 255 };
+            var usableWhileOpen = VisualTreeKit.All<System.Windows.Controls.TextBox>(view).Take(1).All(t => t.IsEnabled);
+
+            model.Detail!.BackCommand.Execute(null);
+            VisualTreeKit.Realize(view);
+            var usableAgain = VisualTreeKit.All<System.Windows.Controls.TextBox>(view).Take(1).All(t => t.IsEnabled);
+            Assert.Empty(errors.Messages);
+            return (opaque && before, usableWhileOpen, usableAgain);
+        });
+
+        Assert.True(covered);
+        Assert.False(listUsable);
+        Assert.True(listUsableAgain);
     }
 
     [Fact]
