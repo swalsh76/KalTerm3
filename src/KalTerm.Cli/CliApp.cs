@@ -816,6 +816,13 @@ internal static partial class CliApp
         problem = null;
         if (Uri.TryCreate(address, UriKind.Absolute, out var parsed) && parsed.Scheme is "http" or "https")
         {
+            if (!KalTermApiClient.IsSafeForToken(parsed))
+            {
+                uri = null!;
+                problem = $"the API address '{address}' is plain http to another computer, which would send your token unencrypted; use an https:// address (plain http is only for this computer)";
+                return false;
+            }
+
             uri = parsed;
             return true;
         }

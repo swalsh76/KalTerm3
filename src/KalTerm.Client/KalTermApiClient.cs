@@ -38,15 +38,32 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
         _ownsClient = ownsClient;
     }
 
+    /// <summary>
+    /// Whether a token may be sent to an address: https (the certificate is pinned), or http to this computer. Plain http to any other host would send the token where anyone on the path can read it.
+    /// </summary>
+    /// <param name="address">The API's address.</param>
+    /// <returns><see langword="true"/> when a token may be sent there.</returns>
+    public static bool IsSafeForToken(Uri address)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        return address.Scheme == Uri.UriSchemeHttps || (address.Scheme == Uri.UriSchemeHttp && address.IsLoopback);
+    }
+
     /// <summary>Creates a client for an address; the client owns its <see cref="HttpClient"/>.</summary>
     /// <param name="baseAddress">The API's address, for example <see cref="DefaultBaseAddress"/>.</param>
     /// <param name="handler">The HTTP handler (for tests); a standard one when <see langword="null"/>. The client takes ownership of it.</param>
     /// <param name="timeout">How long one call may take; 30 seconds when <see langword="null"/>.</param>
     /// <param name="token">The API token to send with every call; none when <see langword="null"/>.</param>
     /// <returns>The client.</returns>
+    /// <exception cref="InsecureAddressException">A token is given for a plain http address that is not this computer.</exception>
     public static KalTermApiClient Create(Uri baseAddress, HttpMessageHandler? handler = null, TimeSpan? timeout = null, string? token = null)
     {
         ArgumentNullException.ThrowIfNull(baseAddress);
+        if (!string.IsNullOrWhiteSpace(token) && !IsSafeForToken(baseAddress))
+        {
+            throw new InsecureAddressException($"{baseAddress.Host}:{baseAddress.Port} is a plain http address, which would send your token unencrypted; use an https:// address (plain http is only for this computer)");
+        }
+
         var http = new HttpClient(handler ?? new SocketsHttpHandler(), disposeHandler: true) { BaseAddress = baseAddress, Timeout = timeout ?? DefaultTimeout };
         http.DefaultRequestHeaders.UserAgent.ParseAdd("KalTerm-Client/1");
         http.DefaultRequestHeaders.Accept.ParseAdd("application/json");

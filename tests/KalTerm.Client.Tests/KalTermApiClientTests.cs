@@ -241,4 +241,50 @@ public sealed class KalTermApiClientTests
         Assert.Single(all.Books);
         Assert.Equal("A/B", one.Ticker);
     }
+
+    [Theory]
+    [InlineData("https://server.example:5280", true)]
+    [InlineData("http://127.0.0.1:5280", true)]
+    [InlineData("http://localhost:5280", true)]
+    [InlineData("http://[::1]:5280", true)]
+    [InlineData("http://server.example:5280", false)]
+    [InlineData("http://192.0.2.10:5280", false)]
+    public void ATokenMayGoToHttpsAndToThisComputerOverHttpAndNowhereElse(string address, bool safe)
+    {
+        Assert.Equal(safe, KalTermApiClient.IsSafeForToken(new Uri(address)));
+        Assert.Throws<ArgumentNullException>(() => KalTermApiClient.IsSafeForToken(null!));
+    }
+
+    [Fact]
+    public void AClientWithATokenRefusesPlainHttpToAnotherComputer()
+    {
+        var thrown = Assert.Throws<InsecureAddressException>(() => KalTermApiClient.Create(new Uri("http://server.example:5280"), null, null, "kt_secret"));
+
+        Assert.Contains("server.example:5280", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("unencrypted", thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WhatIsNotARiskToATokenStillWorks()
+    {
+        using var loopback = KalTermApiClient.Create(new Uri("http://127.0.0.1:5280"), new StubHttpMessageHandler(), null, "kt_secret");
+        using var secure = KalTermApiClient.Create(new Uri("https://server.example:5280"), new StubHttpMessageHandler(), null, "kt_secret");
+        using var noToken = KalTermApiClient.Create(new Uri("http://server.example:5280"), new StubHttpMessageHandler());
+        using var blankToken = KalTermApiClient.Create(new Uri("http://server.example:5280"), new StubHttpMessageHandler(), null, "  ");
+
+        Assert.NotNull(loopback);
+        Assert.NotNull(secure);
+        Assert.NotNull(noToken);
+        Assert.NotNull(blankToken);
+    }
+
+    [Fact]
+    public void TheInsecureAddressExceptionHasTheUsualConstructors()
+    {
+        var inner = new InvalidOperationException("x");
+
+        Assert.Contains("https", new InsecureAddressException().Message, StringComparison.Ordinal);
+        Assert.Equal("m", new InsecureAddressException("m").Message);
+        Assert.Same(inner, new InsecureAddressException("m", inner).InnerException);
+    }
 }

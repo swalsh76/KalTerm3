@@ -563,9 +563,9 @@ public sealed class CommandTests : IDisposable
         Assert.Equal("http://127.0.0.1:5280/", _cli.ApiAddress!.AbsoluteUri);
         Assert.True(_cli.Api.Disposed);
 
-        _cli.Variables[CliEnvironment.ApiVariable] = "http://10.0.0.5:9000";
+        _cli.Variables[CliEnvironment.ApiVariable] = "https://server.example:9000";
         await _cli.RunAsync("status");
-        Assert.Equal("http://10.0.0.5:9000/", _cli.ApiAddress.AbsoluteUri);
+        Assert.Equal("https://server.example:9000/", _cli.ApiAddress.AbsoluteUri);
 
         await _cli.RunAsync("status", "--api", "http://127.0.0.1:6000");
         Assert.Equal("http://127.0.0.1:6000/", _cli.ApiAddress.AbsoluteUri);
@@ -582,6 +582,31 @@ public sealed class CommandTests : IDisposable
         Assert.Equal(CliApp.Failed, exit);
         Assert.Contains("is not an http or https address", _cli.Error, StringComparison.Ordinal);
         Assert.Equal(0, _cli.ClientsCreated);
+    }
+
+    [Theory]
+    [InlineData("status")]
+    [InlineData("markets")]
+    [InlineData("login")]
+    [InlineData("logout")]
+    public async Task PlainHttpToAnotherComputerIsRefusedBecauseItWouldSendTheTokenUnencrypted(string command)
+    {
+        var exit = await _cli.RunAsync(command, "--api", "http://server.example:5280");
+
+        Assert.Equal(CliApp.Failed, exit);
+        Assert.Contains("plain http to another computer", _cli.Error, StringComparison.Ordinal);
+        Assert.Equal(0, _cli.ClientsCreated);
+    }
+
+    [Fact]
+    public async Task PlainHttpToAnotherComputerNamedByTheEnvironmentIsRefusedToo()
+    {
+        _cli.Variables[CliEnvironment.ApiVariable] = "http://192.0.2.10:5280";
+
+        var exit = await _cli.RunAsync("status");
+
+        Assert.Equal(CliApp.Failed, exit);
+        Assert.Contains("use an https:// address", string.Join(' ', _cli.Error.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)), StringComparison.Ordinal);   // the console wraps long lines
     }
 
     [Fact]

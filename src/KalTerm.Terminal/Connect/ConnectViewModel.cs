@@ -319,6 +319,6 @@ internal sealed class ConnectViewModel : ObservableObject
         }
 
         // a loopback http address is plain; it has no certificate to trust
-        return Uri.TryCreate(trimmed, UriKind.Absolute, out var parsed) && parsed.Scheme == Uri.UriSchemeHttp && parsed.IsLoopback && (server = new Uri(parsed.GetLeftPart(UriPartial.Authority))) is not null;
+        return Uri.TryCreate(trimmed, UriKind.Absolute, out var parsed) && parsed.Scheme == Uri.UriSchemeHttp && KalTermApiClient.IsSafeForToken(parsed) && (server = new Uri(parsed.GetLeftPart(UriPartial.Authority))) is not null;
     }
 }
