@@ -156,6 +156,50 @@ public sealed class ChartViewTests : IDisposable
     }
 
     [Fact]
+    public void ALegendUnderTheChartNamesEveryColorAndLine()
+    {
+        var texts = Sta.Run(() =>
+        {
+            using var errors = BindingErrors.Listen();
+            var (chart, feed) = Loaded(new Formatting(TimeZoneInfo.Utc));
+            using var disposeFeed = feed;
+            using var disposeChart = chart;
+            var view = new CandleChartView { DataContext = chart };
+            VisualTreeKit.Realize(view);
+            Assert.Empty(errors.Messages);
+            return VisualTreeKit.Texts(view).ToList();
+        });
+
+        Assert.Contains("Closed at or above its open", texts);
+        Assert.Contains("Closed below its open", texts);
+        Assert.Contains("Data may be missing (a gap)", texts);
+        Assert.Contains("Volume (right axis)", texts);
+        Assert.Contains("Last price", texts);
+    }
+
+    [Fact]
+    public void TheLegendSwatchesAreTheColorsTheChartIsDrawnWith()
+    {
+        var swatches = Sta.Run(() =>
+        {
+            var (chart, feed) = Loaded(new Formatting(TimeZoneInfo.Utc));
+            using var disposeFeed = feed;
+            using var disposeChart = chart;
+            var view = new CandleChartView { DataContext = chart };
+            VisualTreeKit.Realize(view);
+            return VisualTreeKit.All<System.Windows.Shapes.Rectangle>(view)
+                .Where(r => r.Width == 12)
+                .Select(r => (((System.Windows.Media.SolidColorBrush)r.Fill).Color.ToString(System.Globalization.CultureInfo.InvariantCulture), r.Opacity))
+                .ToList();
+        });
+
+        Assert.Equal(
+            [("#FF2E9E5B", 1.0), ("#FFD64545", 1.0), ("#FFD49A1B", ChartColors.GapOpacity), ("#FF7C93B8", ChartColors.VolumeOpacity)],
+            swatches);
+        Assert.Equal(ScottPlot.Color.FromHex(ChartColors.Rising), ScottPlot.Color.FromHex("#2E9E5B"));
+    }
+
+    [Fact]
     public void ChangingTheZoneRedrawsTheChartOnTheClockOfTheNewZone()
     {
         var (before, after) = Sta.Run(() =>

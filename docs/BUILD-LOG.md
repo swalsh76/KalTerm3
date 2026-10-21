@@ -1818,3 +1818,6 @@ from the stream. No server change.
   Choosing the watch list well (for example the most active markets) is a configuration decision for the owner, not part of this slice.
 - **Tests (about 100 new):** book arithmetic; the series and the plot builder (what is drawn, the zone, the starting view, rendering to a picture); the chart view-model (limits, intervals and ranges, a stale answer, the refresh and its cap, the last price,
   failures, hover, zone, closing); the book view-model; the feed's books; the detail tabs; the real views (binding errors captured, redraw on zone change, reset view, the pointer). Terminal 303 tests.
+
+Follow-up to 7.4 (owner, after the first look): a small colour legend under the chart (closed at or above its open, closed below its open, data may be missing, volume, last price). The colours live in one place (`ChartColors`): the drawing and the legend
+(`ChartBrushes`) both read it, and a test pins that the swatches are the colours the chart is drawn with.
