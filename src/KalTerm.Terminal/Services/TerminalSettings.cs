@@ -1,4 +1,5 @@
 using System.Text.Json;
+using KalTerm.Client;
 
 namespace KalTerm.Terminal.Services;
 
@@ -13,7 +14,7 @@ internal sealed class TerminalSettingsStore(string path)
 
     /// <summary>The server used last, or <see langword="null"/>.</summary>
     public Uri? LoadServer() =>
-        Read().Server is { Length: > 0 } text && Uri.TryCreate(text, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" ? uri : null;
+        Read().Server is { Length: > 0 } text && Uri.TryCreate(text, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" && KalTermApiClient.IsSafeForToken(uri) ? uri : null;
 
     /// <summary>Remembers the server.</summary>
     public void SaveServer(Uri server)

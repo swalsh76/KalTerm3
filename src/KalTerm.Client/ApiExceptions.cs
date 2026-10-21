@@ -56,6 +56,31 @@ public sealed class ApiException : Exception
             : $"the API refused the request ({(int)status} {code})";
 }
 
+/// <summary>An API address that would send the token unencrypted over a network: plain http to a host that is not this computer.</summary>
+public sealed class InsecureAddressException : Exception
+{
+    /// <summary>Creates the exception.</summary>
+    public InsecureAddressException()
+        : base("the address would send your token unencrypted; use an https:// address")
+    {
+    }
+
+    /// <summary>Creates the exception with a message.</summary>
+    /// <param name="message">What went wrong.</param>
+    public InsecureAddressException(string message)
+        : base(message)
+    {
+    }
+
+    /// <summary>Creates the exception with a message and the cause.</summary>
+    /// <param name="message">What went wrong.</param>
+    /// <param name="innerException">The cause.</param>
+    public InsecureAddressException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+}
+
 /// <summary>The API could not be reached at all: nothing is listening, the connection failed, or it did not answer in time.</summary>
 public sealed class ApiUnavailableException : Exception
 {

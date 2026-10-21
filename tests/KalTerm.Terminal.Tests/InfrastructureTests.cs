@@ -147,6 +147,28 @@ public sealed class TerminalSettingsTests : IDisposable
 
     private string File_ => Path.Combine(_folder, "terminal.json");
 
+    [Theory]
+    [InlineData("http://server.example:5280")]
+    [InlineData("http://192.0.2.10:5280")]
+    public void AServerThatWouldGetTheTokenOverPlainHttpIsNotRememberedAsTheOneToUse(string address)
+    {
+        Directory.CreateDirectory(_folder);
+        File.WriteAllText(File_, $$"""{ "server": "{{address}}" }""");
+
+        Assert.Null(new TerminalSettingsStore(File_).LoadServer());
+    }
+
+    [Fact]
+    public void ALoopbackHttpServerOrAnHttpsOneIsStillRemembered()
+    {
+        var store = new TerminalSettingsStore(File_);
+
+        store.SaveServer(new Uri("http://127.0.0.1:5280"));
+        Assert.Equal(new Uri("http://127.0.0.1:5280"), store.LoadServer());
+        store.SaveServer(new Uri("https://server.example:5280"));
+        Assert.Equal(new Uri("https://server.example:5280"), store.LoadServer());
+    }
+
     [Fact]
     public void TheServerUsedLastIsRememberedWithoutAnyPath()
     {
