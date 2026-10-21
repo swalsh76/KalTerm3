@@ -16,4 +16,17 @@ internal sealed class WpfDialogs(Func<Window?> owner) : IDialogs
         connect.Closed -= window.Close;
         return Task.FromResult(connect.Result);
     }
+
+    public Task<string?> AskNameAsync(string title, string message, Func<string, string?> check)
+    {
+        var prompt = new PromptViewModel(title, message, check);
+        var window = new PromptWindow { DataContext = prompt, Owner = owner() };
+        prompt.Closed += window.Close;
+        window.ShowDialog();
+        prompt.Closed -= window.Close;
+        return Task.FromResult(prompt.Result);
+    }
+
+    public Task<bool> ConfirmAsync(string title, string message) =>
+        Task.FromResult(MessageBox.Show(owner(), message, title, MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes);
 }

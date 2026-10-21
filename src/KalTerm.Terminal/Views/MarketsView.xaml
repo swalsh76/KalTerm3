@@ -5,6 +5,10 @@
              xmlns:markets="clr-namespace:KalTerm.Terminal.Markets"
              xmlns:views="clr-namespace:KalTerm.Terminal.Views">
     <UserControl.Resources>
+        <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="WatchlistStyles.xaml" />
+        </ResourceDictionary.MergedDictionaries>
         <BooleanToVisibilityConverter x:Key="Visible" />
         <DataTemplate DataType="{x:Type markets:MarketDetailViewModel}">
             <views:MarketDetailView />
@@ -24,6 +28,7 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
         <DockPanel Margin="12" IsEnabled="{Binding ShowingList}">
@@ -37,6 +42,15 @@
                 <TextBlock Text="Rank by" VerticalAlignment="Center" Margin="12,0,6,0" />
                 <ComboBox Width="170" ItemsSource="{Binding Sorts}" SelectedItem="{Binding Sort}" DisplayMemberPath="Text" />
                 <Button Content="{Binding OrderText}" Command="{Binding ToggleOrderCommand}" Margin="8,0,0,0" Padding="10,2" MinWidth="100" />
+            </DockPanel>
+            <DockPanel DockPanel.Dock="Top" Margin="0,8,0,0" LastChildFill="False">
+                <TextBlock Text="List" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox Width="220" ItemsSource="{Binding ListChoices}" SelectedItem="{Binding ListFilter}" DisplayMemberPath="Text"
+                          ToolTip="Show only the markets in one of your watchlists" />
+                <Button Content="New…" Command="{Binding NewListCommand}" Padding="10,2" Margin="8,0,0,0" ToolTip="Make a watchlist" />
+                <Button Content="Delete" Command="{Binding DeleteListCommand}" Padding="10,2" Margin="8,0,0,0" ToolTip="Delete the watchlist shown (its markets are not affected)" />
+                <Button Content="Reread lists" Command="{Binding RefreshListsCommand}" Padding="10,2" Margin="8,0,0,0" ToolTip="Read your watchlists from the server again (after a change made from another computer)" />
+                <TextBlock Text="Right-click a market to add it to a watchlist." Foreground="Gray" VerticalAlignment="Center" Margin="16,0,0,0" />
             </DockPanel>
             <DockPanel DockPanel.Dock="Top" Margin="0,8,0,8" LastChildFill="False">
                 <TextBlock Text="{Binding FeedText}" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -59,7 +73,7 @@
                 <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshCommand}" Padding="10,2" />
             </DockPanel>
             <Grid>
-                <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
+                <DataGrid x:Name="Grid" PreviewMouseRightButtonDown="OnRightClick" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserSortColumns="False" CanUserAddRows="False" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Style>
                         <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
@@ -70,6 +84,9 @@
                             </Style.Triggers>
                         </Style>
                     </DataGrid.Style>
+                    <DataGrid.ContextMenu>
+                        <ContextMenu ItemsSource="{Binding Menu.Choices}" ItemContainerStyle="{StaticResource WatchlistItem}" />
+                    </DataGrid.ContextMenu>
                     <DataGrid.InputBindings>
                         <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding OpenCommand}" />
                         <KeyBinding Key="Return" Command="{Binding OpenCommand}" />
@@ -95,6 +112,7 @@
                         <DataGridTextColumn Header="24h change" Binding="{Binding Change}" ElementStyle="{StaticResource Right}" Width="110" />
                         <DataGridTextColumn Header="24h volume" Binding="{Binding Volume}" ElementStyle="{StaticResource Right}" Width="120" />
                         <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" ElementStyle="{StaticResource Right}" Width="130" />
+                        <DataGridTextColumn Header="Lists" Binding="{Binding Lists}" Width="110" />
                         <DataGridTextColumn Header="Ticker" Binding="{Binding Ticker}" Width="190" />
                     </DataGrid.Columns>
                 </DataGrid>

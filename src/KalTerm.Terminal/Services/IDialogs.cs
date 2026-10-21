@@ -8,4 +8,17 @@ internal interface IDialogs
     /// <summary>Shows the connect dialog and waits for it to close.</summary>
     /// <returns>The server that was connected, or <see langword="null"/> when the person gave up.</returns>
     Task<Uri?> ShowConnectAsync(ConnectViewModel connect);
+
+    /// <summary>Asks for a short text, checking it as it is typed.</summary>
+    /// <param name="title">The window's title.</param>
+    /// <param name="message">What the text is for.</param>
+    /// <param name="check">Returns what is wrong with the text so far, or <see langword="null"/> when it will do.</param>
+    /// <returns>The text, or <see langword="null"/> when the person gave up.</returns>
+    Task<string?> AskNameAsync(string title, string message, Func<string, string?> check);
+
+    /// <summary>Asks a yes-or-no question.</summary>
+    /// <param name="title">The window's title.</param>
+    /// <param name="message">The question.</param>
+    /// <returns><see langword="true"/> when the person agreed.</returns>
+    Task<bool> ConfirmAsync(string title, string message);
 }
