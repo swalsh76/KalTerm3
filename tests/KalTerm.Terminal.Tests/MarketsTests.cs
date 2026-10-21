@@ -604,11 +604,11 @@ public sealed class MarketsViewModelTests : IDisposable
         _t.Api.ScreenerAnswer = query => query.Cursor is null ? Page("C1", "KX-1") : Page(null, "KX-2");
         await OpenAsync();
 
-        _t.Api.ScreenerFails = new ApiUnavailableException("could not reach kaldb:5280");
+        _t.Api.ScreenerFails = new ApiUnavailableException("could not reach srv01:5280");
         await _model.NextCommand.RunAsync();
 
         Assert.Equal(("Page 1", "KX-1", true, true), (_model.PageText, _model.Rows[0].Ticker, _model.CanNext, _model.Stale));
-        Assert.Equal("could not reach kaldb:5280", _model.Error);
+        Assert.Equal("could not reach srv01:5280", _model.Error);
         _t.Api.ScreenerFails = null;
         await _model.NextCommand.RunAsync();
         Assert.Equal(("Page 2", string.Empty, false), (_model.PageText, _model.Error, _model.Stale));
@@ -1141,7 +1141,7 @@ public sealed class MarketsViewTests : IDisposable
     [Fact]
     public void AFailureIsShownOnThePage()
     {
-        _t.Api.ScreenerFails = new ApiUnavailableException("could not reach kaldb:5280");
+        _t.Api.ScreenerFails = new ApiUnavailableException("could not reach srv01:5280");
 
         var texts = Sta.Run(() =>
         {
@@ -1153,7 +1153,7 @@ public sealed class MarketsViewTests : IDisposable
             return VisualTreeKit.Texts(view).ToList();
         });
 
-        Assert.Contains("could not reach kaldb:5280", texts);
+        Assert.Contains("could not reach srv01:5280", texts);
     }
 
     [Fact]

@@ -4,7 +4,7 @@ The reference's own ``fixedpoint.py`` is the oracle: it is loaded by path (no in
 dependencies beyond the standard library) and every expectation is computed by calling it.
 The output is committed, so CI never needs Python; rerun this only when the reference changes.
 
-    python tools/vectors/generate_fixedpoint.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_fixedpoint.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Case kinds
   cases          decimal text -> scaled integer, or "refuse". ``csharp`` is set where the C# parser is

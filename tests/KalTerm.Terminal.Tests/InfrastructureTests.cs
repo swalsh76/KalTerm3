@@ -175,9 +175,9 @@ public sealed class TerminalSettingsTests : IDisposable
         var store = new TerminalSettingsStore(File_);
         Assert.Null(store.LoadServer());
 
-        store.SaveServer(new Uri("https://kaldb:5280/v1/status?x=1"));
+        store.SaveServer(new Uri("https://srv01:5280/v1/status?x=1"));
 
-        Assert.Equal(new Uri("https://kaldb:5280"), store.LoadServer());
+        Assert.Equal(new Uri("https://srv01:5280"), store.LoadServer());
         Assert.Equal(["terminal.json"], Directory.GetFiles(_folder).Select(Path.GetFileName));
     }
 
@@ -186,7 +186,7 @@ public sealed class TerminalSettingsTests : IDisposable
     [InlineData("{}")]
     [InlineData("{\"server\":\"\"}")]
     [InlineData("{\"server\":\"not a uri\"}")]
-    [InlineData("{\"server\":\"ftp://kaldb:5280\"}")]
+    [InlineData("{\"server\":\"ftp://srv01:5280\"}")]
     public void AFileThatCannotBeUsedIsForgottenNotFatal(string content)
     {
         Directory.CreateDirectory(_folder);

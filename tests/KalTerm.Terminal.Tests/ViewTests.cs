@@ -77,7 +77,7 @@ public sealed class ViewTests : IDisposable
             VisualTreeKit.Realize(view);
             var first = VisualTreeKit.Texts(view).ToList();
 
-            _t.Api.StatusFails = new ApiUnavailableException("could not reach kaldb:5280");
+            _t.Api.StatusFails = new ApiUnavailableException("could not reach srv01:5280");
             model.Attach(_t.Api);
             model.RefreshAsync().GetAwaiter().GetResult();
             VisualTreeKit.Realize(view);
@@ -87,7 +87,7 @@ public sealed class ViewTests : IDisposable
 
         Assert.Contains("Loading…", loading);
         Assert.DoesNotContain("Loading…", failed);
-        Assert.Contains("could not reach kaldb:5280", failed);
+        Assert.Contains("could not reach srv01:5280", failed);
     }
 
     [Fact]
@@ -120,11 +120,11 @@ public sealed class ViewTests : IDisposable
             VisualTreeKit.Realize(window);
             var first = VisualTreeKit.Texts(window).ToList();
 
-            model.StartAtTrustAsync(new Uri("https://kaldb:5280"), "WARNING: the certificate CHANGED").GetAwaiter().GetResult();
+            model.StartAtTrustAsync(new Uri("https://srv01:5280"), "WARNING: the certificate CHANGED").GetAwaiter().GetResult();
             VisualTreeKit.Realize(window);
             var second = VisualTreeKit.Texts(window).ToList();
 
-            model.StartAtLogin(new Uri("https://kaldb:5280"), "Paste a new token.");
+            model.StartAtLogin(new Uri("https://srv01:5280"), "Paste a new token.");
             VisualTreeKit.Realize(window);
             var third = VisualTreeKit.Texts(window).ToList();
             Assert.Empty(errors.Messages);
@@ -132,10 +132,10 @@ public sealed class ViewTests : IDisposable
         });
 
         Assert.Contains("Connect to a KalTerm server", address);
-        Assert.Contains("Server address (host:port, for example kaldb:5280)", address);
+        Assert.Contains("Server address (host:port, for example srv01:5280)", address);
         Assert.Contains("Trust this server's certificate", trust);
         Assert.Contains("WARNING: the certificate CHANGED", trust);
-        Assert.Contains("CN=kaldb, O=KalTerm", trust);
+        Assert.Contains("CN=srv01, O=KalTerm", trust);
         Assert.Contains("Log in", login);
         Assert.Contains("Paste a new token.", login);
     }
@@ -167,7 +167,7 @@ public sealed class ViewTests : IDisposable
     [Fact]
     public void TheMainWindowShowsTheStatusPageStartsWhenLoadedAndHasNoBindingErrors()
     {
-        _t.Settings.SaveServer(new Uri("https://kaldb:5280"));
+        _t.Settings.SaveServer(new Uri("https://srv01:5280"));
 
         var (texts, state, model) = Sta.Run(() =>
         {
@@ -181,7 +181,7 @@ public sealed class ViewTests : IDisposable
         });
 
         Assert.Equal(ConnectionState.Connected, state);
-        Assert.Contains("kaldb:5280", texts);
+        Assert.Contains("srv01:5280", texts);
         Assert.Contains("connected", texts);
         Assert.Contains("Server status 2026-10-18 23:00:00 UTC", texts);
         Assert.NotNull(model);
@@ -231,14 +231,14 @@ public sealed class ViewTests : IDisposable
 
             _t.Pins.Set(TestServices.Key, Samples.Fingerprint, Samples.Now.UtcDateTime);
             _t.Tokens.Set(TestServices.Key, Samples.Token);
-            var two = new ConnectViewModel(_t.Services, new Uri("https://kaldb:5280"));
+            var two = new ConnectViewModel(_t.Services, new Uri("https://srv01:5280"));
             Dispatcher.CurrentDispatcher.BeginInvoke(() => two.NextCommand.Execute(null));
             var second = dialogs.ShowConnectAsync(two).GetAwaiter().GetResult();
             return (first, second);
         });
 
         Assert.Null(cancelled);
-        Assert.Equal(new Uri("https://kaldb:5280"), connected);
+        Assert.Equal(new Uri("https://srv01:5280"), connected);
     }
 
     [Fact]

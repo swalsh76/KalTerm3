@@ -4,7 +4,7 @@ The reference's API formatting module (``kalshiterm_server/api/format.py``) is t
 (no install; it needs only ``kalshi_core.fixedpoint``, which is standard library). The output is committed, so CI
 never needs Python; rerun this only when the reference changes.
 
-    python tools/vectors/generate_api_format.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_api_format.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Case kinds
   dollars, count   stored integer (or null) -> the decimal string the API sends

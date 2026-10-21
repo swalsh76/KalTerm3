@@ -11,7 +11,7 @@
         <TextBlock Text="{Binding Message}" Foreground="Firebrick" TextWrapping="Wrap" Margin="0,10,0,0" Visibility="{Binding HasMessage, Converter={StaticResource Visible}}" />
 
         <StackPanel Margin="0,14,0,0" Visibility="{Binding OnAddress, Converter={StaticResource Visible}}">
-            <TextBlock Text="Server address (host:port, for example kaldb:5280)" />
+            <TextBlock Text="Server address (host:port, for example srv01:5280)" />
             <TextBox x:Name="AddressBox" Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,0" />
             <Button Content="Next" Command="{Binding NextCommand}" IsDefault="True" HorizontalAlignment="Right" Padding="16,3" Margin="0,14,0,0" />
         </StackPanel>

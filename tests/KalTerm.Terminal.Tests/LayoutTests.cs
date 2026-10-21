@@ -220,7 +220,7 @@ internal sealed class FakeTarget : ILayoutTarget
 
 public sealed class LayoutCoordinatorTests : IDisposable
 {
-    private const string Key = "kaldb:5280";
+    private const string Key = "srv01:5280";
 
     private readonly TestServices _t = new();
     private readonly FakeDialogs _dialogs = new();

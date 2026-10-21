@@ -115,10 +115,10 @@ public sealed class TrustTests : IDisposable
     // ---- stores and addresses -------------------------------------------------------------------------------------------------------
 
     [Theory]
-    [InlineData("kaldb:5280", "kaldb:5280")]
-    [InlineData("https://KALDB:5280", "kaldb:5280")]
-    [InlineData("https://192.168.1.20:5280/", "192.168.1.20:5280")]
-    [InlineData("https://kaldb", "kaldb:443")]
+    [InlineData("srv01:5280", "srv01:5280")]
+    [InlineData("https://SRV01:5280", "srv01:5280")]
+    [InlineData("https://203.0.113.20:5280/", "203.0.113.20:5280")]
+    [InlineData("https://srv01", "srv01:443")]
     public void AnAddressBecomesALowerCaseHostAndPortKey(string text, string key)
     {
         Assert.True(EndpointKey.TryParse(text, out var address));
@@ -126,12 +126,12 @@ public sealed class TrustTests : IDisposable
     }
 
     [Theory]
-    [InlineData("kaldb")]
-    [InlineData("kaldb:")]
-    [InlineData("kaldb:notaport")]
-    [InlineData("kaldb:99999")]
-    [InlineData("http://kaldb:5280")]
-    [InlineData("https://kaldb:5280/v1")]
+    [InlineData("srv01")]
+    [InlineData("srv01:")]
+    [InlineData("srv01:notaport")]
+    [InlineData("srv01:99999")]
+    [InlineData("http://srv01:5280")]
+    [InlineData("https://srv01:5280/v1")]
     [InlineData("")]
     [InlineData(null)]
     public void ABareHostWithoutAPortOrAnythingNotHttpsIsNotATrustTarget(string? text)
@@ -146,17 +146,17 @@ public sealed class TrustTests : IDisposable
         var pins = Pins();
         var first = new string('A', 64);
         var second = new string('B', 64);
-        Assert.Null(pins.Get("kaldb:5280"));
+        Assert.Null(pins.Get("srv01:5280"));
 
-        pins.Set("kaldb:5280", first.ToLowerInvariant(), Now);
+        pins.Set("srv01:5280", first.ToLowerInvariant(), Now);
         pins.Set("other:5280", second, Now);
-        pins.Set("kaldb:5280", second, Now.AddDays(1));
+        pins.Set("srv01:5280", second, Now.AddDays(1));
 
-        Assert.Equal(new Pin(second, Now.AddDays(1)), Pins().Get("kaldb:5280"));
-        Assert.Equal(["kaldb:5280", "other:5280"], Pins().All().Keys.Order());
+        Assert.Equal(new Pin(second, Now.AddDays(1)), Pins().Get("srv01:5280"));
+        Assert.Equal(["other:5280", "srv01:5280"], Pins().All().Keys.Order());
         Assert.True(pins.Remove("other:5280"));
         Assert.False(pins.Remove("other:5280"));
-        Assert.Throws<ArgumentException>(() => pins.Set("kaldb:5280", "not a fingerprint", Now));
+        Assert.Throws<ArgumentException>(() => pins.Set("srv01:5280", "not a fingerprint", Now));
         Assert.Throws<ArgumentException>(() => pins.Set(" ", first, Now));
     }
 
@@ -178,16 +178,16 @@ public sealed class TrustTests : IDisposable
     {
         var path = Path.Combine(_dir, "credentials.bin");
         var tokens = new TokenStore(path);
-        Assert.Null(tokens.Get("kaldb:5280"));
+        Assert.Null(tokens.Get("srv01:5280"));
 
-        tokens.Set("kaldb:5280", "kt_secret-token-text");
+        tokens.Set("srv01:5280", "kt_secret-token-text");
         tokens.Set("other:5280", "kt_other");
 
-        Assert.Equal("kt_secret-token-text", new TokenStore(path).Get("kaldb:5280"));
+        Assert.Equal("kt_secret-token-text", new TokenStore(path).Get("srv01:5280"));
         Assert.DoesNotContain("secret-token-text", Encoding.Latin1.GetString(File.ReadAllBytes(path)), StringComparison.Ordinal);
         Assert.True(tokens.Remove("other:5280"));
         Assert.False(tokens.Remove("other:5280"));
-        Assert.Throws<ArgumentException>(() => tokens.Set("kaldb:5280", " "));
+        Assert.Throws<ArgumentException>(() => tokens.Set("srv01:5280", " "));
         Assert.EndsWith(Path.Combine("KalTerm", "credentials.bin"), TokenStore.DefaultPath(), StringComparison.Ordinal);
     }
 

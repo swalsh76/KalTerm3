@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Trading's risk layer from the Python reference (kalshiterm_client.risk).
 
-    python tools/vectors/generate_risk.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_risk.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Each case is a full scenario (policy, account snapshot, order, production flag, seconds the snapshot is older than
 ``now``) with the reference's verdict: whether it was approved, every refusal code and message in order, the worst-case

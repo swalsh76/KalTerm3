@@ -335,7 +335,7 @@ public sealed class ChartViewTests : IDisposable
             VisualTreeKit.Realize(view);
             return VisualTreeKit.Texts(view).ToList();
         });
-        _t.Api.CandlesFail = new ApiUnavailableException("could not reach kaldb:5280");
+        _t.Api.CandlesFail = new ApiUnavailableException("could not reach srv01:5280");
         var failed = Sta.Run(() =>
         {
             var (chart, feed) = Loaded(new Formatting(TimeZoneInfo.Utc));
@@ -347,7 +347,7 @@ public sealed class ChartViewTests : IDisposable
         });
 
         Assert.Contains("No trades in this range.", empty);
-        Assert.Contains("could not reach kaldb:5280", failed);
+        Assert.Contains("could not reach srv01:5280", failed);
         Assert.DoesNotContain("No trades in this range.", failed);
     }
 

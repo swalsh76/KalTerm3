@@ -283,7 +283,7 @@ Evaluation media (180 days), not a licensed install.
 **The box.** A Dell **OptiPlex 7060** (not the 7080 Micro that was ordered; the owner did not take the difference up with the seller): service tag
 3YY93Y2, BIOS 1.32.0, Intel Core i7-8700 (6 cores, 12 threads, 3.2 GHz, 8th-generation desktop part), 31.8 GB RAM, one NVMe drive, an Intel
 I219-LM NIC. Windows Server 2025 **Datacenter Evaluation** (build 26100; S-4 tested Standard, same engine), installed by hand from the
-evaluation ISO, hostname `kaldb`, 192.168.1.20 on the workstation's LAN. BIOS: AHCI/NVMe mode, **AC Recovery = Power On**. The NIC first
+evaluation ISO, hostname `srv01`, 203.0.113.20 on the workstation's LAN. BIOS: AHCI/NVMe mode, **AC Recovery = Power On**. The NIC first
 negotiated 10 Mbps (a cable or port problem) and was fixed to 1 Gbps.
 
 **Remote management.** WinRM on 5985 with the firewall rule limited to the workstation's address; a local administrator account `kalterm`
@@ -859,9 +859,9 @@ coverage `KalTerm.Core` 98.3% (351 of 357 lines), `KalTerm.Kalshi` 96.7% (1,041 
 development machine and **fail** on CI (`GITHUB_ACTIONS` or `CI` set), so CI cannot pass by skipping. This workstation has no LocalDB runtime, so locally the 35
 database tests skip and `KalTerm.Data` shows low coverage in the local gate; CI is where it is judged.
 
-**Verified on `kaldb`.** The test assembly was published self-contained with `-p:NoCoverage=true` (coverlet.MTP is a private asset and is not in the publish's
+**Verified on `srv01`.** The test assembly was published self-contained with `-p:NoCoverage=true` (coverlet.MTP is a private asset and is not in the publish's
 `deps.json`, so the host cannot load it), copied to `C:\KalTermSpikes\m3\data-tests-nocov`, and run as SYSTEM (non-interactively) against the real SQL Server 2025 instance
-over shared memory: **35 of 35 passed**, including the drift test, the ordered-columnstore and partition checks, and the truncate test. Afterwards `kaldb` held
+over shared memory: **35 of 35 passed**, including the drift test, the ordered-columnstore and partition checks, and the truncate test. Afterwards `srv01` held
 only the four system databases.
 
 **Problems and fixes.**
@@ -890,9 +890,9 @@ only the four system databases.
 **Deviation from the plan.** The sink fills a reused `DataTable` per batch rather than streaming through a custom `DbDataReader`. Simpler and robust; the measurement
 below shows the writer far ahead of the load, so it stays.
 
-**Verified on `kaldb`** (self-contained publish as in 5.1): 89 of 89 tests pass over shared memory, and no test database is left behind.
+**Verified on `srv01`** (self-contained publish as in 5.1): 89 of 89 tests pass over shared memory, and no test database is left behind.
 
-**Throughput (opt-in test `WriterThroughputTests`, `KALTERM_THROUGHPUT=1`, real SQL Server 2025 on `kaldb`, 5,000 distinct markets, default options).**
+**Throughput (opt-in test `WriterThroughputTests`, `KALTERM_THROUGHPUT=1`, real SQL Server 2025 on `srv01`, 5,000 distinct markets, default options).**
 
 | Load | Result |
 |---|---|
@@ -907,7 +907,7 @@ Limits: 30 s runs on an empty table with one writer; compression, log growth and
 - Error 4060 (cannot open database) was first classified as poison. The host must survive a server restart or a database still recovering, so the restart errors retry.
 - `Microsoft.Data.SqlClient` retries a failed connect once after 10 s by default, which hid the writer's own backoff and made each failed attempt take 10 s;
   `ConnectRetryCount = 0` is now in the connection string (tested).
-- **CI (LocalDB) found two things `kaldb` did not.** (1) Right after `CREATE DATABASE` the provisioner's settings query once returned a NULL column
+- **CI (LocalDB) found two things `srv01` did not.** (1) Right after `CREATE DATABASE` the provisioner's settings query once returned a NULL column
   (`SqlNullValueException`), apparently while the new database was not yet fully online; it now waits, bounded at 60 s, until the database is `ONLINE` and every
   setting is readable. (2) SQL Server refuses `SPLIT RANGE` on a populated partition of a columnstore table, and the last partition holds every day after the newest
   boundary, so once rows exist with no boundary above them it can never be split. **Rule for the host (slice 3.4): add boundaries (today and some days ahead) at
@@ -939,7 +939,7 @@ for up to 60 s), one loop-exit line in the writer, and the null-return branch of
 - `DatabaseFixture` and `Requirement` moved from `KalTerm.Data.Tests` to `KalTerm.TestSupport` (with xunit assert/core references and a reference to `KalTerm.Data`) so
   `KalTerm.Ingest.Tests` shares them.
 
-**Verified on `kaldb`.** Data tests 107 of 107 and Ingest tests 46 of 46 over shared memory; no test database left behind.
+**Verified on `srv01`.** Data tests 107 of 107 and Ingest tests 46 of 46 over shared memory; no test database left behind.
 
 **Live sizing (production, read-only key, GET only, public data; 2026-10-18).** `LiveDiscoveryTests` listed the open non-combo markets once and ran the real discovery over them
 against an in-memory store (no database):
@@ -947,7 +947,7 @@ against an in-memory store (no database):
   saw 121,898, so about 18 markets appeared in the minute between.
 - Longest ticker 48 characters, event ticker 41, sub-title 92 (columns allow 128, 128, 256); every market has a close time; the mapping did not throw on any of them.
 
-**Database half of a pass at that size** (`DiscoveryScaleTests`, 122,000 synthetic markets, opt-in `KALTERM_THROUGHPUT=1`, `kaldb`): first insert pass 6.4 s, an update pass with nothing
+**Database half of a pass at that size** (`DiscoveryScaleTests`, 122,000 synthetic markets, opt-in `KALTERM_THROUGHPUT=1`, `srv01`): first insert pass 6.4 s, an update pass with nothing
 changed 5.8 s, a pass with 100 gone and 100 new 5.8 s.
 
 **What this meant for the schedule, and the decision (owner, 2026-10-18: option 2).** One full pass costs about 18 to 32 s of Kalshi listing plus about 6 s of database work and about 122
@@ -984,14 +984,14 @@ Slice 3.4 is split (owner, 2026-10-18): **3.4a** is the pipeline with no network
 **Left out of the plan's list, deliberately.** No gap row for an unknown-ticker burst: a market that appears before discovery sees it is a small, known loss, so it is counted and logged at 1, 10, 100, ... occurrences.
 
 **Verified.** Local: format clean, build without warnings, 4,330 tests, 0 failed (65 skipped, the database tests: no LocalDB on this workstation). Gate (local, database tests skipped): Core 98.3%, Ingest 97.4%, Kalshi 96.8%; Data is judged on CI.
-On `kaldb` (shared memory, as SYSTEM, `tools/kaldb/run-db-tests.ps1`): Data 111 of 111 run passed, Ingest 96 of 96 run passed (the skips are the opt-in throughput and live tests).
+On `srv01` (shared memory, as SYSTEM, `tools/server/run-db-tests.ps1`): Data 111 of 111 run passed, Ingest 96 of 96 run passed (the skips are the opt-in throughput and live tests).
 
 **Problems and fixes.**
-- **`kaldb` found a silent truncation.** A gap `kind` of 33 characters was cut to the column's 32 by the SQL parameter, not refused. A misspelled kind would have been stored under the wrong name. `GapStore` now refuses a missing or over-long kind before storing anything (tested with and without a database).
+- **`srv01` found a silent truncation.** A gap `kind` of 33 characters was cut to the column's 32 by the SQL parameter, not refused. A misspelled kind would have been stored under the wrong name. `GapStore` now refuses a missing or over-long kind before storing anything (tested with and without a database).
 - The editor tool writes LF; the repo's `.editorconfig` wants CRLF, so `dotnet format` flags every new file. Run `dotnet format KalTerm.sln` after writing files.
 - xUnit1051 rejects a test helper that takes a `CancellationToken` unless every call passes `TestContext.Current.CancellationToken`; the stream helper takes none and the cancellation test throws from inside the stream.
 - `AutoAdvanceTimeProvider` with auto-firing timers cancels a `CancellationTokenSource(timeout, clock)` at once; ingest tests build it with `autoFire: false`.
-- Syncing the published tests to `kaldb` by file size missed 8 files whose size was unchanged; the script now compares SHA-256 and refuses to run unless every file matches.
+- Syncing the published tests to `srv01` by file size missed 8 files whose size was unchanged; the script now compares SHA-256 and refuses to run unless every file matches.
 
 **Local model trial (PLAN 6.4), use 1.** The full test and coverage log (42,278 characters, about 10k tokens) went through the helper: 16 s, about 350 tokens back. Its counts (4,330 / 1 failed / 4,264 / 65) and the failing test and reason matched the raw log, and it also reported the missing LocalDB. The failure was read from the raw log and the coverage verdict came from `check-coverage.ps1`, as the rules require.
 Not a use: reading `KalshiWebSocket.cs` whole and a directory listing that printed 89 KB were wasted context; a narrower listing (or the helper) would have done.
@@ -1015,7 +1015,7 @@ Not a use: reading `KalshiWebSocket.cs` whole and a directory listing that print
 **Decision recorded.** No coverage-gate exclusion for the Host assembly (the plan expected one): no test project loads it, so it never appears in the coverage reports.
 
 **Verified.** Local: format clean, no build warnings, 4,379 tests, 0 failed (74 skipped: the database tests, no LocalDB on this workstation; local gate Data 45%, Ingest 89.0% for that reason, judged on CI).
-On `kaldb` (`tools/kaldb/run-db-tests.ps1`): Data 118 of 118 run passed, Ingest 137 of 137 run passed. The end-to-end test provisions a database of its own (1 GB), runs the whole composition with a scripted feed, checks the ticker and trade rows, the markets, the `stopped` state, and then that a second run logs one `ingest_down` gap.
+On `srv01` (`tools/server/run-db-tests.ps1`): Data 118 of 118 run passed, Ingest 137 of 137 run passed. The end-to-end test provisions a database of its own (1 GB), runs the whole composition with a scripted feed, checks the ticker and trade rows, the markets, the `stopped` state, and then that a second run logs one `ingest_down` gap.
 The runner tests use the real clock with tiny intervals and wait for outcomes; 5 consecutive runs passed.
 Smoke run of the executable with no database: it logged "database 'KalTerm' does not exist ... set Ingest:ProvisionMaxSizeGb to create it", created nothing and exited with code 1.
 
@@ -1025,17 +1025,17 @@ Smoke run of the executable with no database: it logged "database 'KalTerm' does
 - The first retry design reset the wait on every successful open, so a server that accepts and drops a connection would be hit every second; it resets only after data arrived.
 - The host's content root was the current directory, so `appsettings.json` would be missed under a service or scheduled task; it is now the executable's folder.
 - `IWsConnector` / `IWsConnection` are internal to `KalTerm.Kalshi`; `KalTerm.Ingest.Tests` was added to its `InternalsVisibleTo` to reuse the scripted connection.
-- `tools/kaldb/run-db-tests.ps1` mangled the suite list when run with both suites (a nested `-ArgumentList`); fixed.
+- `tools/server/run-db-tests.ps1` mangled the suite list when run with both suites (a nested `-ArgumentList`); fixed.
 - CI hit a race in a slice 3.2 test, `BulkWriterTests.ReportsUnhealthyAfterConsecutiveFailuresAndRecoversOnSuccess`: it waited for the sink to record the batch and then asserted the writer was healthy, but the writer notes the success after the sink returns. It now waits for the state it asserts on (8 clean runs; the failure itself was not reproducible locally).
-- This workstation has a SQL Server default instance reachable at `lpc:.` after all (the host's smoke run reached it), though no LocalDB; the project still runs database tests on `kaldb`.
+- This workstation has a SQL Server default instance reachable at `lpc:.` after all (the host's smoke run reached it), though no LocalDB; the project still runs database tests on `srv01`.
 
 **Not done (per the plan): a live run.** Nothing in 3.4 has talked to Kalshi's WebSocket feed yet beyond the earlier live message tests. The optional short production read-only run, and then the soak in 3.8, each need the owner's go-ahead.
 
-#### 5.5.1 Live-style run on `kaldb` (started 2026-10-18 22:22 server time; owner's go-ahead for the production read-only feed, 100 GB database cap, SQL memory cap 20 GB)
+#### 5.5.1 Live-style run on `srv01` (started 2026-10-18 22:22 server time; owner's go-ahead for the production read-only feed, 100 GB database cap, SQL memory cap 20 GB)
 
-**Setup (once).** The read-only key file was copied to `kaldb:C:\KalTerm\secrets\` (readable by SYSTEM and Administrators only; never read or printed), `KALSHI_ENV=production`, `KALSHI_KEY_ID` and `KALSHI_PRIVATE_KEY_PATH` set as machine variables, and the instance's `max server memory` capped at 20,480 MB.
+**Setup (once).** The read-only key file was copied to `srv01:C:\KalTerm\secrets\` (readable by SYSTEM and Administrators only; never read or printed), `KALSHI_ENV=production`, `KALSHI_KEY_ID` and `KALSHI_PRIVATE_KEY_PATH` set as machine variables, and the instance's `max server memory` capped at 20,480 MB.
 The ingest runs as the scheduled task `KalTerm-Ingest` (SYSTEM, at boot, restarts 3 times a minute apart on failure, no time limit) from `C:\KalTerm\ingest\releases\<name>`; `release.txt` names the release, `run.ps1` is the wrapper (settings: `lpc:.\KALTERM`, database `KalTerm`, `ProvisionMaxSizeGb=100`; console log to `logs\ingest-<time>.log`, newest 30 kept).
-Tools: `tools/kaldb/deploy-ingest.ps1` (hash-synced release, task, wrapper; `-Restart` is a hard stop and start) and `tools/kaldb/ingest-status.ps1` (read-only status: task, process, last status line, warnings, database size, approximate row counts and rates, gaps, run state).
+Tools: `tools/server/deploy-ingest.ps1` (hash-synced release, task, wrapper; `-Restart` is a hard stop and start) and `tools/server/ingest-status.ps1` (read-only status: task, process, last status line, warnings, database size, approximate row counts and rates, gaps, run state).
 
 **Not a blocker.** The soak runs from a pinned release folder; builds, tests and new releases never touch it, and a new release only runs after `-Restart`. Database test suites use databases of their own on the same instance and never touch `KalTerm` (they do share CPU and disk). Monitoring is read-only and on demand, plus an hourly session check that reports only anomalies.
 
@@ -1047,16 +1047,16 @@ Tools: `tools/kaldb/deploy-ingest.ps1` (hash-synced release, task, wrapper; `-Re
 
 **Bugs found in the new scripts.** The status script collapsed single-row query results (PowerShell unrolls a one-element array); the deploy script passed `[bool]$Restart` in an argument list, which PowerShell reads as a non-empty string, so it always restarted.
 
-#### 5.5.2 Reboot test of the ingest on `kaldb` (2026-10-18)
+#### 5.5.2 Reboot test of the ingest on `srv01` (2026-10-18)
 
 The test asked of an unattended process: after a reboot, does it come back by itself, and is the downtime recorded? Two reboots, the second after a fix.
 
 **Reboot 1 (22:33:39 server time): the ingest did not come back.**
 - Windows' shutdown stopped the host gracefully (the run state was marked `stopped` at 22:33:49), so Windows' own clean-shutdown handling reaches the Generic Host.
-- `kaldb` booted at 22:34:10 and the task started the host at 22:34:14. SQL Server on `kaldb` is **Automatic (Delayed Start)** and was not up until 22:36:17, so the host could not reach the database and exited with code 1 (a clear message in the log).
+- `srv01` booted at 22:34:10 and the task started the host at 22:34:14. SQL Server on `srv01` is **Automatic (Delayed Start)** and was not up until 22:36:17, so the host could not reach the database and exited with code 1 (a clear message in the log).
 - The task's "restart on failure" (3 times, 1 minute apart) **did not retry**: the task sat in `Ready` with last result 1. A start-up ordering problem like this is what only a reboot shows.
 
-**Fix (tooling only).** The wrapper `run.ps1` (generated by `tools/kaldb/deploy-ingest.ps1`) now waits for the SQL Server service to be running, bounded at 10 minutes, then supervises the host: any exit other than code 0 is retried after a wait that doubles from 15 s to 120 s, and only a clean exit ends the wrapper. One log file per wrapper launch.
+**Fix (tooling only).** The wrapper `run.ps1` (generated by `tools/server/deploy-ingest.ps1`) now waits for the SQL Server service to be running, bounded at 10 minutes, then supervises the host: any exit other than code 0 is retried after a wait that doubles from 15 s to 120 s, and only a clean exit ends the wrapper. One log file per wrapper launch.
 
 **Reboot 2 (22:38:05): recovered by itself.** Boot at 22:38:36, the task started at 22:38:39, the wrapper waited until SQL was up (22:40:43), the host started at once and was connected, with 0 dropped, within minutes. The new release (combo fix) was the one running. The downtime is one `ingest_down` gap from 22:33:49 to 22:40:46 ("the previous run stopped cleanly"), about 7 minutes of ticker data that cannot be recovered (trades would be backfilled in M4).
 The host had been down since its failed start, so reboot 2 itself cost no further data.
@@ -1080,7 +1080,7 @@ Built in three commits: 3.5a contracts, 3.5b readers, 3.5c the API.
 - **Loopback only (D5).** The process refuses a URL that is not an `http` loopback IP with a port, listens on exactly that endpoint, and checks every bound address after start-up; a configuration mistake prints one line and exits with code 1.
   Settings: `appsettings.json` next to the exe, `KALTERM_Api__*` variables (`Url`, `Server`, `Database`). Run: `dotnet run --project src/KalTerm.Api.Host -c Release` (default `http://127.0.0.1:5280`).
 
-**Verified.** Local: format clean, no warnings, 4,549 tests, 0 failed (96 skipped: the database tests, no LocalDB on this workstation). On `kaldb`: Data 146, Ingest 142 and Api 117, all run passed, including three end-to-end API tests over a real database and the real readers.
+**Verified.** Local: format clean, no warnings, 4,549 tests, 0 failed (96 skipped: the database tests, no LocalDB on this workstation). On `srv01`: Data 146, Ingest 142 and Api 117, all run passed, including three end-to-end API tests over a real database and the real readers.
 Probe of the reader queries on the live soak database (over a million rows, ingest writing): 1 to 158 ms each (freshness checks about 150 ms, everything else under 120 ms).
 Smoke run of the executable on this workstation: `/healthz` 200, `/readyz` and the database endpoints 503 without a database, 404 and 422 for unknown routes and bad input, listening on 127.0.0.1 only, and a wildcard address refused at start-up.
 
@@ -1088,15 +1088,15 @@ Smoke run of the executable on this workstation: `/healthz` 200, `/readyz` and t
 - System.Text.Json escapes `+` as `+` by default, which would change every time string; the wire context uses the relaxed encoder (the API never embeds JSON in HTML).
 - A parameter named `end` trips CA1716 (a Visual Basic keyword); the readers call it `until`.
 - Dapper maps records by constructor-parameter name, so columns are aliased to PascalCase; a record named `TradeRow` already existed on the write path, so the read models are `Stored...`.
-- The `kaldb` script now writes each suite's runner on the server itself and knows the `api` suite.
+- The `srv01` script now writes each suite's runner on the server itself and knows the `api` suite.
 - Database API tests must use the real clock: with the fake clock the seeded gap fell outside the "last 7 days" window.
 
-**Left out (as planned).** Series filter (no series ticker is stored), order book (3.7), candles, retention, auth, TLS (M4), watchlists, alerts, layouts, analytics, and a least-privilege database login for the API (M8). The API is not deployed to `kaldb` yet.
+**Left out (as planned).** Series filter (no series ticker is stored), order book (3.7), candles, retention, auth, TLS (M4), watchlists, alerts, layouts, analytics, and a least-privilege database login for the API (M8). The API is not deployed to `srv01` yet.
 
-#### 5.6.1 The API on `kaldb` (2026-10-19; owner's go-ahead)
+#### 5.6.1 The API on `srv01` (2026-10-19; owner's go-ahead)
 
 Deployed beside the ingest as the scheduled task `KalTerm-Api` (SYSTEM, at boot, the same wrapper as the ingest: waits for the SQL Server service, supervises the host), from the pinned release `C:\KalTerm\api\releases\api-b63069e`, listening on `http://127.0.0.1:5280` only. It reads the live soak database; the ingest is untouched.
-`tools/kaldb/deploy-service.ps1 -Service ingest|api` now does both deployments (the ingest's `deploy-ingest.ps1` is a thin forwarder). The wrapper it generates for the ingest is byte-for-byte the one already running (checked with `-PrintWrapper`), so the soak's deploy path did not change.
+`tools/server/deploy-service.ps1 -Service ingest|api` now does both deployments (the ingest's `deploy-ingest.ps1` is a thin forwarder). The wrapper it generates for the ingest is byte-for-byte the one already running (checked with `-PrintWrapper`), so the soak's deploy path did not change.
 
 **First calls against the live data** (over loopback from the server, while the ingest wrote about 25,000 ticker rows a minute into a database of over 1.5 million rows):
 - `/healthz` and `/readyz` 200; `/v1/status` 200: no problems, ingest `running` with a 14 s heartbeat, ticker and trade streams 0 to 1 s old, data file 264 MB of 102,400 MB, 920 GB free, markets by status, and the two `ingest_down` gaps from the reboot test.
@@ -1118,10 +1118,10 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   `markets` takes `--status`, `--event`, `--search/-q`, `--limit`, `--cursor`; `ticks` and `trades` take `--since 15m|2h|1d`, or `--start`/`--end` (times must carry an offset, as at the API), `--limit`, `--cursor`; `gaps` takes `--since` (default 24h) and `--limit`. A page with more behind it prints `More available: --cursor ...`.
   `status` puts problems first, then ingest, streams, storage, markets and the gaps (downtime) of the last 24 hours with the note that ticker data in a gap is lost. **Exit codes:** 0 fine, 1 the API could not be reached or refused the request or the command line was wrong (one line, no stack trace), 2 `status` found problems.
   Display only shortens: prices keep two decimals and lose trailing zeros (`0.560000` is `0.56`), counts get thousands separators and lose `.00`, times are UTC. `--json` keeps the exact strings.
-- `tools/kaldb/kterm.ps1 -ComputerName ... -CredentialPath ... [-Publish] -- <kterm arguments>`: publishes the CLI when asked, syncs it by hash to `C:\KalTerm\cli` on the server and runs it there (the API listens on loopback only until M4), returning the output and kterm's exit code.
+- `tools/server/kterm.ps1 -ComputerName ... -CredentialPath ... [-Publish] -- <kterm arguments>`: publishes the CLI when asked, syncs it by hash to `C:\KalTerm\cli` on the server and runs it there (the API listens on loopback only until M4), returning the output and kterm's exit code.
 
 **Verified.** Local: format clean, no warnings, 4,690 tests, 0 failed (96 skipped: the database tests). New: 21 client tests (stubbed HTTP: URLs, escaping, every error path), 120 CLI tests (the real command-line parser and views over a fake API and Spectre's test console: output, exit codes, error messages, addresses, widths; formatting tables; the table layout). Coverage: `KalTerm.Client` 100%, `kterm` 94.6%.
-**Live on `kaldb`** (through `kterm.ps1`, against the running soak): every command, `--json`, and the failure cases (unknown market, bad `--since`, the API refusing `--limit 0`) with exit codes 1; `status` exit 0 with no problems.
+**Live on `srv01`** (through `kterm.ps1`, against the running soak): every command, `--json`, and the failure cases (unknown market, bad `--since`, the API refusing `--limit 0`) with exit codes 1; `status` exit 0 with no problems.
 
 **Problems found, mostly only by running it for real.**
 - **Remoting mangles non-ASCII text.** The server-side process encodes output in the server's OEM code page and PowerShell decodes it differently on the way back: the `·` separator arrived as `ú` and Spectre's `─` table rules as `Ä`. Output is now plain ASCII (separators `|`, tables of dashes), and a test fails if any command prints a non-ASCII character.
@@ -1146,7 +1146,7 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   old stale books every 30 s. It publishes changed books about once a second, and every book every 15 s (heartbeat), to `dbo.orderbook_state`
   (migration 0002, top 100 levels per side as text, one row per market, no history). The API reads that table (slice 3.7c).
 - Verified: unit tests for the keeper, runner, ingestor, stream source, host options and level text; an end-to-end composition test (snapshot to a
-  row, and a market without a snapshot published as stale). Data, Ingest and Api suites pass on kaldb (160, 175, 117 tests). Locally the Data
+  row, and a market without a snapshot published as stale). Data, Ingest and Api suites pass on srv01 (160, 175, 117 tests). Locally the Data
   coverage reads 42 % only because LocalDB is missing here; CI judges it.
 - **3.7c**: `dbo.orderbook_state` is read by `BookReader` (and summarised in `StatusReader`; a database without migration 0002 reads as "no books" instead of failing).
   The API gains `GET /v1/orderbooks?depth=N` and `GET /v1/markets/{ticker}/orderbook?depth=N` (depth 1 to 100, default 10; 404 for a market that is not
@@ -1157,16 +1157,16 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - Live check (2026-10-19, production, public `orderbook_delta` channel, subscribe only, plus three REST book reads): three moderately active markets
   (KXTEMPMIAH-26OCT1912-T85.99, KXTRUMPSAY-26OCT26-SUPE, KXTRUMPSAY-26OCT26-MELA) were followed for 60 s: 3 snapshots, 33 deltas, 0 gaps, no crossed book,
   and all three built books equalled the REST books read right after the window. Test: `LiveKalshiWebSocketTests.ABookBuiltFromTheLiveStream...`.
-- Not rolled out: kaldb still runs the pre-3.7 build; the watch list goes live in slice 3.8 with the owner's go-ahead (ingest restart, migration 0002).
+- Not rolled out: srv01 still runs the pre-3.7 build; the watch list goes live in slice 3.8 with the owner's go-ahead (ingest restart, migration 0002).
 
-### 5.9 Slice 3.8: the rollout on kaldb, the M3 gate (2026-10-19)
+### 5.9 Slice 3.8: the rollout on srv01, the M3 gate (2026-10-19)
 
 - Owner approved the restart and production as the feed. Watch list: the 50 markets with the most ticker rows in the last hour among active markets closing
-  in more than 3 days (picked from kaldb's own data, read-only). `deploy-service.ps1` gained `-WatchList` (ingest only; written as `KALTERM_Ingest__WatchList__N`
+  in more than 3 days (picked from srv01's own data, read-only). `deploy-service.ps1` gained `-WatchList` (ingest only; written as `KALTERM_Ingest__WatchList__N`
   lines in the wrapper). Pass `-ReleaseDir` as an absolute path (a relative one broke the file hashing; nothing had been switched at that point).
 - Ingest `host-d475ac4` restarted 09:56 server time (hard stop; the downtime is the third `ingest_down` gap); migration 0002 applied on start; log showed
   `books=50/50` within two minutes. API `api-d475ac4` restarted afterwards.
-- Gate through `kterm` on kaldb (CLI republished with `-Publish`): `status` passes with a Books line (`50 watched, none stale`), `book` lists all 50
+- Gate through `kterm` on srv01 (CLI republished with `-Publish`): `status` passes with a Books line (`50 watched, none stale`), `book` lists all 50
   (empty books of ended matches show as `-`), `book TICKER --depth 4` prints a ladder with derived asks and a 0.02 spread, `book NOPE-1` is `not found` (exit 1).
   Book-versus-REST equality was shown by the live test in 5.8 (3 of 3 equal after 33 deltas).
 - The soak continued on the same database throughout; ticker rows resumed at about 35,000 per minute.
@@ -1174,7 +1174,7 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 ### 5.10 Slice 4.1: storage governor and retention (2026-10-19)
 
 - Owner decisions: raw retention 30 days for both ticker and trade (one window: the two tables share the partition function, so a day is dropped from both),
-  budget thresholds 80 % (status warns) and 90 % (the governor drops), the newest 3 days never dropped, and the data file cap on kaldb raised from 100 GB to
+  budget thresholds 80 % (status warns) and 90 % (the governor drops), the newest 3 days never dropped, and the data file cap on srv01 raised from 100 GB to
   **500 GB** (`ALTER DATABASE ... MODIFY FILE (MAXSIZE = 512000MB)`, done 2026-10-19, no restart). Settled-market slimming and merging of old empty partition
   boundaries are parked (PLAN section 9).
 - `KalTerm.Data.Governor`: `StorageGovernor` runs inside the ingest host every 15 minutes (`GovernorCheckInterval`). **Retention**: once a day from 00:30 UTC every
@@ -1186,9 +1186,9 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - `/v1/status` storage section: `used_bytes`, `used_percent`, `oldest_data_day`, `governor_last`, `governor_age_seconds`. Problems: 80 % used; 90 % used (the governor is
   dropping); a governor error; no governor check for an hour while ingest runs. The old file-size warning is gone (the file does not shrink after a drop).
   `kterm status` shows used versus cap and a Retention line.
-- Measured on kaldb: the oldest-day query takes 176 ms on 22 M rows, so it runs in the governor and its result is stored, not computed per status call.
+- Measured on srv01: the oldest-day query takes 176 ms on 22 M rows, so it runs in the governor and its result is stored, not computed per status call.
 - Tests: policy against a fake store and clock (retention window, once a day, time of day, floors, shedding order, failures, cancellation); the store on real
-  partitions on kaldb (oldest day, boundaries, truncation, refusal of a day without a boundary); runner and composition. Data, Ingest and Api suites pass on kaldb.
+  partitions on srv01 (oldest day, boundaries, truncation, refusal of a day without a boundary); runner and composition. Data, Ingest and Api suites pass on srv01.
 - Rolled out 2026-10-19 together with 4.2 (ingest `host-21c5cc5`, API `api-21c5cc5`): the first governor check was ok at 0 % used; `kterm status` shows the Retention line.
 
 ### 5.11 Slice 4.2: trade backfill (2026-10-19)
@@ -1208,8 +1208,8 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 - Rollout order matters: the API reads the new columns, so ingest (which applies migration 0003 at start) must be restarted before the API. A new API against an unmigrated
   database would fail `/v1/gaps`.
 - Tests: the backfiller against a fake store, source and writer (padding, slicing, caps, duplicates in storage and within and between slices, writer full, retries, failures,
-  cancellation); the store on real tables on kaldb (claim order, settle, open and market-specific gaps, retry delays, takeover, completion); the readers; an end-to-end
-  composition test (a pending gap, a fake REST source: two rows written, the combo skipped, the gap `done`); the runner loop. Data, Ingest and Api suites pass on kaldb.
+  cancellation); the store on real tables on srv01 (claim order, settle, open and market-specific gaps, retry delays, takeover, completion); the readers; an end-to-end
+  composition test (a pending gap, a fake REST source: two rows written, the combo skipped, the gap `done`); the runner loop. Data, Ingest and Api suites pass on srv01.
 - **Live check (owner opted in, 2026-10-19, production, GET only, public trade data) found a bug in the first version.** `LiveTradeBackfillTests` reads a three-minute window that ended
   ten minutes ago, whole and as two slices. The first run: 27,808 trades whole but 15,223 + 12,430 in two slices; a second run with a per-second breakdown showed every missing trade
   was in the last second before the cut. **Kalshi's `max_ts` is exclusive (and `min_ts` inclusive), and trade times carry milliseconds** (the filter is whole seconds). The first
@@ -1220,8 +1220,8 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 
 ### 5.12 Slice 4.3: backup and restore (2026-10-19)
 
-- Owner decisions: the target is a network share on another machine of the owner's (seen on kaldb as a mapped drive; its name is deliberately not in the repository), grandfather-father-son
-  retention, and a new admin console. kaldb is in a workgroup and SQL Server runs as the virtual account `NT SERVICE\MSSQL$KALTERM`, which cannot authenticate to the share, so SQL Server
+- Owner decisions: the target is a network share on another machine of the owner's (seen on srv01 as a mapped drive; its name is deliberately not in the repository), grandfather-father-son
+  retention, and a new admin console. srv01 is in a workgroup and SQL Server runs as the virtual account `NT SERVICE\MSSQL$KALTERM`, which cannot authenticate to the share, so SQL Server
   writes to a **staging folder** (its own default backup folder) and the ingest host verifies the file and copies it to the share with a stored credential, then deletes the staging file.
   The database uses the simple recovery model, so backups are full and differential only.
 - `KalTerm.Backup` (library): `BackupService` takes a full backup weekly (Sunday UTC, or when none is under 7 days old) and a differential on the other days; `WITH CHECKSUM, COMPRESSION`,
@@ -1238,22 +1238,22 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   none today; after a failure it waits 30 minutes; after every full backup it proves the backup by restoring it (physical-only). `Ingest:BackupTarget` (empty = off), `BackupStaging`,
   `BackupCredentialPath`, `BackupDaily/Weekly/Monthly`, `BackupAt`.
 - The share credential is stored by `kalterm-admin backup set-credential` (password from a prompt or standard input, tried against the share first) protected with DPAPI for the machine in a
-  file whose ACL allows only SYSTEM and administrators (`C:\KalTerm\secrets\backup-share.cred`); `tools\kaldb\admin.ps1 -SetShareCredential` asks on the workstation and stores it on the server.
+  file whose ACL allows only SYSTEM and administrators (`C:\KalTerm\secrets\backup-share.cred`); `tools\server\admin.ps1 -SetShareCredential` asks on the workstation and stores it on the server.
   The share connection (`WNetAddConnection2`) has no drive letter and lives only for the run.
 - `kalterm-admin` (new project, runs on the server; `kterm` stays read-only): `backup init-target | set-credential | run [--full|--diff] | list | verify [--full-check]` and
-  `restore --database NAME [--backup NAME] [--keep] [--full-check]`; `tools\kaldb\admin.ps1` runs it through remoting.
+  `restore --database NAME [--backup NAME] [--keep] [--full-check]`; `tools\server\admin.ps1` runs it through remoting.
 - Reporting: `/v1/status` has a `backup` section and `kterm status` a Backup line. Problems: no finished backup 36 h after a target was configured; the last good backup older than 36 h; the latest
   attempt failed; the last proof by restore failed.
 - Tests: GFS rules (six months of Sunday fulls with daily differentials), naming, manifest JSON and count comparison, the target (marker, space, listing, deletion of only our names, partial
   files), the credential store (round trip, ACL), the services against a fake database (kinds by day, failure leaves nothing behind, retention, network connection used and released, chain
-  restore, hash mismatch, refusals), the schedule, the admin commands; and **real SQL Server on kaldb**: full and differential backups restored into a new database that passes `CHECKDB` and
+  restore, hash mismatch, refusals), the schedule, the admin commands; and **real SQL Server on srv01**: full and differential backups restored into a new database that passes `CHECKDB` and
   whose counts equal the live ones, a damaged file failing verification, the whole service plus a proof by restore, and the ingest host taking a backup of its own database.
 - **A mistake worth recording:** the first version of the admin and service tests used the real share's UNC path. Because the workstation can reach that share, one test created the folder and the
   marker file there and the others wrote 5-byte fake backups into it. It was noticed because two tests that should have failed passed; the five test-made files were checked (fake manifests) and
   deleted, nothing else on the share was touched, and the tests now use only `\\127.0.0.1\kalterm-no-such-share` (an address on this computer where nothing can be written) and neutral names.
   CLAUDE.md now says tests never use a real host, share or account name.
-- **First real run on kaldb (2026-10-19, through `admin.ps1`, against the owner's share, GET/read of nothing but our own database):** the owner stored the share credential; `backup init-target`
-  wrote the marker from kaldb over SMB; a **full backup of the live 1.1 GB database took 21 s and is 564 MB** (compressed) on the share; a **differential** one 2 s and 30 MB; a **restore drill** of the
+- **First real run on srv01 (2026-10-19, through `admin.ps1`, against the owner's share, GET/read of nothing but our own database):** the owner stored the share credential; `backup init-target`
+  wrote the marker from srv01 over SMB; a **full backup of the live 1.1 GB database took 21 s and is 564 MB** (compressed) on the share; a **differential** one 2 s and 30 MB; a **restore drill** of the
   full backup into a new database took 13 s, the complete `DBCC CHECKDB` was clean and the per-day row counts agreed with the manifest while ingest kept writing; the same for the full + differential
   chain (14 s); `backup verify` (the proof the host runs after each full backup) passed; no scratch database and no staging file was left behind. Two defects found by this run and fixed: `backup list`
   did not connect to the share with the stored credential (it showed an empty folder), and `admin.ps1` bound the command words to its own `-Instance`/`-Database` parameters (now non-positional).
@@ -1262,7 +1262,7 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 ### 5.13 Slice 4.5: users and tokens, TLS and certificate pinning (2026-10-19)
 
 - Owner decisions: the loopback plain-HTTP listener keeps answering `/healthz`, `/readyz` and `/v1/status` **without a token** (the hourly soak check uses it; only local administrators can reach it
-  and they already have the database), everything else needs a token; the server's address (192.168.1.20) is a router reservation; the firewall rule is for the local subnet only; tokens do not expire
+  and they already have the database), everything else needs a token; the server's address (203.0.113.20) is a router reservation; the firewall rule is for the local subnet only; tokens do not expire
   unless asked.
 - `KalTerm.Security` (new, shared): the self-signed server certificate (ECDSA P-256, SANs for the host names and addresses, 2 years), stored in a folder only SYSTEM and administrators can open with the
   key's password protected for the machine (DPAPI), certificate fingerprints (SHA-256, upper-case hex; people may type colons or spaces), and the file-protection helper that `KalTerm.Backup` now shares.
@@ -1280,19 +1280,19 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   `%APPDATA%\KalTerm\credentials.bin` (DPAPI for the Windows user). `kterm trust host:port` shows the certificate and pins it only if the person types the first 8 characters of the fingerprint
   (or passes the whole fingerprint with `--fingerprint`; without a keyboard and without `--fingerprint` the answer is no); `kterm login` tries the token on the server before storing it;
   `kterm logout`. `KALTERM_API_TOKEN` supplies a token for scripts.
-- Tests: certificates and fingerprints; users and tokens on real tables on kaldb (hash only, expiry, revocation, disabled users, last-used once a minute); the middleware (uniform 401, bearer parsing,
+- Tests: certificates and fingerprints; users and tokens on real tables on srv01 (hash only, expiry, revocation, disabled users, last-used once a minute); the middleware (uniform 401, bearer parsing,
   open paths, the loopback exemption and its limits, throttle, cache, revocation after the cache expires); host options; the admin commands; and the client against **a real TLS server on loopback**
   (trusted, not trusted, changed, the token reaches only a trusted server, a certificate loaded from disk works as a server certificate).
 - A find: loading the stored certificate with ephemeral keys made Windows reject it as a server certificate; the default key storage works (the key is removed when the certificate object is disposed).
-- **Rolled out and checked live (2026-10-19, from the owner's workstation to kaldb over the LAN):** ingest `host-eb10d4d` (restarted first: migration 0004 is applied by ingest at start), then the
-  certificate (`cert init --host kaldb --ip 192.168.1.20`), user `steven` (admin) with a token created through `admin.ps1` and piped into `kterm login` without ever being printed, then API `api-eb10d4d`
-  with `-LanUrl https://192.168.1.20:5280 -OpenFirewall`. The firewall rule reads back as inbound TCP 5280, allow, **remote address: LocalSubnet**; the server listens on exactly `192.168.1.20:5280` and
+- **Rolled out and checked live (2026-10-19, from the owner's workstation to srv01 over the LAN):** ingest `host-eb10d4d` (restarted first: migration 0004 is applied by ingest at start), then the
+  certificate (`cert init --host srv01 --ip 203.0.113.20`), user `steven` (admin) with a token created through `admin.ps1` and piped into `kterm login` without ever being printed, then API `api-eb10d4d`
+  with `-LanUrl https://203.0.113.20:5280 -OpenFirewall`. The firewall rule reads back as inbound TCP 5280, allow, **remote address: LocalSubnet**; the server listens on exactly `203.0.113.20:5280` and
   `127.0.0.1:5280`. Checks: before `trust` the client refused the server and sent nothing; after `trust --fingerprint` (the fingerprint read on the server) and `login`, `kterm status`, `book` and `gaps`
   work from this computer; a wrong token gives the "run kterm login" message; with no token every `/v1/*` path (including an unknown path) is a bare 401 and `/healthz` is 200; a malformed
   Authorization header is 401; plain HTTP on the LAN address gets no answer; **a deliberately wrong pin gives the hard "certificate CHANGED" error naming both fingerprints, and the deliberate re-trust
   warns about the difference**; on the server, loopback `http://127.0.0.1:5280` answers `/v1/status` and `/healthz` without a token and `/v1/markets` with 401 (so the hourly soak check is unchanged);
   after 10 failed attempts in a minute the caller got 429 (even with the right token) while `/healthz` stayed open; `token list` shows the token's last use.
-- `tools\kaldb\kterm.ps1` (the remoting wrapper) now works for `status` only (the loopback exemption); data commands need a token, so use the CLI directly from a computer that trusts the server.
+- `tools\server\kterm.ps1` (the remoting wrapper) now works for `status` only (the loopback exemption); data commands need a token, so use the CLI directly from a computer that trusts the server.
 - Not done: nothing is exposed except the API port; mDNS discovery, WebSocket push and per-user watchlists remain out of scope (parking lot / M5, M7).
 
 ### 5.14 Slice 4.4: candles (2026-10-19)
@@ -1309,7 +1309,7 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
   high, lowest low, sums), else computed from the market's raw rows for at most 24 hours (`source` says which). A watch-list-scoped interval is used only for a watched market. The page carries
   `interval`, `source`, the candles and a `next_cursor` (the next bucket). `kterm candles TICKER --interval 15m --since 6h` shows them, partial ones in yellow. Times are still printed in UTC; the
   selectable client time zone (`--tz`/`--utc`) is a separate item not yet done.
-- Tests: rules and roll-up (pure); the builder on real tables on kaldb (OHLC, sparse buckets, idempotent rebuild, gap flags with and without a finished backfill, slicing, compute equals stored); the job
+- Tests: rules and roll-up (pure); the builder on real tables on srv01 (OHLC, sparse buckets, idempotent rebuild, gap flags with and without a finished backfill, slicing, compute equals stored); the job
   against fakes; the host building the candles of rows already in the database; the service (stored, rolled up, computed, paging, scope); the endpoint, contract pins and the CLI view.
 
 ### 5.15 The client time zone (2026-10-20)
@@ -1322,7 +1322,7 @@ Built in two commits (3.6a client, 3.6b/c CLI and the remote runner).
 ## 6. M4 Server summary (2026-10-20): done
 
 Gate "API contract tests green": met. The contract pin tests (`KalTerm.Contracts.Tests`, 27) cover every model that crosses the API, including the candle and page models; the
-API, client and CLI tests, and the database suites on `kaldb`, pass; CI is green on `main` (PR #45 and #46 merged 2026-10-20).
+API, client and CLI tests, and the database suites on `srv01`, pass; CI is green on `main` (PR #45 and #46 merged 2026-10-20).
 
 | Slice | What | Notes |
 |---|---|---|
@@ -1333,7 +1333,7 @@ API, client and CLI tests, and the database suites on `kaldb`, pass; CI is green
 | 4.4 | Candles | stored `1d`/`1h` for all markets and `1m` for the watch list, exact roll-up, gap flags, `kterm candles` (5.14) |
 | - | Client time zone | `--utc`, `--tz`, `KALTERM_TZ`, else the computer's zone (5.15) |
 
-Running on `kaldb` at close: ingest and API release `host-7e4d2bc`; status reports no problems; backup and restore proof ok; the 1m watch-list candles were still catching up.
+Running on `srv01` at close: ingest and API release `host-7e4d2bc`; status reports no problems; backup and restore proof ok; the 1m watch-list candles were still catching up.
 
 Carried forward, none in M4: a stored per-user time zone (with per-user settings, M5/M7), persisted deltas, live add/remove of watched markets, WebSocket push (M5), mDNS discovery. Parked
 items stay in PLAN.md section 9.
@@ -1348,7 +1348,7 @@ items stay in PLAN.md section 9.
 - A metric that lacks data is `null`, not a smaller number: an average needs all of its closes, the volatility needs three, a spread needs both sides. Hours without trades have no price and are not
   closes (no forward fill). `partial` is true when a gap overlaps the 24 hours, or a candle used is flagged partial.
 - Change from the approved plan: volume and VWAP come from raw trades only (not closed candles plus a raw tail), so they do not wait for the candle job and are exact.
-- Tests: the arithmetic as pure vectors (rounding, a huge volume, short histories); the reader on real tables on kaldb (window edges, as-of filtering, reference close, closes newest first, the 50 cap, partial
+- Tests: the arithmetic as pure vectors (rounding, a huge volume, short histories); the reader on real tables on srv01 (window edges, as-of filtering, reference close, closes newest first, the 50 cap, partial
   from a candle or a gap); endpoint, contract pin and CLI view.
 
 ### 5.17 Slice 5.2: the analyzer runner and the market_metrics analyzer (2026-10-20)
@@ -1365,7 +1365,7 @@ items stay in PLAN.md section 9.
   writes only the rows whose figures differ (`changed_at` says when a row last changed; how fresh the table is comes from the run history); markets that left the universe are deleted after a completed pass.
 - Difference from the single-market endpoint, by design: the table looks for the latest tick only in the last hour (a quiet market has no book figures rather than stale ones); the endpoint looks back 7 days.
 - Found while testing: a temporary table made by a Dapper command with parameters is dropped when the command ends (it runs inside `sp_executesql`); create it with a command without parameters.
-- Tests: the runner against fakes (due, interval, lock, failure, timeout, stop, store failure, pruning, name rules); the analyzer against fakes; the store and the lock on real tables on kaldb; the set-based
+- Tests: the runner against fakes (due, interval, lock, failure, timeout, stop, store failure, pruning, name rules); the analyzer against fakes; the store and the lock on real tables on srv01; the set-based
   reader against the per-market reader on identical data (must agree exactly), universe rules and slicing; the whole host filling the table and recording the run.
 - Not yet: `status` does not show the analyzer runs (to come with the screener, which shows the refresh age); the rollout and a measured run on the production feed.
 
@@ -1380,7 +1380,7 @@ items stay in PLAN.md section 9.
 - `status` gains an Analytics line and problems: the last run failed or timed out (with its message), or no successful run for 15 minutes while ingest runs. Older servers report `null`.
 - `kterm screen [--sort S] [--asc] [--status S] [--min-volume N] [--top N] [--cursor C]`: partial rows are marked in yellow, changes carry a sign, the footer says how old the figures are; times follow the
   chosen time zone.
-- Tests: the reader on real tables on kaldb (sorts, ties, missing values last in both directions, keyset paging over ties and missing values both ways, filters, the refresh time from the newest successful
+- Tests: the reader on real tables on srv01 (sorts, ties, missing values last in both directions, keyset paging over ties and missing values both ways, filters, the refresh time from the newest successful
   run only, limits); endpoint parameters, cursor and mapping; the status builder; contract pins; the CLI view and the status line.
 
 ### 5.19 Slice 5.4: per-user watchlists, alerts and the stored time zone (2026-10-20)
@@ -1403,7 +1403,7 @@ items stay in PLAN.md section 9.
   and `/v1/me/settings` (a test enforces it) and never talks to Kalshi.
 - CLI: `kterm watchlist list|show|create|delete|add|remove`, `kterm alert list|add|pause|resume|remove|fires`, `kterm settings tz [ZONE] [--clear]`, `kterm screen --watchlist NAME`. The stored time zone now sits in the
   precedence after `KALTERM_TZ` and before the computer's zone; it is asked for only when a token is known for the server and quietly ignored if the call fails.
-- Tests: the kinds, thresholds and the firing rule as pure tests; the stores on real tables on kaldb (isolation between two users, limits, cascades, ordering of fires, the evaluation reads with gaps and the
+- Tests: the kinds, thresholds and the firing rule as pure tests; the stores on real tables on srv01 (isolation between two users, limits, cascades, ordering of fires, the evaluation reads with gaps and the
   insert chunk, applying outcomes in one transaction); the analyzer against fakes; the whole host firing an alert from ticks written while it runs; endpoint validation and ownership; contract pins; client requests;
   the CLI commands.
 - Not yet: the push of fires to clients (5.5; for now `kterm alert fires --after ID`).
@@ -1431,7 +1431,7 @@ items stay in PLAN.md section 9.
 ## 7. M5 Analytics summary (2026-10-20): done
 
 Gate "per-user alerts fire": met. A user makes an alert from the command line; the analyzer judges it every 10 seconds against live data; the fire is stored and reaches the user's terminal about one to two seconds
-later; all of it scoped to the user's token. Every slice was rolled out on `kaldb` and checked against the production feed.
+later; all of it scoped to the user's token. Every slice was rolled out on `srv01` and checked against the production feed.
 
 | Slice | What | Notes |
 |---|---|---|
@@ -1444,7 +1444,7 @@ later; all of it scoped to the user's token. Every slice was rolled out on `kald
 Found only by the live checks, none by the fakes: the alerts analyzer took 34 to 39 s a run until the tick lookups were written with the ids in the statement (0.5 s after); a temporary table made by a command with
 parameters is dropped when the command ends; two tests of one class shared rows (CI ordering). The standing question for each slice stays "what would the real service do that my fake cannot?".
 
-Running on `kaldb` at close: ingest `host-84f4848`, API `host-327d431`; status reports no problems; the analyzers run every 5 minutes (metrics) and 10 seconds (alerts).
+Running on `srv01` at close: ingest `host-84f4848`, API `host-327d431`; status reports no problems; the analyzers run every 5 minutes (metrics) and 10 seconds (alerts).
 
 Carried forward, none in M5: persisted deltas, live add/remove of watched markets, WebSocket push (for two-way needs), a desktop notification or sound (with the UI, M7), per-user layouts (M7), mDNS discovery. Parked items
 stay in PLAN.md section 9.
@@ -1690,11 +1690,11 @@ markets is slice 7.2b; in 7.2 a client reconnects to change what it watches.
 - `KalTerm.Client`: `StreamMarketsAsync` and `MarketWatcher` (reconnects with 1 s doubling to 30 s, resumes from the last tick, drops the repeat at the resume moment, passes a `reset` on and opens afresh). `kterm watch TICKER...
   [--book] [--depth N] [--json]` prints ticks and books as they arrive until Ctrl+C.
 - Tests (about 110 new): the hub (limits, fan-out, no moment missed between polls, failed reads, the row limit, books, unknown tickers, overflow, idle), the endpoint over a test server (every event, resume both ways, resets, refusals, limits,
-  a revoked token), the client and the watcher (including the reconnect and dedupe rules), `kterm watch`, the new readers on real tables, and one end-to-end test over a real database through the real watcher. Run on kaldb: Data 388, API 344.
+  a revoked token), the client and the watcher (including the reconnect and dedupe rules), `kterm watch`, the new readers on real tables, and one end-to-end test over a real database through the real watcher. Run on srv01: Data 388, API 344.
 - Rollout: the API only (no migration, the ingest is not touched). A live check after it measures what a fake cannot: that no tick is missed behind the 2-second margin (the stream's ticks against the same window read over REST) and how
   soon after being written a tick arrives.
 
-Rolled out 2026-10-20 (API release host-def745a on kaldb; ingest untouched; API and ingest tasks running, `/readyz` 200). Live check: `kterm watch` on all 50 watched markets for 60 s over the LAN address. The stream carried 236 ticks in a
+Rolled out 2026-10-20 (API release host-def745a on srv01; ingest untouched; API and ingest tasks running, `/readyz` 200). Live check: `kterm watch` on all 50 watched markets for 60 s over the LAN address. The stream carried 236 ticks in a
 window of 57 s that ended 5 s before the end of the watch; the same window read over REST (`kterm ticks --start --end`, per market) held 236. So the 2-second margin lost no tick in this run. Arrival delay was not measured.
 
 ### 9.3 Slice 7.2b: live add and remove of a stream's markets (2026-10-20)
@@ -1715,7 +1715,7 @@ history is the client's to load over REST.
   `subscribed` / `unsubscribed` lines with `--json`.
 - Tests (about 50 new): the hub (a new market begins at the last poll's end and nothing before it is sent; already watched; unknown; books; no book; removal order; the cap and double counting; another user's stream; an ended stream; a failed
   lookup), the endpoint over a test server (every route and refusal, the confirmations, the book after its confirmation, a book subscribed again, another user's token), the client calls and events, the watcher (live, between connections,
-  before `ready`, refusals, an empty list) and `kterm watch` (typed lines, bad lines, refusals, confirmations, JSON, piped input), and one end-to-end test on a real database. Run on kaldb: API 368.
+  before `ready`, refusals, an empty list) and `kterm watch` (typed lines, bad lines, refusals, confirmations, JSON, piped input), and one end-to-end test on a real database. Run on srv01: API 368.
 - Rollout: the API only (no migration, ingest untouched). The live check after it adds a watched market to a running stream and compares its stream ticks with REST for the same window.
 
 ### 9.4 The stream's tick margin is 3 seconds (2026-10-20)
@@ -1724,7 +1724,7 @@ The live check of 7.2b (API release host-707ba8f) compared a stream's ticks with
 watched from the start and on one added live (about 3 ticks in 900), and one miss fell 8.7 s before the end of the window, so it was not a boundary effect. The cause is the 2-second margin of 7.2: a poll reads rows up to 2 s old once a
 second, and a row that reaches the table after the poll has gone past its time is never sent.
 
-Measured on kaldb itself (a read-only script polling the ticker table of the 6 busiest markets every 0.19 s for 3 minutes, 1,015 ticks, the server's own clock): a row is readable a median of 1.13 s after its time, 90% within 1.39 s, 99% within
+Measured on srv01 itself (a read-only script polling the ticker table of the 6 busiest markets every 0.19 s for 3 minutes, 1,015 ticks, the server's own clock): a row is readable a median of 1.13 s after its time, 90% within 1.39 s, 99% within
 1.95 s, at most 2.15 s; 6 of 1,015 took longer than 2 s. (Measured through the REST endpoint from a workstation the same rows looked about 0.8 s later: the request and the polling add to it; that figure is not the table's.) With a poll every second,
 a row that is readable after 2 + u seconds (u between 0 and 1) is lost, which matches about one in 300.
 
@@ -1742,7 +1742,7 @@ ahead of REST (84 against 83) in the original three; it was not seen again in th
 Approved by the owner 2026-10-20 with the three recommended choices: the screener is the list source (with a new `search`), trades are polled, paging is Next and Previous.
 
 - **Server (its own rollout):** `GET /v1/screener` takes `q` (2 to 64 characters, the markets endpoint's own parameter): only markets whose ticker or yes label contains the text, matched literally (`%`, `_` and `[` are not wildcards) and in any
-  case. `ScreenerQuery.Search`, `ScreenQuery.Search`, `kterm screen --search`. Tested on real SQL on kaldb (Data 390 passed).
+  case. `ScreenerQuery.Search`, `ScreenQuery.Search`, `kterm screen --search`. Tested on real SQL on srv01 (Data 390 passed).
 - **`MarketFeed`:** the terminal's one stream. Pages say what they want by name (`SetWanted("list", ...)`, `SetWanted("detail", ...)`); it watches the union, adds and drops markets live (always worked out from the current wish, never replayed, so
   two quick changes cannot cross), and opens nothing until some market is wanted. Events are raised on the UI thread. Found by the tests, fixed: a stream refused at once reported "stopped" before "connecting"; "connecting" is now posted first.
 - **`MarketsViewModel` and `MarketRowViewModel`:** 50 rows per page (the stream's per-stream limit), Next/Previous (a list of the cursors visited), status filter (default active), minimum volume (digits, up to two decimals, anything else
@@ -1782,7 +1782,7 @@ context ("Philadelphia vs New York", sub-title "PHI vs NYK (Oct 20)"). The owner
 - **Terminal:** `MarketNames` (the name is the event title, else the market title, else the yes label, else the ticker; the line under it is the market title when the name is the event's). The list has one folded **Market** column (name in
   semibold, the market title in grey under it), then Yes, the numbers, and the ticker as a narrow last column. The detail heading is the name; under it the market title and the ticker; the event sub-title is one of the lines. The older layout (ticker
   first, Yes beside it) is the fallback if the folded one is not liked.
-- **Tests (about 55 new):** the Kalshi title; event discovery (batches, hourly refresh, lookups, the weekly retry, the per-pass limit, failures keep what was read); the runner loop; the stores and readers on real SQL on kaldb (Data 397, Ingest 262, API
+- **Tests (about 55 new):** the Kalshi title; event discovery (batches, hourly refresh, lookups, the weekly retry, the per-pass limit, failures keep what was read); the runner loop; the stores and readers on real SQL on srv01 (Data 397, Ingest 262, API
   371); the API wire names; the CLI; the terminal's names, row, folded cell and detail heading with their fallbacks.
 - **Rollout (in this order, each asked for):** the ingest (applies migration 0008; a short gap in ticker and order-book data), then the API, then the owner restarts the terminal. Titles of finished markets arrive over the following hours.
 
@@ -1812,7 +1812,7 @@ from the stream. No server change.
   from the exact text. Nothing computes with them.
 - **Book.** `OrderBookViewModel`: the yes bids as they come, the asks derived from the no bids (1 minus the price, in whole millionths), cumulative totals in whole hundredths, bar fractions for drawing only, best bid and ask, spread and middle exact, 10, 20 or
   50 levels, a warning when the server says stale or approximate. `MarketFeed` now carries books as well as ticks (`SetWantedBooks`, one stream, added and dropped live, depth fixed at 50 when the stream opens).
-- **Looked at, not only tested.** A real market's candles from kaldb (an in-play game, price 0.50 to 0.12, three gap candles, a volume spike of millions) were drawn through the real builder to a picture and the three tabs of the real detail view were drawn
+- **Looked at, not only tested.** A real market's candles from srv01 (an in-play game, price 0.50 to 0.12, three gap candles, a volume spike of millions) were drawn through the real builder to a picture and the three tabs of the real detail view were drawn
   offscreen with real data; the picture of the chart, the ladder and the Overview tab were looked at. The offscreen harness cannot capture the GPU-backed control itself (it shows blank), so the chart is judged from the builder's own picture.
 - **Found by looking: the watch list.** The 50 markets the server publishes books for (the ingest watch list, chosen long ago) are all quiet, one level a side, so the Book tab is thin for them and says "no book is published" for everything else.
   Choosing the watch list well (for example the most active markets) is a configuration decision for the owner, not part of this slice.
@@ -1882,9 +1882,9 @@ box); an opaque JSON body of at most 32 KB, 20 layouts per user and no CLI comma
   until the person saves under another name.
 - **The zone box.** Windows names a zone with its standard-time offset ("(UTC-07:00) Mountain Time"), which is wrong while daylight saving applies. The box now reads "Mountain Time (US & Canada), now UTC-06:00": the name without that prefix and the offset in effect now.
 - **Found on the way.** `Dispatcher.Yield()` is needed before closing the window from the end of its own Closing event (an answer that comes at once would otherwise throw).
-- **Tests (about 120 new).** Data (on kaldb: save, replace, list, read, delete, isolation between users, the 20 limit and replacing when full, a non-JSON body refused by the table), API (routes, name and body rules, size limit, conflict, unauthorised), client (requests and
+- **Tests (about 120 new).** Data (on srv01: save, replace, list, read, delete, isolation between users, the 20 limit and replacing when full, a non-JSON body refused by the table), API (routes, name and body rules, size limit, conflict, unauthorised), client (requests and
   escaping), contract pins; in the terminal the model, placement arithmetic, the service, the coordinator (every path above), the Markets page applying and capturing layouts, chart and book preferences, the wiring in the main window, the zone text, and the real views with binding
-  errors captured. Terminal 518 tests, Api 382, Data 404, Ingest 269 (the last three run on kaldb).
+  errors captured. Terminal 518 tests, Api 382, Data 404, Ingest 269 (the last three run on srv01).
 - **Rolled out 2026-10-21 (owner: "do the merge and the rollouts"), from main 99c9ae5.** Both published self-contained, and both run wrappers printed by `-PrintWrapper` were identical to the live ones (the same 50-ticker watch list and the same backup target for ingest; the same LAN address for the API). Ingest first: released as `host-99c9ae5`, restarted at 08:17 local, the log says the schema is current after one migration (migration 9), the pause is one `ingest_down` gap (13 now), and tickers flow again at about 51k rows/min with no drops and 50 of 50 books. Then the API: released as `api-99c9ae5` (note: the folder name is not `host-...`), restarted in about 5 seconds, `/v1/status` reports no problems, and an authenticated read-only `GET /v1/me/layouts` with the owner's stored token (a throwaway client that never printed it) answered 200 with no layouts yet. The first real layout is made by the owner's next terminal start.
 
 ### 9.12 Slice 7.8: the trading panel (2026-10-21)

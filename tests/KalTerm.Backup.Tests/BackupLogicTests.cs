@@ -383,7 +383,7 @@ public sealed class ShareAccessTests : IDisposable
     [Theory]
     [InlineData(@"\\127.0.0.1\kalterm-no-such-share", @"\\127.0.0.1\kalterm-no-such-share")]
     [InlineData(@"\\127.0.0.1\kalterm-no-such-share\KalTerm\sub", @"\\127.0.0.1\kalterm-no-such-share")]
-    [InlineData(@"\\192.168.1.16\kdb\", @"\\192.168.1.16\kdb")]
+    [InlineData(@"\\203.0.113.16\share\", @"\\203.0.113.16\share")]
     public void TheShareIsTheHostAndFirstFolderOfAUncPath(string unc, string share)
     {
         Assert.Equal(share, Win32ShareConnector.ShareRoot(unc));

@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Core.RateLimiting from the Python reference (kalshi_core.ratelimit).
 
-    python tools/vectors/generate_ratelimit.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_ratelimit.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Each scenario builds the reference TokenBucket under its deterministic fake clock (whose sleep advances time),
 runs a list of operations and records the clock after every one. The reference computes in floats; the C#

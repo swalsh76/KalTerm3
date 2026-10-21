@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Kalshi.Models from the Python reference (kalshi_core.models).
 
-    python tools/vectors/generate_models.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_models.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Needs pydantic (the reference models are pydantic models): ``pip install pydantic`` in a throwaway venv. The generated
 JSON is committed, so CI never runs Python.

@@ -210,7 +210,7 @@ internal sealed class ConnectViewModel : ObservableObject
         Message = string.Empty;
         if (!TryParseAddress(_address, out var server))
         {
-            Message = "Give the server as host:port, for example kaldb:5280 (or an https:// address; a loopback http:// address is also accepted).";
+            Message = "Give the server as host:port, for example srv01:5280 (or an https:// address; a loopback http:// address is also accepted).";
             return;
         }
 

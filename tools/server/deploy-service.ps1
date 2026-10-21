@@ -29,10 +29,10 @@ Ingest only: the tickers whose order books are built and published (Ingest:Watch
 
 .PARAMETER BackupTarget
 Ingest only: the folder the daily backups go to as the SERVER sees it (Ingest:BackupTarget), a folder or a \host\shareolder path. Omitted means no backups. The folder
-must carry the marker written by `tools\kaldbdmin.ps1 -- backup init-target`, and for a share the credential must be stored (`admin.ps1 -SetShareCredential`).
+must carry the marker written by `tools\serverdmin.ps1 -- backup init-target`, and for a share the credential must be stored (`admin.ps1 -SetShareCredential`).
 
 .PARAMETER LanUrl
-API only: the address the network reaches the API on (Api:LanUrl), https with one specific IP address and a port, for example https://192.168.1.20:5280. Every request there needs a token.
+API only: the address the network reaches the API on (Api:LanUrl), https with one specific IP address and a port, for example https://203.0.113.20:5280. Every request there needs a token.
 The server's certificate (`kalterm-admin cert init`) must exist first. Omitted means the API listens on loopback only.
 
 .PARAMETER TlsDirectory
@@ -93,7 +93,7 @@ if ($LanUrl -or $TlsDirectory -or $OpenFirewall) {
     if ($Service -ne 'api') { throw '-LanUrl, -TlsDirectory and -OpenFirewall apply to the api service only.' }
     if ($OpenFirewall -and -not $LanUrl) { throw '-OpenFirewall needs -LanUrl.' }
     if ($LanUrl) {
-        if ($LanUrl -notmatch '^https://[0-9]{1,3}(\.[0-9]{1,3}){3}:[0-9]{2,5}$') { throw '-LanUrl must look like https://192.168.1.20:5280 (https, one IPv4 address, a port).' }
+        if ($LanUrl -notmatch '^https://[0-9]{1,3}(\.[0-9]{1,3}){3}:[0-9]{2,5}$') { throw '-LanUrl must look like https://203.0.113.20:5280 (https, one IPv4 address, a port).' }
         $services.api.Env += "`$env:KALTERM_Api__LanUrl = '$LanUrl'"
     }
     if ($TlsDirectory) {

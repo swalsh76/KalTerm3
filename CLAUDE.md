@@ -10,10 +10,10 @@ KalTerm is a greenfield rewrite. The Python/Postgres predecessor (KalshiTerm2, `
 is the **reference implementation**: its docs are the specification, and its tests and fixtures are the
 oracle. No code is shared.
 
-- Local clone of the reference: `C:\Users\stebe\dev\KalshiTerm2` (read it; do not edit it from here).
+- Local clone of the reference: `%USERPROFILE%\dev\KalshiTerm2` (read it; do not edit it from here).
   Fixtures and tests live under `packages\kalshi-core\tests`, measurements in `docs\BUILD-LOG.md` §10.2.
 - Longer list of lessons (durability, unattended operation, backups, testing):
-  `C:\Users\stebe\dev\KalshiTerm2\docs\windows\CLAUDE.md`.
+  `%USERPROFILE%\dev\KalshiTerm2\docs\windows\CLAUDE.md`.
 
 ## Status
 
@@ -94,17 +94,17 @@ Regenerate golden vectors from the Python reference (only when the reference cha
 committed and CI never runs Python; see `tools/vectors/README.md`):
 
 ```powershell
-python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install cryptography
-python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
-python tools/vectors/generate_ws_models.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs: pip install pydantic
-python tools/vectors/generate_api_format.py --reference C:/Users/stebe/dev/KalshiTerm2
-python tools/vectors/generate_risk.py --reference C:/Users/stebe/dev/KalshiTerm2   # the risk layer: loads kalshiterm_client/risk.py by path, needs only kalshi_core
-python tools/vectors/generate_orderbook.py --reference C:/Users/stebe/dev/KalshiTerm2   # needs: pip install pydantic pydantic-settings cryptography httpx websockets
+python tools/vectors/generate_fixedpoint.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_fees.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_ratelimit.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_config.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_ed25519.py --reference %USERPROFILE%\dev\KalshiTerm2   # needs: pip install cryptography
+python tools/vectors/generate_clock.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_models.py --reference %USERPROFILE%\dev\KalshiTerm2   # needs: pip install pydantic
+python tools/vectors/generate_ws_models.py --reference %USERPROFILE%\dev\KalshiTerm2   # needs: pip install pydantic
+python tools/vectors/generate_api_format.py --reference %USERPROFILE%/dev/KalshiTerm2
+python tools/vectors/generate_risk.py --reference %USERPROFILE%/dev/KalshiTerm2   # the risk layer: loads kalshiterm_client/risk.py by path, needs only kalshi_core
+python tools/vectors/generate_orderbook.py --reference %USERPROFILE%/dev/KalshiTerm2   # needs: pip install pydantic pydantic-settings cryptography httpx websockets
 ```
 
 Run the ingest process (demo by default; `KALSHI_ENV=production` plus the key variables for production, and `KALTERM_Ingest__ProvisionMaxSizeGb=<n>` to let it create the database):
@@ -132,13 +132,13 @@ Read a KalTerm server with the CLI (`status` exits 2 when it finds problems). Lo
 
 ```powershell
 dotnet run --project src/KalTerm.Cli -c Release -- status
-.\tools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
+.\tools\server\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- market <TICKER>
 ```
 
 Watch markets live from this computer (ticks, and order books with `--book`, pushed as they happen; Ctrl+C stops it; it reconnects by itself and misses no tick):
 
 ```powershell
-dotnet run --project src/KalTerm.Cli -c Release -- watch <TICKER> [<TICKER>...] --book --api https://kaldb:5280
+dotnet run --project src/KalTerm.Cli -c Release -- watch <TICKER> [<TICKER>...] --book --api https://srv01:5280
 ```
 
 While it runs, type `+TICKER`, `+TICKER book`, `-TICKER` or `-TICKER book` to add or remove a market without reconnecting.
@@ -146,19 +146,19 @@ While it runs, type `+TICKER`, `+TICKER book`, `-TICKER` or `-TICKER book` to ad
 Read the server from this computer (once per server: trust its certificate, then store your token; the operator makes users and tokens on the server with `kalterm-admin user add` and `token create`):
 
 ```powershell
-dotnet run --project src/KalTerm.Cli -c Release -- trust kaldb:5280          # compare the fingerprint with `kalterm-admin cert show`
-dotnet run --project src/KalTerm.Cli -c Release -- login --api https://kaldb:5280
-dotnet run --project src/KalTerm.Cli -c Release -- status --api https://kaldb:5280     # or set KALTERM_API_URL
+dotnet run --project src/KalTerm.Cli -c Release -- trust srv01:5280          # compare the fingerprint with `kalterm-admin cert show`
+dotnet run --project src/KalTerm.Cli -c Release -- login --api https://srv01:5280
+dotnet run --project src/KalTerm.Cli -c Release -- status --api https://srv01:5280     # or set KALTERM_API_URL
 # times show in the zone stored with `kterm settings tz`, else this computer's zone; choose with --utc, --tz America/Denver or KALTERM_TZ
 ```
 
 Back up, restore and prove backups on the server (`kalterm-admin`, run on the server through remoting; the share credential is entered once with `-SetShareCredential`):
 
 ```powershell
-.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -SetShareCredential
-.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -- backup init-target
-.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -- backup run --full
-.\tools\kaldb\admin.ps1 -BackupTarget <\\host\share\folder> -- restore --database KalTerm_check
+.\tools\server\admin.ps1 -BackupTarget <\\host\share\folder> -SetShareCredential
+.\tools\server\admin.ps1 -BackupTarget <\\host\share\folder> -- backup init-target
+.\tools\server\admin.ps1 -BackupTarget <\\host\share\folder> -- backup run --full
+.\tools\server\admin.ps1 -BackupTarget <\\host\share\folder> -- restore --database KalTerm_check
 ```
 
 Opt-in live tests against the real Kalshi API (read-only key, GET only, about a dozen requests, skipped by default and in
@@ -182,7 +182,7 @@ $env:KALSHI_INTEGRATION='1'; $env:KALSHI_ENV='production'   # plus KALSHI_KEY_ID
 ```
 
 Database tests (`KalTerm.Data.Tests`, `KalTerm.Ingest.Tests`) run on LocalDB (`(localdb)\MSSQLLocalDB`). If it is missing they skip on a development machine and fail on CI.
-This workstation has no LocalDB, so **run them on the target server before committing database changes**: `tools/kaldb/run-db-tests.ps1 -ComputerName <host> -CredentialPath <cred file>`
+This workstation has no LocalDB, so **run them on the target server before committing database changes**: `tools/server/run-db-tests.ps1 -ComputerName <host> -CredentialPath <cred file>`
 (or set `KALTERM_TEST_HOST` and `KALTERM_TEST_CRED`) publishes, syncs by hash and runs them there as SYSTEM.
 `KALTERM_TEST_SQL_SERVER` selects another server; to run them on the target server see BUILD-LOG 5.1 (self-contained publish with `-p:NoCoverage=true`, then re-run `dotnet restore`).
 

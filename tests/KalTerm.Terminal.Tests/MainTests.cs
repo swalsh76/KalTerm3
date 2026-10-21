@@ -10,7 +10,7 @@ namespace KalTerm.Terminal.Tests;
 
 public sealed class MainViewModelTests : IDisposable
 {
-    private static readonly Uri Server = new("https://kaldb:5280");
+    private static readonly Uri Server = new("https://srv01:5280");
 
     private readonly TestServices _t = new();
     private readonly FakeDialogs _dialogs = new();
@@ -51,7 +51,7 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.Equal(ConnectionState.Connected, _model.State);
         Assert.Equal("connected", _model.StateText);
-        Assert.Equal("kaldb:5280", _model.ServerText);
+        Assert.Equal("srv01:5280", _model.ServerText);
         Assert.True(_status.HasPage);
         Assert.Equal([Server, Server, Server, Server, Server], _t.Created);   // the status page, the Markets page's two (its own requests and its live feed), the Alerts page and the alert listener
         Assert.Empty(_dialogs.Shown);
@@ -84,7 +84,7 @@ public sealed class MainViewModelTests : IDisposable
     public async Task AnUnreachableServerIsShownAndRetryTriesAgain()
     {
         _t.Settings.SaveServer(Server);
-        _t.Api.StatusFails = new ApiUnavailableException("could not reach kaldb:5280");
+        _t.Api.StatusFails = new ApiUnavailableException("could not reach srv01:5280");
 
         await _model.StartAsync();
         Assert.Equal((ConnectionState.Unreachable, "not reachable"), (_model.State, _model.StateText));
@@ -124,7 +124,7 @@ public sealed class MainViewModelTests : IDisposable
     public async Task ACertificateNotTrustedOpensTheDialogAtTrustAndConnectsAfter()
     {
         _t.Settings.SaveServer(Server);
-        _t.Api.StatusFails = new TlsTrustException(TrustFailure.NotTrusted, "kaldb:5280", null, Samples.Fingerprint, new InvalidOperationException());
+        _t.Api.StatusFails = new TlsTrustException(TrustFailure.NotTrusted, "srv01:5280", null, Samples.Fingerprint, new InvalidOperationException());
         _dialogs.Answer = connect =>
         {
             _t.Api.StatusFails = null;
@@ -136,7 +136,7 @@ public sealed class MainViewModelTests : IDisposable
         var connect = Assert.Single(_dialogs.Shown);
         Assert.True(connect.OnTrust);
         Assert.False(connect.HasWarning);
-        Assert.Equal([("kaldb", 5280)], _t.Probed);
+        Assert.Equal([("srv01", 5280)], _t.Probed);
         Assert.Equal(ConnectionState.Connected, _model.State);
     }
 
@@ -144,13 +144,13 @@ public sealed class MainViewModelTests : IDisposable
     public async Task AChangedCertificateOpensTheDialogWithAWarning()
     {
         _t.Settings.SaveServer(Server);
-        _t.Api.StatusFails = new TlsTrustException(TrustFailure.Changed, "kaldb:5280", new string('1', 64), Samples.Fingerprint, new InvalidOperationException());
+        _t.Api.StatusFails = new TlsTrustException(TrustFailure.Changed, "srv01:5280", new string('1', 64), Samples.Fingerprint, new InvalidOperationException());
 
         await _model.StartAsync();
 
         var connect = Assert.Single(_dialogs.Shown);
         Assert.True(connect.OnTrust);
-        Assert.StartsWith("WARNING: the certificate of kaldb:5280 CHANGED", connect.Warning, StringComparison.Ordinal);
+        Assert.StartsWith("WARNING: the certificate of srv01:5280 CHANGED", connect.Warning, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class MainViewModelTests : IDisposable
 
         await _model.ConnectCommand.RunAsync();
 
-        Assert.Equal("https://kaldb:5280", Assert.Single(_dialogs.Shown).Address);
+        Assert.Equal("https://srv01:5280", Assert.Single(_dialogs.Shown).Address);
     }
 
     [Fact]

@@ -5,7 +5,7 @@ using KalTerm.Data.State;
 namespace KalTerm.Backup.Tests;
 
 /// <summary>
-/// The real thing: SQL Server writes, verifies, restores and checks backups of a real database with the real tables. Skipped where no SQL Server is available (run on kaldb).
+/// The real thing: SQL Server writes, verifies, restores and checks backups of a real database with the real tables. Skipped where no SQL Server is available (run on srv01).
 /// </summary>
 public sealed class SqlBackupTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>, IDisposable
 {

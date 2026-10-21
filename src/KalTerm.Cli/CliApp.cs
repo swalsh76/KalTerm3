@@ -438,7 +438,7 @@ internal static partial class CliApp
             {
                 return EndpointKey.TryParse(given, out var named)
                     ? await RunGuarded(env, () => TrustCommands.TrustAsync(env, named, parsed.GetValue(trustFingerprint), ct)).ConfigureAwait(false)
-                    : Fail(env, "give the server as host:port, for example kaldb:5280");
+                    : Fail(env, "give the server as host:port, for example srv01:5280");
             }
 
             return TryResolve(env, parsed.GetValue(api), out var resolved, out var problem)

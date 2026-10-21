@@ -15,7 +15,7 @@ public static class EndpointKey
 {
     /// <summary>The key of an address.</summary>
     /// <param name="address">The API address.</param>
-    /// <returns>For example <c>kaldb:5280</c>.</returns>
+    /// <returns>For example <c>srv01:5280</c>.</returns>
     public static string Of(Uri address)
     {
         ArgumentNullException.ThrowIfNull(address);

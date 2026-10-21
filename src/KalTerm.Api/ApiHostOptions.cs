@@ -20,7 +20,7 @@ public sealed class ApiHostOptions
     public string Url { get; set; } = DefaultUrl;
 
     /// <summary>
-    /// The address the LAN reaches the API on (<c>Api:LanUrl</c>), for example <c>https://192.168.1.20:5280</c>: HTTPS with an explicit port and one specific IP address (never a wildcard).
+    /// The address the LAN reaches the API on (<c>Api:LanUrl</c>), for example <c>https://203.0.113.20:5280</c>: HTTPS with an explicit port and one specific IP address (never a wildcard).
     /// Everything there needs a token. Empty means the API is not reachable from the network at all.
     /// </summary>
     public string? LanUrl { get; set; }
@@ -53,7 +53,7 @@ public sealed class ApiHostOptions
 
         if (!Uri.TryCreate(LanUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || uri.IsDefaultPort)
         {
-            throw new InvalidOperationException("Api:LanUrl must be an https address with an explicit port, for example https://192.168.1.20:5280");
+            throw new InvalidOperationException("Api:LanUrl must be an https address with an explicit port, for example https://203.0.113.20:5280");
         }
 
         if (!IPAddress.TryParse(uri.Host.Trim('[', ']'), out var address) || address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))

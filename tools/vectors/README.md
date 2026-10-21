@@ -6,15 +6,15 @@ Python. Regenerate only when the reference changes, review the diff, and record 
 (the generator writes it into each file).
 
 ```powershell
-python tools/vectors/generate_fixedpoint.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_fees.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_ratelimit.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_config.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_ed25519.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_clock.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_models.py --reference C:\Users\stebe\dev\KalshiTerm2    # needs: pip install pydantic
-python tools/vectors/generate_api_format.py --reference C:\Users\stebe\dev\KalshiTerm2
-python tools/vectors/generate_orderbook.py --reference C:\Users\stebe\dev\KalshiTerm2   # needs the reference's dependencies, see below
+python tools/vectors/generate_fixedpoint.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_fees.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_ratelimit.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_config.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_ed25519.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_clock.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_models.py --reference %USERPROFILE%\dev\KalshiTerm2    # needs: pip install pydantic
+python tools/vectors/generate_api_format.py --reference %USERPROFILE%\dev\KalshiTerm2
+python tools/vectors/generate_orderbook.py --reference %USERPROFILE%\dev\KalshiTerm2   # needs the reference's dependencies, see below
 ```
 
 `generate_models.py` runs the reference's pydantic models over an adversarial corpus (JSON numbers where strings are

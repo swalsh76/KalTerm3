@@ -705,7 +705,7 @@ public sealed class TradingViewModelTests : IDisposable
 
 public sealed class TradingWiringTests : IDisposable
 {
-    private static readonly Uri Server = new("https://kaldb:5280");
+    private static readonly Uri Server = new("https://srv01:5280");
 
     private readonly TestServices _t = new();
     private readonly FakeDialogs _dialogs = new();

@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Core.Clock from the Python reference (kalshi_core.clock).
 
-    python tools/vectors/generate_clock.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_clock.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 ``clock.py`` is standard-library only, so it is imported and called directly as the oracle.
 
