@@ -15,17 +15,17 @@
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0">
             <TextBlock Text="New alert" FontSize="16" FontWeight="SemiBold" />
-            <DockPanel Margin="0,8,0,0" LastChildFill="False">
-                <TextBlock Text="Market" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <TextBox Width="220" Text="{Binding Ticker, UpdateSourceTrigger=PropertyChanged}" ToolTip="The ticker of the market" />
-                <ComboBox Width="190" Margin="8,0,0,0" ItemsSource="{Binding Kinds}" SelectedItem="{Binding Kind}" DisplayMemberPath="Text" />
-                <TextBox Width="90" Margin="8,0,0,0" Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Hint}" />
-                <TextBlock Text="{Binding Kind.Unit}" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="Gray" />
-                <TextBlock Text="Cooldown" VerticalAlignment="Center" Margin="16,0,6,0" />
-                <TextBox Width="60" Text="{Binding Cooldown, UpdateSourceTrigger=PropertyChanged}" ToolTip="The least time between two fires, in seconds (10 to 86400)" />
-                <TextBlock Text="seconds" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="Gray" />
-                <Button Content="Add alert" Command="{Binding AddCommand}" Margin="16,0,0,0" Padding="12,2" />
-            </DockPanel>
+            <WrapPanel Margin="0,8,0,0">
+                <TextBlock Text="Market" VerticalAlignment="Center" Margin="0,2,6,2" />
+                <TextBox Width="220" Margin="0,2" Text="{Binding Ticker, UpdateSourceTrigger=PropertyChanged}" ToolTip="The ticker of the market" />
+                <ComboBox Width="190" Margin="8,2,0,2" ItemsSource="{Binding Kinds}" SelectedItem="{Binding Kind}" DisplayMemberPath="Text" />
+                <TextBox Width="90" Margin="8,2,0,2" Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Hint}" />
+                <TextBlock Text="{Binding Kind.Unit}" VerticalAlignment="Center" Margin="6,2,0,2" Foreground="Gray" />
+                <TextBlock Text="Cooldown" VerticalAlignment="Center" Margin="16,2,6,2" />
+                <TextBox Width="60" Margin="0,2" Text="{Binding Cooldown, UpdateSourceTrigger=PropertyChanged}" ToolTip="The least time between two fires, in seconds (10 to 86400)" />
+                <TextBlock Text="seconds" VerticalAlignment="Center" Margin="6,2,0,2" Foreground="Gray" />
+                <Button Content="Add alert" Command="{Binding AddCommand}" Margin="16,2,0,2" Padding="12,2" MinWidth="90" />
+            </WrapPanel>
             <TextBlock Text="{Binding Hint}" Foreground="Gray" Margin="0,6,0,0" TextWrapping="Wrap" />
             <TextBlock Text="{Binding Problem}" Foreground="DarkGoldenrod" Margin="0,2,0,0" TextWrapping="Wrap" Visibility="{Binding HasProblem, Converter={StaticResource Visible}}" />
             <TextBlock Text="{Binding Error}" Foreground="Firebrick" Margin="0,2,0,0" TextWrapping="Wrap" Visibility="{Binding HasError, Converter={StaticResource Visible}}" />

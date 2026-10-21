@@ -116,7 +116,7 @@ internal sealed class LayoutCoordinator : ObservableObject, IDisposable
         SetNames(names);
         if (listProblem is not null)
         {
-            Problem = listProblem + " Changes are not saved until it can be read.";
+            Problem = listProblem.TrimEnd('.', ' ') + ". Changes are not saved until the layouts can be read.";
             SetCurrent(wanted);
             return;
         }

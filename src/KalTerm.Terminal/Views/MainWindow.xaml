@@ -21,20 +21,28 @@
     </Window.Resources>
     <DockPanel>
         <Border DockPanel.Dock="Top" Padding="12,8" BorderThickness="0,0,0,1" BorderBrush="{x:Static SystemColors.ControlDarkBrush}">
-            <DockPanel LastChildFill="False">
-                <TextBlock Text="{Binding ServerText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding StateText}" Margin="12,0,0,0" VerticalAlignment="Center" />
-                <Button Content="Connect…" Command="{Binding ConnectCommand}" Margin="16,0,0,0" Padding="10,2" />
-                <Button Content="Retry" Command="{Binding RetryCommand}" Margin="8,0,0,0" Padding="10,2" />
-                <TextBlock Text="Layout" Margin="20,0,6,0" VerticalAlignment="Center" />
-                <ComboBox Width="130" ItemsSource="{Binding Layouts.Names}" SelectedItem="{Binding Layouts.Current}"
-                          ToolTip="How the window, filters and columns are laid out. Changes are saved on the server as you go." />
-                <Button Content="Save as…" Command="{Binding Layouts.SaveAsCommand}" Margin="6,0,0,0" Padding="10,2" ToolTip="Save the way things are now under a new layout name" />
-                <Button Content="Delete" Command="{Binding Layouts.DeleteCommand}" Margin="6,0,0,0" Padding="10,2" ToolTip="Delete the layout in use" />
-                <ComboBox DockPanel.Dock="Right" Width="340" ItemsSource="{Binding Zones}" SelectedItem="{Binding Zone}" DisplayMemberPath="Text"
-                          ToolTip="The time zone every time on screen is shown in" />
-                <TextBlock DockPanel.Dock="Right" Text="Time zone" Margin="0,0,8,0" VerticalAlignment="Center" />
-            </DockPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ServerText}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,2,0,2" />
+                    <TextBlock Text="{Binding StateText}" Margin="12,2,0,2" VerticalAlignment="Center" />
+                    <Button Content="Connect…" Command="{Binding ConnectCommand}" Margin="16,2,0,2" Padding="10,2" />
+                    <Button Content="Retry" Command="{Binding RetryCommand}" Margin="8,2,0,2" Padding="10,2" />
+                    <TextBlock Text="Layout" Margin="20,2,6,2" VerticalAlignment="Center" />
+                    <ComboBox Width="130" Margin="0,2" ItemsSource="{Binding Layouts.Names}" SelectedItem="{Binding Layouts.Current}"
+                              ToolTip="How the window, filters and columns are laid out. Changes are saved on the server as you go." />
+                    <Button Content="Save as…" Command="{Binding Layouts.SaveAsCommand}" Margin="6,2,0,2" Padding="10,2" ToolTip="Save the way things are now under a new layout name" />
+                    <Button Content="Delete" Command="{Binding Layouts.DeleteCommand}" Margin="6,2,0,2" Padding="10,2" ToolTip="Delete the layout in use" />
+                </WrapPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="Time zone" Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <ComboBox Width="300" ItemsSource="{Binding Zones}" SelectedItem="{Binding Zone}" DisplayMemberPath="Text"
+                              ToolTip="The time zone every time on screen is shown in" />
+                </StackPanel>
+            </Grid>
         </Border>
         <TextBlock DockPanel.Dock="Top" Text="{Binding Layouts.Problem}" Foreground="DarkGoldenrod" Margin="12,4,12,0" TextWrapping="Wrap"
                    Visibility="{Binding Layouts.HasProblem, Converter={StaticResource Visible}}" />
