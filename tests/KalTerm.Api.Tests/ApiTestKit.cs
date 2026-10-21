@@ -290,6 +290,34 @@ internal sealed class FakeUserData : IUserDataStore
         return Task.FromResult<IReadOnlyList<UserFire>>([.. matching.Take(limit)]);
     }
 
+    public IReadOnlyList<LayoutSummary> LayoutList { get; set; } = [];
+
+    public LayoutDetail? Layout { get; set; }
+
+    public Task<IReadOnlyList<LayoutSummary>> ListLayoutsAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"list-layouts {userId}");
+        return Task.FromResult(LayoutList);
+    }
+
+    public Task<LayoutDetail?> GetLayoutAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"get-layout {userId} {name}");
+        return Task.FromResult(Layout);
+    }
+
+    public Task<StoreOutcome> PutLayoutAsync(int userId, string name, string body, DateTime now, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"put-layout {userId} {name} {body}");
+        return Task.FromResult(Outcome);
+    }
+
+    public Task<StoreOutcome> DeleteLayoutAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        Calls.Add($"delete-layout {userId} {name}");
+        return Task.FromResult(Outcome);
+    }
+
     public Task<string?> GetSettingAsync(int userId, string name, CancellationToken cancellationToken = default)
     {
         Calls.Add($"get-setting {userId} {name}");

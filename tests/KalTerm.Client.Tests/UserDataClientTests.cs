@@ -15,6 +15,41 @@ public sealed class UserDataClientTests
     private static string Error(string code) => Json(new ErrorDto(code));
 
     [Fact]
+    public async Task LayoutsAreListedAndReadWithGetAndTheNameIsEscaped()
+    {
+        var body = System.Text.Json.JsonDocument.Parse("""{"version":1}""").RootElement;
+        var stub = new StubHttpMessageHandler()
+            .Respond(HttpStatusCode.OK, Json(new LayoutListDto([new LayoutSummaryDto("desk", "2026-10-20T20:00:00.000000+00:00")])))
+            .Respond(HttpStatusCode.OK, Json(new LayoutDto("my layout", "2026-10-20T20:00:00.000000+00:00", body)));
+        using var client = Client(stub);
+
+        var list = await client.GetLayoutsAsync(TestContext.Current.CancellationToken);
+        var one = await client.GetLayoutAsync("my layout", TestContext.Current.CancellationToken);
+
+        Assert.Equal(["http://127.0.0.1:5280/v1/me/layouts", "http://127.0.0.1:5280/v1/me/layouts/my%20layout"], stub.Requests.Select(r => r.Uri.AbsoluteUri));
+        Assert.All(stub.Requests, r => Assert.Equal(HttpMethod.Get, r.Method));
+        Assert.Equal("desk", list.Layouts[0].Name);
+        Assert.Equal(1, one.Body.GetProperty("version").GetInt32());
+    }
+
+    [Fact]
+    public async Task ALayoutIsSavedWithAPutOfItsBodyAsItIsAndDeletedWithADelete()
+    {
+        var body = System.Text.Json.JsonDocument.Parse("""{"version":1,"page":"Markets"}""").RootElement;
+        var stub = new StubHttpMessageHandler()
+            .Respond(HttpStatusCode.OK, Json(new LayoutDto("desk", "2026-10-20T20:00:00.000000+00:00", body)))
+            .Respond(HttpStatusCode.NoContent, string.Empty);
+        using var client = Client(stub);
+
+        var saved = await client.PutLayoutAsync("desk", body, TestContext.Current.CancellationToken);
+        await client.DeleteLayoutAsync("desk", TestContext.Current.CancellationToken);
+
+        Assert.Equal((HttpMethod.Put, "http://127.0.0.1:5280/v1/me/layouts/desk", """{"version":1,"page":"Markets"}"""), (stub.Requests[0].Method, stub.Requests[0].Uri.AbsoluteUri, stub.Requests[0].Body));
+        Assert.Equal((HttpMethod.Delete, "http://127.0.0.1:5280/v1/me/layouts/desk", null), (stub.Requests[1].Method, stub.Requests[1].Uri.AbsoluteUri, stub.Requests[1].Body));
+        Assert.Equal("desk", saved.Name);
+    }
+
+    [Fact]
     public async Task WatchlistsAreReadWithGet()
     {
         var stub = new StubHttpMessageHandler()

@@ -45,6 +45,17 @@ public sealed record WatchlistDetail(string Name, DateTime CreatedAt, IReadOnlyL
 /// <param name="CreatedAt">When it was made (UTC).</param>
 /// <param name="LastEvaluatedAt">When it was last judged (UTC).</param>
 /// <param name="LastFiredAt">When it last fired (UTC).</param>
+/// <summary>A saved layout in a list.</summary>
+/// <param name="Name">Its name.</param>
+/// <param name="UpdatedAt">When it was last saved (UTC).</param>
+public sealed record LayoutSummary(string Name, DateTime UpdatedAt);
+
+/// <summary>A saved layout.</summary>
+/// <param name="Name">Its name.</param>
+/// <param name="UpdatedAt">When it was last saved (UTC).</param>
+/// <param name="Body">The JSON object the terminal saved; the server does not read it.</param>
+public sealed record LayoutDetail(string Name, DateTime UpdatedAt, string Body);
+
 public sealed record UserAlert(int AlertId, string Ticker, AlertKind Kind, long Threshold, int CooldownSeconds, bool Paused, DateTime CreatedAt, DateTime? LastEvaluatedAt, DateTime? LastFiredAt);
 
 /// <summary>An alert that fired.</summary>
@@ -152,6 +163,35 @@ public interface IUserDataStore
     /// <returns>The fires.</returns>
     Task<IReadOnlyList<UserFire>> ReadFiresAsync(int userId, long? afterFireId, int limit, CancellationToken cancellationToken = default);
 
+    /// <summary>The layouts the user saved, by name.</summary>
+    /// <param name="userId">The user.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The layouts, without their bodies.</returns>
+    Task<IReadOnlyList<LayoutSummary>> ListLayoutsAsync(int userId, CancellationToken cancellationToken = default);
+
+    /// <summary>One layout of the user.</summary>
+    /// <param name="userId">The user.</param>
+    /// <param name="name">The layout.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The layout, or <see langword="null"/> when there is none by that name.</returns>
+    Task<LayoutDetail?> GetLayoutAsync(int userId, string name, CancellationToken cancellationToken = default);
+
+    /// <summary>Saves a layout: makes it, or replaces the one with that name.</summary>
+    /// <param name="userId">The user.</param>
+    /// <param name="name">The layout.</param>
+    /// <param name="body">A JSON object.</param>
+    /// <param name="now">The current UTC time.</param>
+    /// <param name="cancellationToken">Cancels the work.</param>
+    /// <returns><see cref="StoreOutcome.Ok"/>, or <see cref="StoreOutcome.LimitReached"/> when the user has the most layouts and this one is new.</returns>
+    Task<StoreOutcome> PutLayoutAsync(int userId, string name, string body, DateTime now, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes a layout.</summary>
+    /// <param name="userId">The user.</param>
+    /// <param name="name">The layout.</param>
+    /// <param name="cancellationToken">Cancels the work.</param>
+    /// <returns><see cref="StoreOutcome.Ok"/> or <see cref="StoreOutcome.NotFound"/>.</returns>
+    Task<StoreOutcome> DeleteLayoutAsync(int userId, string name, CancellationToken cancellationToken = default);
+
     /// <summary>A setting of the user.</summary>
     /// <param name="userId">The user.</param>
     /// <param name="name">The setting.</param>
@@ -181,6 +221,9 @@ public sealed class UserDataStore(DataSource source) : IUserDataStore
 
     /// <summary>The most alerts one user can have.</summary>
     public const int MaxAlerts = 200;
+
+    /// <summary>The most layouts one user can have.</summary>
+    public const int MaxLayouts = 20;
 
     private const int MaxFires = 1_000;
     private const int UniqueViolation = 2601;
@@ -385,6 +428,59 @@ public sealed class UserDataStore(DataSource source) : IUserDataStore
         return [.. rows
             .Select(r => AlertKinds.TryParse(r.Kind, out var kind) ? new UserFire(r.FireId, r.AlertId, r.Ticker, kind, r.Threshold, r.Value, Utc(r.FiredAt)) : null)
             .OfType<UserFire>()];
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<LayoutSummary>> ListLayoutsAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await connection.QueryAsync<(string Name, DateTime UpdatedAt)>(Command("SELECT name AS Name, updated_at AS UpdatedAt FROM dbo.user_layout WHERE user_id = @userId ORDER BY name", new { userId }, cancellationToken)).ConfigureAwait(false);
+        return [.. rows.Select(r => new LayoutSummary(r.Name, Utc(r.UpdatedAt)))];
+    }
+
+    /// <inheritdoc/>
+    public async Task<LayoutDetail?> GetLayoutAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var found = await connection.QuerySingleOrDefaultAsync<(string Body, DateTime UpdatedAt)?>(Command("SELECT body AS Body, updated_at AS UpdatedAt FROM dbo.user_layout WHERE user_id = @userId AND name = @name", new { userId, name = Ansi(name, 64) }, cancellationToken)).ConfigureAwait(false);
+        return found is { } layout ? new LayoutDetail(name, Utc(layout.UpdatedAt), layout.Body) : null;
+    }
+
+    /// <inheritdoc/>
+    public async Task<StoreOutcome> PutLayoutAsync(int userId, string name, string body, DateTime now, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var parameters = new { userId, name = Ansi(name, 64), body, now };
+        const string update = "UPDATE dbo.user_layout SET body = @body, updated_at = @now WHERE user_id = @userId AND name = @name";
+        if (await connection.ExecuteAsync(Command(update, parameters, cancellationToken)).ConfigureAwait(false) > 0)
+        {
+            return StoreOutcome.Ok;
+        }
+
+        if (await connection.ExecuteScalarAsync<int>(Command("SELECT COUNT(*) FROM dbo.user_layout WHERE user_id = @userId", new { userId }, cancellationToken)).ConfigureAwait(false) >= MaxLayouts)
+        {
+            return StoreOutcome.LimitReached;
+        }
+
+        try
+        {
+            await connection.ExecuteAsync(Command("INSERT dbo.user_layout (user_id, name, body, updated_at) VALUES (@userId, @name, @body, @now)", parameters, cancellationToken)).ConfigureAwait(false);
+        }
+        catch (SqlException ex) when (ex.Number is UniqueViolation or UniqueConstraint)
+        {
+            // two saves of a new layout at the same moment: the other one made it, so this one replaces it
+            await connection.ExecuteAsync(Command(update, parameters, cancellationToken)).ConfigureAwait(false);
+        }
+
+        return StoreOutcome.Ok;
+    }
+
+    /// <inheritdoc/>
+    public async Task<StoreOutcome> DeleteLayoutAsync(int userId, string name, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        var deleted = await connection.ExecuteAsync(Command("DELETE dbo.user_layout WHERE user_id = @userId AND name = @name", new { userId, name = Ansi(name, 64) }, cancellationToken)).ConfigureAwait(false);
+        return deleted > 0 ? StoreOutcome.Ok : StoreOutcome.NotFound;
     }
 
     /// <inheritdoc/>

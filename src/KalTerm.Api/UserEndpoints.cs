@@ -77,6 +77,7 @@ public static partial class AlertText
 internal static partial class UserEndpoints
 {
     private const int MaxBodyBytes = 4_096;
+    private const int MaxLayoutBytes = 32_768;
     private const int FiresMax = 1_000;
     private const string TimeZoneSetting = "time_zone";
 
@@ -309,6 +310,69 @@ internal static partial class UserEndpoints
                 ApiJson.Wire.AlertFiresPage);
         });
 
+        app.MapGet("/v1/me/layouts", async (HttpContext context, IUserDataStore store, CancellationToken cancellationToken) =>
+            User(context) is not { } user
+                ? Unauthorized()
+                : ApiEndpoints.Json(new LayoutListDto([.. (await store.ListLayoutsAsync(user.UserId, cancellationToken).ConfigureAwait(false)).Select(l => new LayoutSummaryDto(l.Name, ApiFormat.Moment(l.UpdatedAt)))]), ApiJson.Wire.LayoutListDto));
+
+        app.MapGet("/v1/me/layouts/{name}", async (string name, HttpContext context, IUserDataStore store, CancellationToken cancellationToken) =>
+        {
+            if (User(context) is not { } user)
+            {
+                return Unauthorized();
+            }
+
+            if (!WatchlistName().IsMatch(name))
+            {
+                return ApiEndpoints.Invalid("name");
+            }
+
+            return await store.GetLayoutAsync(user.UserId, name, cancellationToken).ConfigureAwait(false) is { } layout
+                ? ApiEndpoints.Json(new LayoutDto(layout.Name, ApiFormat.Moment(layout.UpdatedAt), Body(layout.Body)), ApiJson.Wire.LayoutDto)
+                : ApiEndpoints.NotFound();
+        });
+
+        app.MapPut("/v1/me/layouts/{name}", async (string name, HttpContext context, IUserDataStore store, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            if (User(context) is not { } user)
+            {
+                return Unauthorized();
+            }
+
+            if (!WatchlistName().IsMatch(name))
+            {
+                return ApiEndpoints.Invalid("name");
+            }
+
+            var text = await ReadObjectAsync(context.Request, cancellationToken).ConfigureAwait(false);
+            if (text is null)
+            {
+                return ApiEndpoints.Invalid("body");
+            }
+
+            var now = time.GetUtcNow().UtcDateTime;
+            return await store.PutLayoutAsync(user.UserId, name, text, now, cancellationToken).ConfigureAwait(false) switch
+            {
+                StoreOutcome.Ok => ApiEndpoints.Json(new LayoutDto(name, ApiFormat.Moment(now), Body(text)), ApiJson.Wire.LayoutDto),
+                _ => Conflict("limit_reached"),
+            };
+        });
+
+        app.MapDelete("/v1/me/layouts/{name}", async (string name, HttpContext context, IUserDataStore store, CancellationToken cancellationToken) =>
+        {
+            if (User(context) is not { } user)
+            {
+                return Unauthorized();
+            }
+
+            if (!WatchlistName().IsMatch(name))
+            {
+                return ApiEndpoints.Invalid("name");
+            }
+
+            return await store.DeleteLayoutAsync(user.UserId, name, cancellationToken).ConfigureAwait(false) == StoreOutcome.Ok ? Results.NoContent() : ApiEndpoints.NotFound();
+        });
+
         app.MapGet("/v1/me/settings/time_zone", async (HttpContext context, IUserDataStore store, CancellationToken cancellationToken) =>
             User(context) is not { } user
                 ? Unauthorized()
@@ -378,6 +442,44 @@ internal static partial class UserEndpoints
         ApiFormat.Moment(a.CreatedAt),
         ApiFormat.Moment(a.LastEvaluatedAt),
         ApiFormat.Moment(a.LastFiredAt));
+
+    /// <summary>A stored layout as the JSON value it is, for sending back.</summary>
+    private static System.Text.Json.JsonElement Body(string text)
+    {
+        using var document = JsonDocument.Parse(text);
+        return document.RootElement.Clone();
+    }
+
+    /// <summary>The text of a request body that is a JSON object of at most <see cref="MaxLayoutBytes"/>, or <see langword="null"/> when it is missing, too long, not JSON or not an object.</summary>
+    private static async Task<string?> ReadObjectAsync(HttpRequest request, CancellationToken cancellationToken)
+    {
+        if (request.ContentLength is > MaxLayoutBytes)
+        {
+            return null;
+        }
+
+        using var buffer = new MemoryStream();
+        var chunk = new byte[4_096];
+        int read;
+        while ((read = await request.Body.ReadAsync(chunk, cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            await buffer.WriteAsync(chunk.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+            if (buffer.Length > MaxLayoutBytes)
+            {
+                return null;
+            }
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(buffer.ToArray());
+            return document.RootElement.ValueKind == JsonValueKind.Object ? System.Text.Encoding.UTF8.GetString(buffer.ToArray()) : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>The JSON body of a request, or <see langword="null"/> when it is missing, too long or not the expected JSON. Never throws on a bad body.</summary>
     private static async Task<T?> ReadAsync<T>(HttpRequest request, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> info, CancellationToken cancellationToken)

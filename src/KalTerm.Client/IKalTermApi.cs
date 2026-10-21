@@ -173,6 +173,32 @@ public interface IKalTermApi
     /// <exception cref="ApiException">The stream is gone (<c>not_found</c>).</exception>
     Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default);
 
+    /// <summary>The caller's saved layouts.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The layouts, by name, without their bodies.</returns>
+    Task<LayoutListDto> GetLayoutsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>One of the caller's layouts.</summary>
+    /// <param name="name">The layout.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The layout.</returns>
+    /// <exception cref="ApiException">There is no such layout (<c>not_found</c>).</exception>
+    Task<LayoutDto> GetLayoutAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>Saves a layout: makes it, or replaces the one with that name.</summary>
+    /// <param name="name">The layout: lower-case letters, digits, dots, dashes and underscores, starting with a letter or digit.</param>
+    /// <param name="body">A JSON object of at most 32 KB; the server stores it as it is.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The saved layout.</returns>
+    /// <exception cref="ApiException">The name or the body is not usable (<c>invalid_parameter</c>) or the caller has too many layouts (<c>limit_reached</c>).</exception>
+    Task<LayoutDto> PutLayoutAsync(string name, System.Text.Json.JsonElement body, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes a layout.</summary>
+    /// <param name="name">The layout.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <exception cref="ApiException">There is no such layout (<c>not_found</c>).</exception>
+    Task DeleteLayoutAsync(string name, CancellationToken cancellationToken = default);
+
     /// <summary>The caller's stored time zone.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The setting; its value is <see langword="null"/> when none is stored.</returns>

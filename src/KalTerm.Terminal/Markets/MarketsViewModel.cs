@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using KalTerm.Client;
 using KalTerm.Contracts;
+using KalTerm.Terminal.Layouts;
 using KalTerm.Terminal.Mvvm;
 using KalTerm.Terminal.Services;
 
@@ -88,6 +89,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     private readonly WatchlistService _watchlists = new();
     private readonly ListChoice _allMarkets = new(null, "All markets");
     private ListChoice _listFilter;
+    private bool _applyingLayout;
     private StatusChoice? _statusBeforeList;
 
     /// <summary>Creates the page.</summary>
@@ -115,7 +117,13 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
             {
                 ClearFiltersCommand.RaiseCanExecuteChanged();
             }
+
+            if (e.PropertyName is nameof(MinVolumeText) or nameof(StatusFilter) or nameof(ListFilter) or nameof(Sort) or nameof(Descending) && !_applyingLayout)
+            {
+                LayoutChanged?.Invoke();
+            }
         };
+        Preferences.Changed += () => LayoutChanged?.Invoke();
         Statuses =
         [
             new StatusChoice(null, "Any status"),
@@ -146,6 +154,124 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     }
 
     public string Title { get; } = "Markets";
+
+    /// <summary>Something the layout holds changed (a filter, the ranking, a column, the chart or book defaults); the search text does not count.</summary>
+    public event Action? LayoutChanged;
+
+    /// <summary>The columns were set from a layout; the grid should take their widths and order.</summary>
+    public event Action? ColumnsApplied;
+
+    /// <summary>What the chart and book of every market opened start with, and where their choices are kept.</summary>
+    public ViewPreferences Preferences { get; } = new();
+
+    /// <summary>The grid's columns as a layout last set them or the grid last reported them.</summary>
+    public IReadOnlyList<ColumnLayout> Columns { get; private set; } = [];
+
+    /// <summary>The grid's columns changed (the person moved or resized one); remembered for the layout.</summary>
+    /// <param name="columns">Every column's key, width and place.</param>
+    public void SetColumns(IReadOnlyList<ColumnLayout> columns)
+    {
+        ArgumentNullException.ThrowIfNull(columns);
+        if (Columns.SequenceEqual(columns))
+        {
+            return;
+        }
+
+        Columns = columns;
+        if (!_applyingLayout)
+        {
+            LayoutChanged?.Invoke();
+        }
+    }
+
+    /// <summary>What the layout holds of this page.</summary>
+    /// <returns>The filters, the ranking and the columns.</returns>
+    public MarketsLayout CaptureLayout() =>
+        new((_statusBeforeList ?? _status).Value ?? "any", _minVolumeText.Trim().Length == 0 ? null : _minVolumeText.Trim(), _listFilter.Name, _sort.Key, _descending, Columns);
+
+    /// <summary>
+    /// Lays the page out as a layout says: the filters, the ranking and the columns. Anything the layout does not name is left as it is. The list is asked for once, and only when the page already has a server (when it does not, the
+    /// first load that follows asks with these filters).
+    /// </summary>
+    /// <param name="layout">The saved page, or <see langword="null"/> to leave the page alone.</param>
+    public void ApplyLayout(MarketsLayout? layout)
+    {
+        if (layout is null)
+        {
+            return;
+        }
+
+        _applyingLayout = true;
+        try
+        {
+            if (layout.Status is { } status && Statuses.FirstOrDefault(s => (s.Value ?? "any") == status) is { } chosen)
+            {
+                _status = chosen;
+            }
+
+            if (layout.MinVolume is { } minimum)
+            {
+                _minVolumeText = MinVolumeShape().IsMatch(minimum.Trim()) ? minimum.Trim() : _minVolumeText;
+            }
+
+            if (layout.Sort is { } key && Sorts.FirstOrDefault(s => s.Key == key) is { } sort)
+            {
+                _sort = sort;
+            }
+
+            if (layout.Descending is { } descending)
+            {
+                _descending = descending;
+            }
+
+            _statusBeforeList = null;
+            _listFilter = layout.List is { Length: > 0 } list ? ChoiceFor(list) : _allMarkets;
+            if (_listFilter.Name is not null)
+            {
+                _statusBeforeList = _status;
+                _status = Statuses[0];
+            }
+
+            Raise(nameof(StatusFilter));
+            Raise(nameof(MinVolumeText));
+            Raise(nameof(MinVolumeInvalid));
+            Raise(nameof(Sort));
+            Raise(nameof(Descending));
+            Raise(nameof(OrderText));
+            Raise(nameof(ListFilter));
+            DeleteListCommand.RaiseCanExecuteChanged();
+            if (layout.Columns is { } columns)
+            {
+                Columns = columns;
+                ColumnsApplied?.Invoke();
+            }
+        }
+        finally
+        {
+            _applyingLayout = false;
+        }
+
+        ReloadSoon(immediately: true);
+    }
+
+    /// <summary>The choice for a list name, made (in its place among the others) when the lists have not been read yet or no longer hold it.</summary>
+    private ListChoice ChoiceFor(string name)
+    {
+        if (ListChoices.FirstOrDefault(c => c.Name == name) is { } known)
+        {
+            return known;
+        }
+
+        var made = new ListChoice(name, name);
+        var at = 1;
+        while (at < ListChoices.Count && string.CompareOrdinal(ListChoices[at].Name, name) < 0)
+        {
+            at++;
+        }
+
+        ListChoices.Insert(at, made);
+        return made;
+    }
 
     /// <summary>The person asked to make an alert on a market (from a row's menu or from the open market).</summary>
     public event Action<string>? AlertRequested;
@@ -442,7 +568,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     public void Attach(Func<IKalTermApi> create)
     {
         ArgumentNullException.ThrowIfNull(create);
-        Detach();
+        Stop();
         _api = create();
         _watchlists.Attach(_api);
         NewListCommand.RaiseCanExecuteChanged();
@@ -458,6 +584,33 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
 
     /// <summary>Stops everything and lets go of the server.</summary>
     public void Detach()
+    {
+        Stop();
+        ResetFilters();
+    }
+
+    /// <summary>Puts the list and the status back to all markets and the status chosen before a list was (the choices belonged to the server just left).</summary>
+    private void ResetFilters()
+    {
+        while (ListChoices.Count > 1)
+        {
+            ListChoices.RemoveAt(ListChoices.Count - 1);
+        }
+
+        _listFilter = _allMarkets;
+        Raise(nameof(ListFilter));
+        if (_statusBeforeList is { } before)
+        {
+            _status = before;
+            _statusBeforeList = null;
+            Raise(nameof(StatusFilter));
+        }
+
+        DeleteListCommand.RaiseCanExecuteChanged();
+    }
+
+    /// <summary>Stops everything and lets go of the server. The filters stay as they are: a layout may have set them before the page is attached.</summary>
+    private void Stop()
     {
         _debounce?.Cancel();
         _debounce?.Dispose();
@@ -481,15 +634,6 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         (_api as IDisposable)?.Dispose();
         _api = null;
         _watchlists.Attach(null);
-        _listFilter = _allMarkets;
-        Raise(nameof(ListFilter));
-        if (_statusBeforeList is { } before)
-        {
-            _status = before;
-            _statusBeforeList = null;
-            Raise(nameof(StatusFilter));
-        }
-
         NewListCommand.RaiseCanExecuteChanged();
         DeleteListCommand.RaiseCanExecuteChanged();
         RefreshListsCommand.RaiseCanExecuteChanged();
@@ -567,9 +711,10 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     private void OnWatchlistsChanged()
     {
         var present = _watchlists.Lists;
+        var known = _watchlists.Loaded;   // before the lists are read, the list a layout chose is kept: it may be there
         for (var i = ListChoices.Count - 1; i >= 1; i--)
         {
-            if (!present.Any(l => l.Name == ListChoices[i].Name))
+            if (!present.Any(l => l.Name == ListChoices[i].Name) && (known || !ReferenceEquals(ListChoices[i], _listFilter)))
             {
                 ListChoices.RemoveAt(i);
             }
@@ -600,7 +745,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
             row.SetLists(_watchlists.ListsOf(row.Ticker));
         }
 
-        if (_listFilter.Name is { } viewed)
+        if (known && _listFilter.Name is { } viewed)
         {
             if (!present.Any(l => l.Name == viewed))
             {
@@ -638,7 +783,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
 
         CloseDetail();
         var menu = new WatchlistMenu(_watchlists, _dialogs, ReportProblem) { Ticker = ticker };
-        var detail = new MarketDetailViewModel(ticker, _api, _feed, _format, _time, menu);
+        var detail = new MarketDetailViewModel(ticker, _api, _feed, _format, _time, menu, Preferences);
         detail.Closed += CloseDetail;
         detail.AlertRequested += RaiseAlertRequested;
         Detail = detail;

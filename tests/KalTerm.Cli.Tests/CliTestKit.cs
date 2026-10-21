@@ -141,6 +141,14 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default) => Answer(Watchlists);
 
+    public Task<LayoutListDto> GetLayoutsAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+    public Task<LayoutDto> GetLayoutAsync(string name, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+    public Task<LayoutDto> PutLayoutAsync(string name, System.Text.Json.JsonElement body, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+    public Task DeleteLayoutAsync(string name, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
     public Task<WatchlistDto> GetWatchlistAsync(string name, CancellationToken cancellationToken = default) => Answer(Watchlist);
 
     public Task<WatchlistDto> CreateWatchlistAsync(string name, CancellationToken cancellationToken = default)

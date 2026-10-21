@@ -194,7 +194,7 @@ public sealed class ViewTests : IDisposable
         {
             var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
             VisualTreeKit.Realize(window);
-            return (VisualTreeKit.All<ListBox>(window).First().Items.Count, VisualTreeKit.All<ComboBox>(window).First().Items.Count);
+            return (VisualTreeKit.All<ListBox>(window).First().Items.Count, VisualTreeKit.All<ComboBox>(window).Max(c => c.Items.Count));
         });
 
         Assert.Equal(3, pages);

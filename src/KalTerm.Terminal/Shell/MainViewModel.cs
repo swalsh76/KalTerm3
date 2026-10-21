@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using KalTerm.Client;
 using KalTerm.Terminal.Alerts;
 using KalTerm.Terminal.Connect;
+using KalTerm.Terminal.Layouts;
 using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Mvvm;
 using KalTerm.Terminal.Services;
@@ -38,7 +40,7 @@ internal sealed record NavigationItem(string Title, object Page);
 /// The main window: which server, whether it answers, the page being shown and the time zone. It connects on start with the server used last, opens the connect dialog when there is none or when the server needs a
 /// trusted certificate or a token, and shows every time in the zone the person chose (stored on the server, like <c>kterm settings tz</c>).
 /// </summary>
-internal sealed class MainViewModel : ObservableObject
+internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
 {
     private readonly ClientServices _services;
     private readonly TerminalSettingsStore _settings;
@@ -51,6 +53,9 @@ internal sealed class MainViewModel : ObservableObject
     private ZoneChoice _zone;
     private bool _asking;
     private bool _applyingZone;
+    /// <summary>How long closing the window waits for the layout to be saved.</summary>
+    public static readonly TimeSpan LayoutFlushLimit = TimeSpan.FromSeconds(2);
+
     private readonly AlertNotifier _notifier;
     private string? _pendingTicker;
     private bool _marketsReady;
@@ -63,6 +68,7 @@ internal sealed class MainViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(toaster);
         Alerts = alerts;
         _notifier = notifier;
+        Layouts = new LayoutCoordinator(this, dialogs, settings, services.Time);
         _services = services;
         _settings = settings;
         _dialogs = dialogs;
@@ -71,7 +77,7 @@ internal sealed class MainViewModel : ObservableObject
         Markets = markets;
         Navigation = [new NavigationItem(status.Title, status), new NavigationItem(markets.Title, markets), new NavigationItem(alerts.Title, alerts)];
         _selected = Navigation[0];
-        Zones = new ObservableCollection<ZoneChoice>(BuildZones(services.SystemZone));
+        Zones = new ObservableCollection<ZoneChoice>(BuildZones(services.SystemZone, services.Time.GetUtcNow()));
         _zone = Zones[0];
         StartCommand = new AsyncCommand(StartAsync, ex => StateText = ex.Message);
         ConnectCommand = new AsyncCommand(() => ConnectDialogAsync(null), ex => StateText = ex.Message);
@@ -79,6 +85,14 @@ internal sealed class MainViewModel : ObservableObject
         Status.Succeeded += OnStatusSucceeded;
         Status.Failed += OnStatusFailed;
         Markets.AlertRequested += OnAlertRequested;
+        Markets.LayoutChanged += Layouts.Changed;
+        Alerts.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AlertsViewModel.Sound))
+            {
+                Layouts.Changed();
+            }
+        };
         _notifier.Fired += Alerts.OnFire;
         toaster.Activated += OnToastActivated;
     }
@@ -91,6 +105,12 @@ internal sealed class MainViewModel : ObservableObject
     public MarketsViewModel Markets { get; }
 
     public AlertsViewModel Alerts { get; }
+
+    /// <summary>The saved layouts: which one is in use, saving, switching, deleting.</summary>
+    public LayoutCoordinator Layouts { get; }
+
+    /// <summary>The main window as the layout sees it; set by the window.</summary>
+    public IWindowPlacement? Placement { get; set; }
 
     public IReadOnlyList<NavigationItem> Navigation { get; }
 
@@ -110,6 +130,7 @@ internal sealed class MainViewModel : ObservableObject
             if (Set(ref _selected, value))
             {
                 Raise(nameof(CurrentPage));
+                Layouts.Changed();
             }
         }
     }
@@ -194,8 +215,7 @@ internal sealed class MainViewModel : ObservableObject
         {
             _settings.SaveServer(_server);
             _ = LoadZoneAsync();
-            _ = OpenMarketsAsync(_server);
-            _ = OpenAlertsAsync(_server);
+            _ = OpenPagesAsync(_server);
         }
     }
 
@@ -234,6 +254,7 @@ internal sealed class MainViewModel : ObservableObject
             Status.Detach();
             Markets.Detach();
             _marketsReady = false;
+            Layouts.Detach();
             _notifier.Stop();
             Alerts.Detach();
             var connect = new ConnectViewModel(_services, _server);
@@ -263,6 +284,67 @@ internal sealed class MainViewModel : ObservableObject
         finally
         {
             _asking = false;
+        }
+    }
+
+    /// <summary>
+    /// Reads the layout in use and lays the terminal out with it, then opens the pages: they load once, already laid out. The layout is a convenience, so a server that cannot give it leaves the normal layout and the pages open anyway.
+    /// </summary>
+    private async Task OpenPagesAsync(Uri server)
+    {
+        if (_api is not null)
+        {
+            await Layouts.StartAsync(_api, EndpointKey.Of(server)).ConfigureAwait(true);
+        }
+
+        await Task.WhenAll(OpenMarketsAsync(server), OpenAlertsAsync(server)).ConfigureAwait(true);
+    }
+
+    /// <summary>The window, a page or a filter changed: the layout is saved a moment after the last change.</summary>
+    public void NotifyLayoutChanged() => Layouts.Changed();
+
+    /// <summary>Saves the layout now if it changed. The window calls this as it closes; the wait is bounded, and a server that does not answer never keeps the window open.</summary>
+    /// <returns>A task that completes when it is saved or the time is up.</returns>
+    public async Task FlushLayoutAsync()
+    {
+        using var limit = new CancellationTokenSource(LayoutFlushLimit, _services.Time);
+        try
+        {
+            await Layouts.FlushAsync(limit.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // the server did not answer in time: the layout of a moment ago stays
+        }
+    }
+
+    /// <inheritdoc/>
+    LayoutState ILayoutTarget.Capture() => new(
+        LayoutState.Current,
+        Placement?.Capture(),
+        Selected?.Title,
+        Markets.CaptureLayout(),
+        Markets.Preferences.Capture(),
+        Alerts.Sound);
+
+    /// <inheritdoc/>
+    void ILayoutTarget.Apply(LayoutState state)
+    {
+        if (state.Window is { } window)
+        {
+            Placement?.Apply(window);
+        }
+
+        if (_pendingTicker is null && state.Page is { } page && Navigation.FirstOrDefault(n => n.Title == page) is { } navigation)
+        {
+            Selected = navigation;   // a toast that started the terminal has already chosen the page
+        }
+
+        Markets.ApplyLayout(state.Markets);
+        Markets.Preferences.Apply(state.Chart);
+        if (state.Sound is { } sound)
+        {
+            Alerts.Sound = sound;
         }
     }
 
@@ -365,7 +447,7 @@ internal sealed class MainViewModel : ObservableObject
 
         try
         {
-            var added = new ZoneChoice(stored, TimeZoneInfo.FindSystemTimeZoneById(stored).DisplayName);
+            var added = new ZoneChoice(stored, ZoneText(TimeZoneInfo.FindSystemTimeZoneById(stored), _services.Time.GetUtcNow()));
             Zones.Add(added);
             return added;
         }
@@ -395,14 +477,32 @@ internal sealed class MainViewModel : ObservableObject
     private TimeZoneInfo ZoneOf(ZoneChoice choice) =>
         choice.Id is null ? _services.SystemZone : TimeZoneInfo.FindSystemTimeZoneById(choice.Id);
 
-    private static List<ZoneChoice> BuildZones(TimeZoneInfo system)
+    /// <summary>
+    /// A zone's name with the offset in effect at the moment, for example <c>Mountain Time (US &amp; Canada), now UTC-06:00</c>. Windows names a zone with its standard-time offset ("(UTC-07:00) Mountain Time"), which is
+    /// not the offset the times shown are in while daylight saving applies.
+    /// </summary>
+    /// <param name="zone">The zone.</param>
+    /// <param name="now">The moment the offset is taken at.</param>
+    /// <returns>The text for the zone box.</returns>
+    internal static string ZoneText(TimeZoneInfo zone, DateTimeOffset now)
     {
-        var zones = new List<ZoneChoice> { new(null, $"This computer ({system.DisplayName})"), new("UTC", "UTC") };
+        ArgumentNullException.ThrowIfNull(zone);
+        var name = StandardOffsetPrefix().Replace(zone.DisplayName, string.Empty);
+        var offset = zone.GetUtcOffset(now);
+        return $"{name}, now UTC{(offset < TimeSpan.Zero ? '-' : '+')}{offset.Duration():hh\\:mm}";
+    }
+
+    [GeneratedRegex(@"^\(UTC(?:[+-]\d{2}:\d{2})?\)\s*", RegexOptions.CultureInvariant)]
+    private static partial Regex StandardOffsetPrefix();
+
+    private static List<ZoneChoice> BuildZones(TimeZoneInfo system, DateTimeOffset now)
+    {
+        var zones = new List<ZoneChoice> { new(null, $"This computer ({ZoneText(system, now)})"), new("UTC", "UTC") };
         zones.AddRange(TimeZoneInfo.GetSystemTimeZones()
             .Where(z => z.Id != "UTC")
             .OrderBy(z => z.BaseUtcOffset)
             .ThenBy(z => z.DisplayName, StringComparer.Ordinal)
-            .Select(z => new ZoneChoice(z.Id, z.DisplayName)));
+            .Select(z => new ZoneChoice(z.Id, ZoneText(z, now))));
         return zones;
     }
 }

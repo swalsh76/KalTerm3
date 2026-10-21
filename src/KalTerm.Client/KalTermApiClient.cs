@@ -245,6 +245,22 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
         $"v1/stream/{Segment(streamId)}/{(kind == StreamKind.Books ? "books" : "ticks")}/{Segment(ticker)}";
 
     /// <inheritdoc/>
+    public Task<LayoutListDto> GetLayoutsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync("v1/me/layouts", [], ApiJson.Wire.LayoutListDto, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<LayoutDto> GetLayoutAsync(string name, CancellationToken cancellationToken = default) =>
+        GetAsync($"v1/me/layouts/{Segment(name)}", [], ApiJson.Wire.LayoutDto, cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<LayoutDto> PutLayoutAsync(string name, System.Text.Json.JsonElement body, CancellationToken cancellationToken = default) =>
+        Read(await SendAsync(HttpMethod.Put, $"v1/me/layouts/{Segment(name)}", body.GetRawText(), cancellationToken).ConfigureAwait(false), ApiJson.Wire.LayoutDto);
+
+    /// <inheritdoc/>
+    public async Task DeleteLayoutAsync(string name, CancellationToken cancellationToken = default) =>
+        await SendAsync(HttpMethod.Delete, $"v1/me/layouts/{Segment(name)}", null, cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc/>
     public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) =>
         GetAsync("v1/me/settings/time_zone", [], ApiJson.Wire.SettingDto, cancellationToken);
 
