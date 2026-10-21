@@ -17,7 +17,7 @@ oracle. No code is shared.
 
 ## Status
 
-M0, **M2 Core, M3, M4, M5 and M6 are done** (BUILD-LOG §4 to §8; M6 Trading was verified live on the real account under tiny limits; M7 UI is decided later and M8 Host layer is next; **no real order is sent without the owner's go-ahead**). All M1 spikes are done (BUILD-LOG 2.1 to 2.7); S-1d (real power cuts) passed on the target server, so M3 may start. The
+M0, **M2 Core, M3, M4, M5, M6 and M7 are done** (BUILD-LOG §4 to §9; M6 Trading and the M7 trading panel were verified live on the real account under tiny limits; the whole-codebase review gate (PLAN 6.9, its own plan first) is next, then M8 Host layer; **no real order is sent without the owner's go-ahead**). All M1 spikes are done (BUILD-LOG 2.1 to 2.7); S-1d (real power cuts) passed on the target server, so M3 may start. The
 spike proposals in PLAN.md 6.3 and the M3 decisions D1 to D8 (6.4) are approved; M3 reads production market data with the
 read-only key, and a long ingest soak needs the owner's fresh go-ahead. S-1a found that this workstation's consumer NVMe acknowledges write-through writes
 from volatile cache (BUILD-LOG §2.2).
@@ -124,6 +124,9 @@ Run the desktop terminal (WPF; the first start opens the connect dialog: trust t
 ```powershell
 dotnet run --project src/KalTerm.Terminal -c Release
 ```
+
+The terminal trades on the demo environment unless started with the real one for that one process (`$env:KALSHI_ENV='production'; dotnet run --project src/KalTerm.Terminal -c Release`; never set it in the user
+environment, so `kterm` also keeps defaulting to demo). How to use it: [docs/TERMINAL.md](docs/TERMINAL.md).
 
 Read a KalTerm server with the CLI (`status` exits 2 when it finds problems). Locally against a running API, or on the server through remoting (the API listens on loopback only until M4; pass the host and a credential file, or set `KALTERM_TEST_HOST` and `KALTERM_TEST_CRED`):
 
