@@ -29,6 +29,11 @@ internal static class Sta
             {
                 failure = ex;
             }
+            finally
+            {
+                // WPF keeps helper threads for a thread that used it until its dispatcher is shut down; left alone they outlive the tests and hold the test process open past its exit.
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
+            }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
