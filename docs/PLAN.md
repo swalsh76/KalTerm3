@@ -73,6 +73,7 @@ Each milestone ends with tests green and the BUILD-LOG updated.
 | **M5 Analytics** | Runner, built-in metrics, alerts, push | per-user alerts fire (**met 2026-10-20**, BUILD-LOG §7) |
 | **M6 Trading** | Risk layer, trading client, kill switch; production off by default | verified under tiny limits, with the owner's go-ahead (plan: section 6.7). **Met 2026-10-20** (BUILD-LOG §8) |
 | **M7 UI** | WPF terminal | starts, connects, shows live data from push streams, alerts notify, layouts persist, trading panel works under tiny limits with the owner's go (plan: section 6.8) |
+| **Review gate (between M7 and M8)** | A whole-codebase review before the host layer is built on it (owner 2026-10-20; section 6.9) | findings triaged with the owner; the accepted ones fixed; the rest parked in section 9 |
 | **M8 Host layer and verification** | Installer, services, reboot and power-cut tests, 48 h soak | all pass |
 
 ### 6.1 S-1 stages
@@ -347,6 +348,17 @@ quietly). Any new third-party package is named in its slice plan, must be permis
 **Gate.** The terminal starts, connects with a pinned certificate and token, shows live data from the push streams, alerts notify, layouts persist, and the trading panel works under the tiny limits with the owner's go-ahead.
 
 **Not in M7 (parking lot if raised).** Mobile or web clients, multiple trading accounts, strategy automation, a built-in order-book replay, themes beyond the system light and dark.
+
+### 6.9 Review gate between M7 and M8
+
+Owner 2026-10-20: after M7 closes (7.9) and before M8 starts, the code is reviewed as a whole. It is its own piece of work with its own plan, approved before any change, and it is not part of M7 or M8. The review looks at:
+
+- **Reused code.** Logic written more than once across the projects (the stream, the SSE parsing, the validators, the CLI and terminal views, the test fakes and kits) that belongs in one place; abstractions that earn nothing.
+- **Hard-coded values.** Limits, timings, sizes, paths, addresses and names written into code instead of configuration or one named constant (CLAUDE.md: no `localhost` or Kalshi URLs outside the core configuration; the same care for everything else); anything duplicated that has to change in step.
+- **Secure practices.** The trust boundaries: the trading key and the Credential Manager, tokens and their storage, TLS and pinning, the SQL surface (parameters, least privilege, shared-memory only), input validation on every route, error messages that leak, logs that carry a secret, file and folder permissions, dependencies and their licences and known issues, and the public repository (no secrets, keys or personal data in any file or in history).
+- **Others the owner or the review adds**, for example error handling and cancellation, dead code, test quality and flakiness, documentation that no longer matches the code.
+
+Output: a findings list ranked by severity, each with where, why, and a proposed fix. The owner decides which are fixed now, deferred (section 9) or dropped. Fixes go in as small branches like any other change.
 
 ## 7. Risks
 
