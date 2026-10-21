@@ -61,6 +61,13 @@ internal sealed partial class MainWindow : Window, IWindowPlacement
         Close();
     }
 
+    /// <summary>The trading session is let go of with the window.</summary>
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+        (DataContext as MainViewModel)?.Trading.Dispose();
+    }
+
     private void Notify() => (DataContext as MainViewModel)?.NotifyLayoutChanged();
 
     /// <summary>A toast was clicked: show the window if it is minimised and bring it to the front.</summary>

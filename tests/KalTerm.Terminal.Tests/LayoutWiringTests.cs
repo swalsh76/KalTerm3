@@ -8,6 +8,7 @@ using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Shell;
 using KalTerm.Terminal.Status;
+using KalTerm.Terminal.Trading;
 using KalTerm.Terminal.Views;
 
 namespace KalTerm.Terminal.Tests;
@@ -226,7 +227,7 @@ public sealed class LayoutWiringTests : IDisposable
         _markets = new MarketsViewModel(_format, _t.Time, InlineContext.Instance, _dialogs);
         _alerts = new AlertsViewModel(_format, _dialogs);
         _notifier = new AlertNotifier(_toaster, _format, _t.Settings, _t.Time, () => _alerts.Silent, InlineContext.Instance);
-        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, _toaster) { Placement = _placement };
+        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, _toaster, new TradingViewModel(new FakeTradingGateway(), _format, _dialogs, _t.Time, InlineContext.Instance)) { Placement = _placement };
         _t.Settings.SaveServer(Server);
         _t.Api.ScreenerRows.Add(Samples.Row("KX-A"));
     }
@@ -419,7 +420,7 @@ public sealed class LayoutViewTests : IDisposable
     {
         var (before, after, state) = Sta.Run(() =>
         {
-            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster(), new FakeTradingGateway());
             window.Width = 900;
             window.Height = 700;
             window.Left = 30;
@@ -443,7 +444,7 @@ public sealed class LayoutViewTests : IDisposable
         var (texts, buttons, boxes) = Sta.Run(() =>
         {
             using var errors = BindingErrors.Listen();
-            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster(), new FakeTradingGateway());
             VisualTreeKit.Realize(window);
             Assert.Empty(errors.Messages);
             return (VisualTreeKit.Texts(window).ToList(), VisualTreeKit.All<Button>(window).Select(b => b.Content as string).ToList(), VisualTreeKit.All<ComboBox>(window).Count());
@@ -460,7 +461,7 @@ public sealed class LayoutViewTests : IDisposable
     {
         var closed = Sta.Run(() =>
         {
-            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster(), new FakeTradingGateway());
             var closedEvent = false;
             window.Closed += (_, _) => closedEvent = true;
 

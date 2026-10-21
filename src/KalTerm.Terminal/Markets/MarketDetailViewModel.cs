@@ -84,6 +84,7 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
         _time = time;
         BackCommand = new RelayCommand(() => Closed?.Invoke());
         AlertCommand = new RelayCommand(() => AlertRequested?.Invoke(Ticker));
+        TradeCommand = new RelayCommand(() => TradeRequested?.Invoke(Ticker, SuggestedPrice));
         _format.ZoneChanged += Redraw;
     }
 
@@ -92,6 +93,9 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
 
     /// <summary>The person asked to make an alert on this market.</summary>
     public event Action<string>? AlertRequested;
+
+    /// <summary>The person asked to trade this market: the ticker and a price to start the ticket with (the latest ask), or <see langword="null"/>.</summary>
+    public event Action<string, string?>? TradeRequested;
 
     public string Ticker { get; }
 
@@ -104,6 +108,11 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     public RelayCommand BackCommand { get; }
 
     public RelayCommand AlertCommand { get; }
+
+    public RelayCommand TradeCommand { get; }
+
+    /// <summary>The latest ask as dollars, to start an order ticket with; <see langword="null"/> when no tick has a usable ask.</summary>
+    public string? SuggestedPrice => Ticks.Select(t => t.Source.YesAsk).FirstOrDefault(a => a is { Length: > 0 }) is { } ask ? Formatting.Dollars(ask) : null;
 
     /// <summary>What the market is called (its event's title), the ticker until it is known.</summary>
     public string Heading

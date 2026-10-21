@@ -8,6 +8,7 @@ using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Mvvm;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Status;
+using KalTerm.Terminal.Trading;
 
 namespace KalTerm.Terminal.Shell;
 
@@ -61,8 +62,10 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
     private bool _marketsReady;
     private IKalTermApi? _api;
 
-    public MainViewModel(ClientServices services, TerminalSettingsStore settings, IDialogs dialogs, Formatting format, StatusViewModel status, MarketsViewModel markets, AlertsViewModel alerts, AlertNotifier notifier, IToaster toaster)
+    public MainViewModel(ClientServices services, TerminalSettingsStore settings, IDialogs dialogs, Formatting format, StatusViewModel status, MarketsViewModel markets, AlertsViewModel alerts, AlertNotifier notifier, IToaster toaster, TradingViewModel trading)
     {
+        ArgumentNullException.ThrowIfNull(trading);
+        Trading = trading;
         ArgumentNullException.ThrowIfNull(alerts);
         ArgumentNullException.ThrowIfNull(notifier);
         ArgumentNullException.ThrowIfNull(toaster);
@@ -75,7 +78,7 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
         _format = format;
         Status = status;
         Markets = markets;
-        Navigation = [new NavigationItem(status.Title, status), new NavigationItem(markets.Title, markets), new NavigationItem(alerts.Title, alerts)];
+        Navigation = [new NavigationItem(status.Title, status), new NavigationItem(markets.Title, markets), new NavigationItem(alerts.Title, alerts), new NavigationItem(trading.Title, trading)];
         _selected = Navigation[0];
         Zones = new ObservableCollection<ZoneChoice>(BuildZones(services.SystemZone, services.Time.GetUtcNow()));
         _zone = Zones[0];
@@ -85,6 +88,7 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
         Status.Succeeded += OnStatusSucceeded;
         Status.Failed += OnStatusFailed;
         Markets.AlertRequested += OnAlertRequested;
+        Markets.TradeRequested += OnTradeRequested;
         Markets.LayoutChanged += Layouts.Changed;
         Alerts.PropertyChanged += (_, e) =>
         {
@@ -105,6 +109,9 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
     public MarketsViewModel Markets { get; }
 
     public AlertsViewModel Alerts { get; }
+
+    /// <summary>The trading page: the account on Kalshi, the order ticket and the kill switch.</summary>
+    public TradingViewModel Trading { get; }
 
     /// <summary>The saved layouts: which one is in use, saving, switching, deleting.</summary>
     public LayoutCoordinator Layouts { get; }
@@ -168,6 +175,7 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
     /// <summary>Connects to the server used last, or asks for one.</summary>
     public async Task StartAsync()
     {
+        _ = Trading.ConnectAsync();   // Kalshi is reached directly, not through the KalTerm server, and a failure here never stops anything else
         if (_settings.LoadServer() is { } server)
         {
             await ConnectAsync(server).ConfigureAwait(true);
@@ -374,6 +382,13 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
         Alerts.Attach(_services.CreateApi(server));
         _notifier.Start(_services.CreateApi(server), EndpointKey.Of(server));
         await Alerts.LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>A trade was asked for on a market: show the Trading page with an order ticket for it.</summary>
+    private void OnTradeRequested(string ticker, string? price)
+    {
+        Selected = Navigation.Single(n => ReferenceEquals(n.Page, Trading));
+        _ = Trading.OpenTicketAsync(ticker, price);
     }
 
     /// <summary>An alert was asked for on a market: show the form with the market in it.</summary>

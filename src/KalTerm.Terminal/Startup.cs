@@ -3,6 +3,7 @@ using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Shell;
 using KalTerm.Terminal.Status;
+using KalTerm.Terminal.Trading;
 using KalTerm.Terminal.Views;
 
 namespace KalTerm.Terminal;
@@ -11,11 +12,12 @@ namespace KalTerm.Terminal;
 internal static class Composition
 {
     /// <summary>Builds the main window with its view-model; the window connects when it is shown.</summary>
-    public static MainWindow Create(ClientServices services, TerminalSettingsStore settings, IToaster toaster)
+    public static MainWindow Create(ClientServices services, TerminalSettingsStore settings, IToaster toaster, ITradingGateway gateway)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(toaster);
+        ArgumentNullException.ThrowIfNull(gateway);
         var format = new Formatting(services.SystemZone);
         var status = new StatusViewModel(format, services.Time);
         MainWindow? window = null;
@@ -23,7 +25,8 @@ internal static class Composition
         var markets = new MarketsViewModel(format, services.Time, dialogs: dialogs);
         var alerts = new AlertsViewModel(format, dialogs);
         var notifier = new AlertNotifier(toaster, format, settings, services.Time, () => alerts.Silent);
-        var model = new MainViewModel(services, settings, dialogs, format, status, markets, alerts, notifier, toaster);
+        var trading = new TradingViewModel(gateway, format, dialogs, services.Time);
+        var model = new MainViewModel(services, settings, dialogs, format, status, markets, alerts, notifier, toaster, trading);
         window = new MainWindow { DataContext = model };
         return window;
     }

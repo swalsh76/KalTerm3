@@ -4,6 +4,7 @@ using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Shell;
 using KalTerm.Terminal.Status;
+using KalTerm.Terminal.Trading;
 
 namespace KalTerm.Terminal.Tests;
 
@@ -27,7 +28,7 @@ public sealed class MainViewModelTests : IDisposable
         _markets = new MarketsViewModel(_format, _t.Time);
         _alerts = new AlertsViewModel(_format, _dialogs);
         _notifier = new AlertNotifier(_toaster, _format, _t.Settings, _t.Time, () => _alerts.Silent, InlineContext.Instance);
-        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, _toaster);
+        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, _toaster, new TradingViewModel(new FakeTradingGateway(), _format, _dialogs, _t.Time, InlineContext.Instance));
     }
 
     public void Dispose()
@@ -283,9 +284,9 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
-    public void TheStatusMarketsAndAlertsPagesAreThePagesForNow()
+    public void TheStatusMarketsAlertsAndTradingPagesAreThePagesForNow()
     {
-        Assert.Equal(["Status", "Markets", "Alerts"], _model.Navigation.Select(n => n.Title));
+        Assert.Equal(["Status", "Markets", "Alerts", "Trading"], _model.Navigation.Select(n => n.Title));
         Assert.Same(_status, _model.CurrentPage);
 
         _model.Selected = null;

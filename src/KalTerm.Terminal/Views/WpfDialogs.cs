@@ -1,6 +1,7 @@
 using System.Windows;
 using KalTerm.Terminal.Connect;
 using KalTerm.Terminal.Services;
+using KalTerm.Terminal.Trading;
 
 namespace KalTerm.Terminal.Views;
 
@@ -25,6 +26,15 @@ internal sealed class WpfDialogs(Func<Window?> owner) : IDialogs
         window.ShowDialog();
         prompt.Closed -= window.Close;
         return Task.FromResult(prompt.Result);
+    }
+
+    public Task ShowOrderTicketAsync(OrderTicketViewModel ticket)
+    {
+        var window = new OrderTicketWindow { DataContext = ticket, Owner = owner() };
+        ticket.Closed += window.Close;
+        window.ShowDialog();
+        ticket.Closed -= window.Close;
+        return Task.CompletedTask;
     }
 
     public Task<bool> ConfirmAsync(string title, string message) =>

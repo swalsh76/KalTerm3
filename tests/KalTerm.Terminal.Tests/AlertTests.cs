@@ -7,6 +7,7 @@ using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Shell;
 using KalTerm.Terminal.Status;
+using KalTerm.Terminal.Trading;
 using KalTerm.Terminal.Views;
 
 namespace KalTerm.Terminal.Tests;
@@ -800,7 +801,7 @@ public sealed class AlertWiringTests : IDisposable
         _markets = new MarketsViewModel(_format, _t.Time, InlineContext.Instance, _dialogs);
         _alerts = new AlertsViewModel(_format, _dialogs);
         _notifier = new AlertNotifier(_toaster, _format, _t.Settings, _t.Time, () => _alerts.Silent, InlineContext.Instance);
-        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, _toaster);
+        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, _toaster, new TradingViewModel(new FakeTradingGateway(), _format, _dialogs, _t.Time, InlineContext.Instance));
         _model.ActivationRequested += () => _activations++;
         _t.Settings.SaveServer(Server);
         _t.Api.ScreenerRows.Add(Samples.Row("KX-A"));
@@ -903,8 +904,8 @@ public sealed class AlertWiringTests : IDisposable
     [Fact]
     public void TheModelNeedsItsAlertPieces()
     {
-        Assert.Throws<ArgumentNullException>(() => new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, null!, _notifier, _toaster));
-        Assert.Throws<ArgumentNullException>(() => new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, null!, _toaster));
-        Assert.Throws<ArgumentNullException>(() => new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, null!));
+        Assert.Throws<ArgumentNullException>(() => new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, null!, _notifier, _toaster, new TradingViewModel(new FakeTradingGateway(), _format, _dialogs, _t.Time, InlineContext.Instance)));
+        Assert.Throws<ArgumentNullException>(() => new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, null!, _toaster, new TradingViewModel(new FakeTradingGateway(), _format, _dialogs, _t.Time, InlineContext.Instance)));
+        Assert.Throws<ArgumentNullException>(() => new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, null!, new TradingViewModel(new FakeTradingGateway(), _format, _dialogs, _t.Time, InlineContext.Instance)));
     }
 }
