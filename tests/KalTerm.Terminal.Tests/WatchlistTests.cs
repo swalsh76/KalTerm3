@@ -488,6 +488,49 @@ public sealed class WatchlistViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task ClearFiltersPutsTheSearchStatusVolumeAndListBackWithOneReloadAndKeepsTheRanking()
+    {
+        await OpenAsync();
+        Assert.False(_model.HasFilters);
+        Assert.False(_model.ClearFiltersCommand.CanExecute(null));
+        _model.Sort = _model.Sorts[2];
+        _model.Descending = false;
+        _model.SearchText = "rain";
+        _model.MinVolumeText = "5";
+        _model.ListFilter = _model.ListChoices.Single(c => c.Name == "macro");
+        await Wait.UntilAsync(() => _t.Api.ScreenQueries.Count >= 4);
+        Assert.True(_model.HasFilters);
+        Assert.True(_model.ClearFiltersCommand.CanExecute(null));
+        var asked = _t.Api.ScreenQueries.Count;
+
+        _model.ClearFiltersCommand.Execute(null);
+        await Wait.UntilAsync(() => _t.Api.ScreenQueries.Count == asked + 1);
+        await Task.Delay(400, TestContext.Current.CancellationToken);   // longer than the search delay: nothing else is asked
+
+        Assert.Equal(asked + 1, _t.Api.ScreenQueries.Count);
+        Assert.Equal(new ScreenQuery("change", "asc", "active", null, 50, null, null, null), _t.Api.ScreenQueries[^1]);
+        Assert.Equal(("", "", "All markets", "active"), (_model.SearchText, _model.MinVolumeText, _model.ListFilter.Text, _model.StatusFilter.Value));
+        Assert.False(_model.HasFilters);
+        Assert.False(_model.ClearFiltersCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task ClearFiltersAlsoClearsAStatusChosenByHandAndWorksWithoutAServer()
+    {
+        await OpenAsync();
+        _model.StatusFilter = _model.Statuses.Single(s => s.Value == "closed");
+        Assert.True(_model.HasFilters);
+
+        _model.ClearFiltersCommand.Execute(null);
+
+        Assert.Equal("active", _model.StatusFilter.Value);
+        _model.Detach();
+        _model.SearchText = "x";
+        _model.ClearFiltersCommand.Execute(null);   // no server: nothing is asked, the fields still clear
+        Assert.Equal(string.Empty, _model.SearchText);
+    }
+
+    [Fact]
     public async Task DetachingResetsTheListAndTheStatusItHadChanged()
     {
         await OpenAsync();
