@@ -26,6 +26,9 @@ public sealed class AlertDataReader(DataSource source) : IAlertDataReader
     private static readonly TimeSpan[] TickWindows = [TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10), TimeSpan.FromHours(1), TimeSpan.FromHours(24)];
     private static readonly TimeSpan PriceWindow = TimeSpan.FromMinutes(1);
 
+    /// <summary>How far before the spike window the baseline of trade volume reaches.</summary>
+    public static readonly TimeSpan BaselineWindow = TimeSpan.FromHours(24);
+
     /// <inheritdoc/>
     public async Task<IReadOnlyDictionary<int, AlertObservation>> ReadAsync(IReadOnlyCollection<int> marketIds, DateTime now, CancellationToken cancellationToken = default)
     {
@@ -37,7 +40,7 @@ public sealed class AlertDataReader(DataSource source) : IAlertDataReader
         }
 
         var recentFrom = now - AlertKinds.SpikeWindow;
-        var baselineFrom = recentFrom - TimeSpan.FromHours(24);
+        var baselineFrom = recentFrom - BaselineWindow;
         var hourAgo = now - AlertKinds.OiWindow;
         await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
         await connection.ExecuteAsync(new CommandDefinition("CREATE TABLE #m (market_id int NOT NULL PRIMARY KEY)", commandTimeout: 30, cancellationToken: cancellationToken)).ConfigureAwait(false);

@@ -34,6 +34,7 @@ catch (Exception ex) when (ex is InvalidOperationException or InvalidDataExcepti
 
 builder.WebHost.ConfigureKestrel(kestrel =>
 {
+    KestrelLimits.Apply(kestrel);
     kestrel.Listen(endpoint);
     if (lan is not null)
     {

@@ -16,11 +16,14 @@ public sealed class MarketMetricsAnalyzer(IMetricsBatchReader reader, IMarketMet
     /// <summary>The analyzer's name.</summary>
     public const string AnalyzerName = "market_metrics";
 
+    /// <summary>How often the analyzer runs unless told otherwise.</summary>
+    public static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(5);
+
     /// <inheritdoc/>
     public string Name => AnalyzerName;
 
     /// <inheritdoc/>
-    public TimeSpan Interval { get; } = interval ?? TimeSpan.FromMinutes(5);
+    public TimeSpan Interval { get; } = interval ?? DefaultInterval;
 
     /// <inheritdoc/>
     public async Task<AnalyzerOutcome> RunAsync(AnalysisContext context, CancellationToken cancellationToken = default)
