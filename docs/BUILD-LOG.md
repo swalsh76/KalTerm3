@@ -1736,3 +1736,26 @@ per-stream list of what was sent, which would keep the latency at 2 to 3 s and r
 Rolled out 2026-10-21 (API release host-9cc6bad; ingest untouched; `/readyz` 200). The live comparison was repeated 8 times on the 3 busiest watched markets plus one market added and removed live (windows moved out to match the 3-second margin).
 Seven runs matched REST exactly, for the added market and for the original three, 40 to 120 ticks each; no tick came before an added market's start or after its removal. One run (the first after the rollout) showed the stream one tick
 ahead of REST (84 against 83) in the original three; it was not seen again in the five runs after it that printed the difference, and it is not explained (a tick REST did not return is not a tick the stream lost; kept here so a repeat is recognised).
+
+### 9.5 Slice 7.3: Markets (2026-10-20)
+
+Approved by the owner 2026-10-20 with the three recommended choices: the screener is the list source (with a new `search`), trades are polled, paging is Next and Previous.
+
+- **Server (its own rollout):** `GET /v1/screener` takes `q` (2 to 64 characters, the markets endpoint's own parameter): only markets whose ticker or yes label contains the text, matched literally (`%`, `_` and `[` are not wildcards) and in any
+  case. `ScreenerQuery.Search`, `ScreenQuery.Search`, `kterm screen --search`. Tested on real SQL on kaldb (Data 390 passed).
+- **`MarketFeed`:** the terminal's one stream. Pages say what they want by name (`SetWanted("list", ...)`, `SetWanted("detail", ...)`); it watches the union, adds and drops markets live (always worked out from the current wish, never replayed, so
+  two quick changes cannot cross), and opens nothing until some market is wanted. Events are raised on the UI thread. Found by the tests, fixed: a stream refused at once reported "stopped" before "connecting"; "connecting" is now posted first.
+- **`MarketsViewModel` and `MarketRowViewModel`:** 50 rows per page (the stream's per-stream limit), Next/Previous (a list of the cursors visited), status filter (default active), minimum volume (digits, up to two decimals, anything else
+  is marked and ignored), search (two characters or more, 300 ms after typing stops, only the last text is asked), "Rank by" and a largest/smallest-first button (each asks at once), an answer that arrives after a newer ask is thrown away, a
+  failed ask keeps the rows greyed and says why, the age of the 24-hour figures (marked when over 5 minutes), the live/reconnecting state, a reset from the server reloads the page. A tick updates last, bid, ask, the spread (exact, in whole
+  millionths) and open interest; the 24-hour change and volume stay as of the analyzer's last run.
+- **`MarketDetailViewModel`:** the market, its metrics (every 60 s), the last 200 ticks then live ones (newest first, 500 kept, a tick known from both the history and the stream shown once), the last 100 trades (every 5 s: the stream carries
+  ticks and books, not trades), each part's failure said on its own and cleared when it works again; times redraw when the zone changes. Opening watches the market on the same stream; going back stops.
+- **Views:** `MarketsView` (the grid, the controls, the state line, the detail over the list) and `MarketDetailView`; the built-in DataGrid, no new packages. `Formatting` gained `Dollars`, `Signed`, `Count` (the CLI's rules) and
+  `Difference`; `Moment` can show milliseconds.
+- **Deviation from the plan row, said here:** sorting is by a "Rank by" box, not by clicking a column header (a header click needs code-behind or a binding proxy; parked for 7.7 with the saved layout).
+- **A latent race in an old test, fixed:** `PollingAsksAgainEveryIntervalUntilDetached` fired the clock before the polling loop had re-armed its timer; it failed 5 times in 8 on this machine on unchanged main. It now waits for the pending timer.
+- **Tests (about 95 new):** the formatting; the row; the feed (lazy open, union, live changes, two pages wanting one market, too many markets, resets, drops, a refused token, closing); the list (defaults, paging, filters, typing, stale
+  answers, failures, age, opening a detail, detaching); the detail (all parts, live ticks, duplicates, the cap, timers, failures, zones); the real views with binding errors captured; the main window showing the page. Terminal 202, line
+  coverage 96.9%.
+- **Rollout:** the API (for `q`). The terminal itself is run by the owner; the live check after the rollout runs the search against the real screener and the owner looks at the window.

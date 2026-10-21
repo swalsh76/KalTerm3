@@ -362,6 +362,16 @@ public sealed class CommandTests : IDisposable
     }
 
     [Fact]
+    public async Task ScreenSearchReachesTheApi()
+    {
+        _cli.Api.Screener = new ScreenerPage("volume", "desc", null, null, [], null);
+
+        await _cli.RunAsync("screen", "--search", "wash");
+
+        Assert.Equal("wash", _cli.Api.ScreenQueries.Single().Search);
+    }
+
+    [Fact]
     public async Task TheStatusShowsTheAnalyticsLine()
     {
         _cli.Api.Status = Samples.Status() with { Analytics = new AnalyticsStatusDto("ok", "x", "2026-10-18T22:55:00.000000+00:00", "2026-10-18T22:55:00.000000+00:00", 300, 11, 201_000) };

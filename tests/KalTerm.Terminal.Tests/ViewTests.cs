@@ -197,7 +197,7 @@ public sealed class ViewTests : IDisposable
             return (VisualTreeKit.All<ListBox>(window).First().Items.Count, VisualTreeKit.All<ComboBox>(window).First().Items.Count);
         });
 
-        Assert.Equal(1, pages);
+        Assert.Equal(2, pages);
         Assert.True(zones > 50);
     }
 

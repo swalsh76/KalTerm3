@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -165,9 +166,40 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public void Dispose() => Disposed = true;
 
-    public Task<MarketDto> GetMarketAsync(string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public MarketDto Market { get; set; } = Samples.Market("KX-A");
 
-    public Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Exception? MarketFails { get; set; }
+
+    public Task<MarketDto> GetMarketAsync(string ticker, CancellationToken cancellationToken = default) =>
+        MarketFails is null ? Task.FromResult(Market with { Ticker = ticker }) : Task.FromException<MarketDto>(MarketFails);
+
+    /// <summary>What the screener answers; by default one page with the rows in <see cref="ScreenerRows"/>.</summary>
+    public Func<ScreenQuery, ScreenerPage>? ScreenerAnswer { get; set; }
+
+    public List<ScreenerRowDto> ScreenerRows { get; } = [];
+
+    public Exception? ScreenerFails { get; set; }
+
+    /// <summary>When set, the screener does not answer until the test completes this.</summary>
+    public TaskCompletionSource<ScreenerPage>? ScreenerHold { get; set; }
+
+    public List<ScreenQuery> ScreenQueries { get; } = [];
+
+    public async Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default)
+    {
+        ScreenQueries.Add(query);
+        if (ScreenerFails is not null)
+        {
+            throw ScreenerFails;
+        }
+
+        if (ScreenerHold is { } hold)
+        {
+            return await hold.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return ScreenerAnswer is { } answer ? answer(query) : new ScreenerPage("volume", "desc", "2026-10-18T22:58:00.000000+00:00", 120, [.. ScreenerRows], null);
+    }
 
     public Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
@@ -193,19 +225,81 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
-    public IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>What the market stream says: a test writes events here and the open stream yields them.</summary>
+    public Channel<MarketStreamEvent> Stream { get; } = Channel.CreateUnbounded<MarketStreamEvent>();
 
-    public Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public List<MarketStreamRequest> StreamOpens { get; } = [];
 
-    public Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>The live changes asked for, as <c>add|remove ticks|books TICKER</c>.</summary>
+    public List<string> StreamChanges { get; } = [];
 
-    public Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Exception? StreamChangeFails { get; set; }
 
-    public Task<TickPage> GetTicksAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Exception? StreamFails { get; set; }
+
+    public async IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        StreamOpens.Add(request);
+        if (StreamFails is not null)
+        {
+            throw StreamFails;
+        }
+
+        await foreach (var item in Stream.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
+    public Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("add", kind, ticker);
+
+    public Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("remove", kind, ticker);
+
+    private Task Change(string verb, StreamKind kind, string ticker)
+    {
+        StreamChanges.Add($"{verb} {kind.ToString().ToLowerInvariant()} {ticker}");
+        return StreamChangeFails is null ? Task.CompletedTask : Task.FromException(StreamChangeFails);
+    }
+
+    public MetricsDto Metrics { get; set; } = Samples.Metrics("KX-A");
+
+    public Exception? MetricsFail { get; set; }
+
+    public int MetricsCalls { get; private set; }
+
+    public Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default)
+    {
+        MetricsCalls++;
+        return MetricsFail is null ? Task.FromResult(Metrics with { Ticker = ticker }) : Task.FromException<MetricsDto>(MetricsFail);
+    }
+
+    /// <summary>Oldest first, as the server sends them.</summary>
+    public List<TickDto> TickHistory { get; } = [];
+
+    public Exception? TicksFail { get; set; }
+
+    public List<WindowQuery> TickQueries { get; } = [];
+
+    public Task<TickPage> GetTicksAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
+    {
+        TickQueries.Add(query);
+        return TicksFail is null ? Task.FromResult(new TickPage([.. TickHistory], null)) : Task.FromException<TickPage>(TicksFail);
+    }
 
     public Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
-    public Task<TradePage> GetTradesAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>Oldest first, as the server sends them.</summary>
+    public List<TradeDto> TradeHistory { get; } = [];
+
+    public Exception? TradesFail { get; set; }
+
+    public int TradeCalls { get; private set; }
+
+    public Task<TradePage> GetTradesAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
+    {
+        TradeCalls++;
+        return TradesFail is null ? Task.FromResult(new TradePage([.. TradeHistory], null)) : Task.FromException<TradePage>(TradesFail);
+    }
 
     public Task<OrderBookPage> GetOrderBooksAsync(int? depth = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
@@ -237,6 +331,22 @@ internal static class Samples
     public const string Token = "kt_0123456789abcdef0123456789abcdef0123456789a";
 
     public static ApiException Unauthorized() => new(HttpStatusCode.Unauthorized, "unauthorized");
+
+    public static ScreenerRowDto Row(string ticker, string? last = "0.560000", string? bid = "0.550000", string? ask = "0.570000", string? spread = "0.020000", string? change = "0.020000", string volume = "1234.00", string? openInterest = "99.00", string status = "active", string label = "Yes") =>
+        new(ticker, "EV-" + ticker, status, label, "2026-10-18T22:58:00.000000+00:00", "2026-10-18T22:59:00.000000+00:00", last, change, volume, 7, openInterest, bid, ask, spread, null, null, null, null, false);
+
+    public static TickDto Tick(string time = "2026-10-18T22:59:30.250000+00:00", string? price = "0.570000", string? bid = "0.560000", string? ask = "0.580000", string? openInterest = "100.00") =>
+        new(time, price, bid, ask, "5.00", "6.00", "5000.00", openInterest, null);
+
+    public static MarketTickDto MarketTick(string ticker, TickDto? tick = null) => new(ticker, tick ?? Tick());
+
+    public static TradeDto Trade(string id, string time = "2026-10-18T22:59:00.000000+00:00", string side = "yes", bool block = false) => new(time, id, "0.560000", "0.440000", "3.00", side, block);
+
+    public static MarketDto Market(string ticker) =>
+        new(ticker, "EV-" + ticker, "binary", "active", "Washington", "San Francisco", "2026-10-18T14:00:00.000000+00:00", "2026-10-19T04:00:00.000000+00:00", "2026-10-26T04:00:00.000000+00:00", string.Empty, null, null, "2026-10-17T00:00:00.000000+00:00", "2026-10-18T22:00:00.000000+00:00");
+
+    public static MetricsDto Metrics(string ticker) =>
+        new(ticker, "2026-10-18T22:58:00.000000+00:00", "2026-10-18T22:59:00.000000+00:00", "0.560000", "0.020000", "1234.00", 7, "99.00", "0.550000", "0.570000", "0.020000", "0.551000", "0.540000", "0.530000", "0.012000", false);
 }
 
 /// <summary>The terminal's services built from fakes and stores in a folder of the test's own.</summary>

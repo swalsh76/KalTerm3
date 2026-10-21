@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using KalTerm.Client;
 using KalTerm.Terminal.Connect;
+using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Mvvm;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Status;
@@ -51,14 +52,15 @@ internal sealed class MainViewModel : ObservableObject
     private bool _applyingZone;
     private IKalTermApi? _api;
 
-    public MainViewModel(ClientServices services, TerminalSettingsStore settings, IDialogs dialogs, Formatting format, StatusViewModel status)
+    public MainViewModel(ClientServices services, TerminalSettingsStore settings, IDialogs dialogs, Formatting format, StatusViewModel status, MarketsViewModel markets)
     {
         _services = services;
         _settings = settings;
         _dialogs = dialogs;
         _format = format;
         Status = status;
-        Navigation = [new NavigationItem(status.Title, status)];
+        Markets = markets;
+        Navigation = [new NavigationItem(status.Title, status), new NavigationItem(markets.Title, markets)];
         _selected = Navigation[0];
         Zones = new ObservableCollection<ZoneChoice>(BuildZones(services.SystemZone));
         _zone = Zones[0];
@@ -70,6 +72,8 @@ internal sealed class MainViewModel : ObservableObject
     }
 
     public StatusViewModel Status { get; }
+
+    public MarketsViewModel Markets { get; }
 
     public IReadOnlyList<NavigationItem> Navigation { get; }
 
@@ -173,6 +177,7 @@ internal sealed class MainViewModel : ObservableObject
         {
             _settings.SaveServer(_server);
             _ = LoadZoneAsync();
+            _ = OpenMarketsAsync(_server);
         }
     }
 
@@ -209,6 +214,7 @@ internal sealed class MainViewModel : ObservableObject
         try
         {
             Status.Detach();
+            Markets.Detach();
             var connect = new ConnectViewModel(_services, _server);
             switch (reason)
             {
@@ -236,6 +242,20 @@ internal sealed class MainViewModel : ObservableObject
         finally
         {
             _asking = false;
+        }
+    }
+
+    /// <summary>Points the Markets page at the server and loads its first page. A failure is shown on the page itself.</summary>
+    private async Task OpenMarketsAsync(Uri server)
+    {
+        try
+        {
+            Markets.Attach(() => _services.CreateApi(server));
+            await Markets.LoadAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is ApiException or ApiUnavailableException or TlsTrustException)
+        {
+            StateText = "could not open the markets: " + ex.Message;
         }
     }
 

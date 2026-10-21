@@ -136,6 +136,66 @@ public class ScreenerReaderTests(DatabaseFixture db) : IClassFixture<DatabaseFix
     }
 
     [Fact]
+    public async Task ASearchMatchesTheTickerOrTheYesLabelInAnyCaseAndNothingElse()
+    {
+        db.Require();
+        var byTicker = await SeedAsync("SC-Q-ALPHA-1", 10);
+        var byLabel = await SeedAsync("SC-Q-OTHER-2", 20);
+        await db.ExecuteAsync($"UPDATE dbo.market SET yes_sub_title = N'Washington Commanders' WHERE market_id = {byLabel}");
+        await SeedAsync("SC-Q-OTHER-3", 30);
+
+        var ticker = await TickersAsync(Query() with { Search = "sc-q-alpha" });
+        var label = await TickersAsync(Query() with { Search = "WASHINGTON com" });
+        var both = await TickersAsync(Query() with { Search = "SC-Q-" });
+        var none = await TickersAsync(Query() with { Search = "no-such-text-anywhere" });
+
+        Assert.Equal([byTicker], await IdsAsync(ticker));
+        Assert.Equal(["SC-Q-OTHER-2"], label);
+        Assert.Equal(3, both.Count);
+        Assert.Empty(none);
+    }
+
+    [Fact]
+    public async Task ASearchTakesPercentUnderscoreAndBracketLiterally()
+    {
+        db.Require();
+        await SeedAsync("SC-W-PLAIN", 10);
+        var odd = await SeedAsync("SC-W-50%_[X]", 20);
+        _ = odd;
+
+        var percent = await TickersAsync(Query() with { Search = "50%" });
+        var underscore = await TickersAsync(Query() with { Search = "%_[" });
+        var wildcardOnly = await TickersAsync(Query() with { Search = "%%" });
+
+        Assert.Equal(["SC-W-50%_[X]"], percent);
+        Assert.Equal(["SC-W-50%_[X]"], underscore);
+        Assert.DoesNotContain("SC-W-PLAIN", wildcardOnly);   // a bare wildcard matches the text, not every market
+    }
+
+    [Fact]
+    public async Task ASearchAndAStatusFilterWorkTogetherAndPagingKeepsTheSearch()
+    {
+        db.Require();
+        await SeedAsync("SC-Z-ONE", 10);
+        await SeedAsync("SC-Z-TWO", 20, status: "closed");
+        await SeedAsync("SC-Z-THREE", 30);
+        await SeedAsync("SC-Z-FOUR", 40);
+
+        var active = await TickersAsync(Query(status: "active") with { Search = "SC-Z-" });
+        var first = await Reader().ReadAsync(Query(limit: 1) with { Search = "SC-Z-" }, TestContext.Current.CancellationToken);
+        var second = await Reader().ReadAsync(Query(after: first.Next, limit: 1) with { Search = "SC-Z-" }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(["SC-Z-FOUR", "SC-Z-THREE", "SC-Z-ONE"], active);
+        Assert.Equal(("SC-Z-FOUR", "SC-Z-THREE"), (first.Rows[0].Ticker, second.Rows[0].Ticker));
+    }
+
+    private async Task<List<int>> IdsAsync(List<string> tickers)
+    {
+        var page = await Reader().ReadAsync(Query(), TestContext.Current.CancellationToken);
+        return [.. page.Rows.Where(r => tickers.Contains(r.Ticker)).Select(r => r.MarketId)];
+    }
+
+    [Fact]
     public async Task TheLimitMustBeBetweenOneAndAThousand()
     {
         db.Require();

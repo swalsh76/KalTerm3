@@ -301,6 +301,18 @@ public sealed class EndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TheScreenerPassesASearchOnAndRefusesOneThatIsTooShortOrLong()
+    {
+        var found = await _api.GetAsync<ScreenerPage>("/v1/screener?q=nfl");
+        var (tooShort, _) = await _api.GetAsync("/v1/screener?q=n");
+        var (tooLong, _) = await _api.GetAsync("/v1/screener?q=" + new string('x', 65));
+
+        Assert.Empty(found.Rows);
+        Assert.Equal("nfl", Fakes.Screener.Queries.Single().Search);
+        Assert.Equal((HttpStatusCode.UnprocessableEntity, HttpStatusCode.UnprocessableEntity), (tooShort.StatusCode, tooLong.StatusCode));
+    }
+
+    [Fact]
     public async Task AScreenerWithoutAFinishedRunHasNoRefreshTime()
     {
         var page = await _api.GetAsync<ScreenerPage>("/v1/screener");

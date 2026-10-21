@@ -80,7 +80,7 @@ public sealed class KalTermApiClient : IKalTermApi, IDisposable
     public Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
-        return GetAsync("v1/screener", [("sort", query.Sort), ("order", query.Order), ("status", query.Status), ("min_volume", query.MinVolume), ("limit", Number(query.Limit)), ("cursor", query.Cursor), ("watchlist", query.Watchlist)], ApiJson.Wire.ScreenerPage, cancellationToken);
+        return GetAsync("v1/screener", [("sort", query.Sort), ("order", query.Order), ("status", query.Status), ("min_volume", query.MinVolume), ("limit", Number(query.Limit)), ("cursor", query.Cursor), ("watchlist", query.Watchlist), ("q", query.Search)], ApiJson.Wire.ScreenerPage, cancellationToken);
     }
 
     /// <inheritdoc/>

@@ -325,10 +325,11 @@ public sealed class StatusViewModelTests : IDisposable
         _model.Attach(_t.Api);
         await _model.RefreshAsync(Ct);
         _model.StartPolling();
-        await Task.Yield();
+        await WaitAsync(() => _t.Time.PendingTimers == 1);   // the loop is waiting for its interval; firing before it is would find nothing
 
         _t.Time.FireNext();
         await WaitAsync(() => _t.Api.StatusCalls == 2);
+        await WaitAsync(() => _t.Time.PendingTimers == 1);
         _t.Time.FireNext();
         await WaitAsync(() => _t.Api.StatusCalls == 3);
         _model.Detach();
