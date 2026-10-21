@@ -1,0 +1,88 @@
+<Window x:Class="KalTerm.Terminal.Views.OrderTicketWindow"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:trading="clr-namespace:KalTerm.Terminal.Trading"
+        Title="{Binding Title}" Width="640" SizeToContent="Height" MaxHeight="900" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="Visible" />
+    </Window.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Text="PRODUCTION: this sends a real order with real money." Foreground="Firebrick" FontWeight="SemiBold" Margin="0,6,0,0"
+                       Visibility="{Binding RequiresTyping, Converter={StaticResource Visible}}" />
+            <TextBlock Text="{Binding AmendingText}" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="{Binding IsAmend, Converter={StaticResource Visible}}" />
+
+            <Grid Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="Market" VerticalAlignment="Center" Margin="0,4" />
+                <TextBox Grid.Column="1" Margin="0,4" Text="{Binding Ticker, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsAmend, Mode=OneWay}" />
+                <TextBlock Grid.Row="1" Text="Action" VerticalAlignment="Center" Margin="0,4" Visibility="{Binding IsNew, Converter={StaticResource Visible}}" />
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,4" Visibility="{Binding IsNew, Converter={StaticResource Visible}}">
+                    <ComboBox Width="90" ItemsSource="{x:Static trading:OrderTicketViewModel.ActionChoices}" SelectedItem="{Binding Action}" />
+                    <ComboBox Width="90" Margin="8,0,0,0" ItemsSource="{x:Static trading:OrderTicketViewModel.OutcomeChoices}" SelectedItem="{Binding Outcome}" />
+                </StackPanel>
+                <TextBlock Grid.Row="2" Text="Count" VerticalAlignment="Center" Margin="0,4" />
+                <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Width="140" HorizontalAlignment="Left" Text="{Binding CountText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Contracts, at most two decimals. For a change: the new total (empty keeps it)" />
+                <TextBlock Grid.Row="3" Text="Price" VerticalAlignment="Center" Margin="0,4" />
+                <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Width="140" HorizontalAlignment="Left" Text="{Binding PriceText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Dollars strictly between 0 and 1, of the side traded. For a change: the new YES price (empty keeps it)" />
+                <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,4" Visibility="{Binding IsNew, Converter={StaticResource Visible}}">
+                    <CheckBox Content="Immediate-or-cancel" IsChecked="{Binding ImmediateOrCancel}" />
+                    <CheckBox Content="Post only (never take liquidity)" IsChecked="{Binding PostOnly}" Margin="16,0,0,0" />
+                </StackPanel>
+            </Grid>
+            <TextBlock Text="{Binding Problem}" Foreground="DarkGoldenrod" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="{Binding HasProblem, Converter={StaticResource Visible}}" />
+
+            <Button Content="Check" Command="{Binding CheckCommand}" HorizontalAlignment="Left" Padding="16,3" Margin="0,12,0,0" ToolTip="Look the market up and ask the risk layer. Nothing is sent." />
+
+            <Border Margin="0,10,0,0" Padding="10" BorderThickness="1" BorderBrush="Gray" Visibility="{Binding HasPlan, Converter={StaticResource Visible}}">
+                <StackPanel>
+                    <TextBlock Text="What would happen (nothing has been sent)" FontWeight="SemiBold" />
+                    <ItemsControl ItemsSource="{Binding PlanLines}" Margin="0,6,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" FontFamily="Consolas" Margin="0,1" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Margin="0,10,0,0" Visibility="{Binding ShowTyping, Converter={StaticResource Visible}}">
+                <TextBlock Text="To send it, type the order: TICKER buy|sell yes|no COUNT PRICE" TextWrapping="Wrap" FontWeight="SemiBold" />
+                <TextBox x:Name="TypedBox" AllowDrop="False" FontFamily="Consolas" Margin="0,4,0,0" Text="{Binding TypedText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Typed, not pasted. For example: KXEXAMPLE buy yes 1 0.40" />
+                <TextBlock Text="That is the order above." Foreground="SeaGreen" Margin="0,4,0,0" Visibility="{Binding PhraseOk, Converter={StaticResource Visible}}" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding Error}" Foreground="Firebrick" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,10,0,0" Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+            <Border Margin="0,10,0,0" Padding="10" BorderThickness="1" BorderBrush="SeaGreen" Visibility="{Binding HasResult, Converter={StaticResource Visible}}">
+                <ItemsControl ItemsSource="{Binding Result}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,1" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <Button Content="Send" Command="{Binding SendCommand}" Padding="18,3" MinWidth="90" />
+                <Button Content="Close" Command="{Binding CloseCommand}" IsCancel="True" Padding="18,3" MinWidth="90" Margin="8,0,0,0" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

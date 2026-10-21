@@ -14,6 +14,6 @@ internal sealed partial class App : Application
             MessageBox.Show(args.Exception.Message, "KalTerm", MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         };
-        Composition.Create(ClientServices.Real(), new TerminalSettingsStore(TerminalSettingsStore.DefaultPath()), new WindowsToaster()).Show();
+        Composition.Create(ClientServices.Real(), new TerminalSettingsStore(TerminalSettingsStore.DefaultPath()), new WindowsToaster(), new KalTerm.Terminal.Trading.TradingGateway()).Show();
     }
 }

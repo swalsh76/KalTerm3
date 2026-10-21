@@ -155,6 +155,9 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
 
     public string Title { get; } = "Markets";
 
+    /// <summary>The person asked to trade a market (from the open market): its ticker and a price to start the ticket with.</summary>
+    public event Action<string, string?>? TradeRequested;
+
     /// <summary>Something the layout holds changed (a filter, the ranking, a column, the chart or book defaults); the search text does not count.</summary>
     public event Action? LayoutChanged;
 
@@ -786,11 +789,14 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         var detail = new MarketDetailViewModel(ticker, _api, _feed, _format, _time, menu, Preferences);
         detail.Closed += CloseDetail;
         detail.AlertRequested += RaiseAlertRequested;
+        detail.TradeRequested += RaiseTradeRequested;
         Detail = detail;
         await detail.LoadAsync().ConfigureAwait(true);
     }
 
     private void RaiseAlertRequested(string ticker) => AlertRequested?.Invoke(ticker);
+
+    private void RaiseTradeRequested(string ticker, string? price) => TradeRequested?.Invoke(ticker, price);
 
     private void CloseDetail()
     {
@@ -802,6 +808,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         var detail = _detail;
         detail.Closed -= CloseDetail;
         detail.AlertRequested -= RaiseAlertRequested;
+        detail.TradeRequested -= RaiseTradeRequested;
         Detail = null;
         detail.Dispose();
     }

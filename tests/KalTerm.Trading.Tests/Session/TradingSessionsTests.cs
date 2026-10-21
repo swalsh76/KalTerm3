@@ -85,6 +85,7 @@ public sealed class TradingSessionsTests : IDisposable
 
         Assert.Equal(10_349_000, balance.BalanceDollars.Micros);
         Assert.Null(session.Service);
+        Assert.Null(session.Tracker);
         Assert.Null(session.Trading);
         Assert.Contains("KALSHI-ACCESS-KEY", _read.Requests[0].Headers.Keys);
         Assert.Empty(_trade.Requests);
@@ -170,6 +171,7 @@ public sealed class TradingSessionsTests : IDisposable
         await using var session = await TradingSessions.OpenAsync(TradingMode.Trade, Options(), Ct);
 
         Assert.NotNull(session.Service);
+        Assert.NotNull(session.Tracker);   // the terminal reads the account from it
         Assert.IsType<KalshiTradingClient>(session.Trading);
     }
 

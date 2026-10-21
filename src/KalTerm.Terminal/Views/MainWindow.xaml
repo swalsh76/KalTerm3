@@ -5,6 +5,7 @@
         xmlns:status="clr-namespace:KalTerm.Terminal.Status"
         xmlns:markets="clr-namespace:KalTerm.Terminal.Markets"
         xmlns:alerts="clr-namespace:KalTerm.Terminal.Alerts"
+        xmlns:trading="clr-namespace:KalTerm.Terminal.Trading"
         xmlns:views="clr-namespace:KalTerm.Terminal.Views"
         Title="KalTerm" Width="1100" Height="720" MinWidth="720" MinHeight="480">
     <Window.Resources>
@@ -17,6 +18,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type alerts:AlertsViewModel}">
             <views:AlertsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type trading:TradingViewModel}">
+            <views:TradingView />
         </DataTemplate>
     </Window.Resources>
     <DockPanel>

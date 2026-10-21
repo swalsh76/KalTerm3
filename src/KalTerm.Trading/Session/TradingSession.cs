@@ -128,6 +128,9 @@ public sealed class TradingSession : IAsyncDisposable
     /// <summary>Market reads.</summary>
     public IMarketRest Markets { get; }
 
+    /// <summary>The live view of the account (orders, positions, fills, balances, the risk snapshot); <see langword="null"/> in <see cref="TradingMode.Read"/>.</summary>
+    public AccountTracker? Tracker { get; set; }
+
     /// <summary>The order service; <see langword="null"/> in <see cref="TradingMode.Read"/>.</summary>
     public OrderService? Service { get; set; }
 

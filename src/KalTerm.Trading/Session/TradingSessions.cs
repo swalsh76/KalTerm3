@@ -140,6 +140,7 @@ public static class TradingSessions
             cleanup.Add(service.DisposeAsync);
             session.Trading = api;
             session.Service = service;
+            session.Tracker = tracker;
             Attach(session, cleanup);
             return session;
         }

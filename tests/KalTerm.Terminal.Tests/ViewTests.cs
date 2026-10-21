@@ -172,7 +172,7 @@ public sealed class ViewTests : IDisposable
         var (texts, state, model) = Sta.Run(() =>
         {
             using var errors = BindingErrors.Listen();
-            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster(), new FakeTradingGateway());
             window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
             VisualTreeKit.Realize(window);
             Assert.Empty(errors.Messages);
@@ -192,12 +192,12 @@ public sealed class ViewTests : IDisposable
     {
         var (pages, zones) = Sta.Run(() =>
         {
-            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster(), new FakeTradingGateway());
             VisualTreeKit.Realize(window);
             return (VisualTreeKit.All<ListBox>(window).First().Items.Count, VisualTreeKit.All<ComboBox>(window).Max(c => c.Items.Count));
         });
 
-        Assert.Equal(3, pages);
+        Assert.Equal(4, pages);
         Assert.True(zones > 50);
     }
 
@@ -207,7 +207,7 @@ public sealed class ViewTests : IDisposable
         var state = Sta.Run(() =>
         {
             var toaster = new FakeToaster();
-            var window = Composition.Create(_t.Services, _t.Settings, toaster);
+            var window = Composition.Create(_t.Services, _t.Settings, toaster, new FakeTradingGateway());
             window.WindowState = WindowState.Minimized;
 
             toaster.Click(null);
@@ -244,7 +244,7 @@ public sealed class ViewTests : IDisposable
     [Fact]
     public void TheCompositionBuildsAWindowForTheRealServicesToo()
     {
-        var model = Sta.Run(() => ((MainViewModel)Composition.Create(ClientServices.Real(), new TerminalSettingsStore(Path.Combine(Path.GetTempPath(), "kalterm-none-" + Guid.NewGuid().ToString("N") + ".json")), new FakeToaster()).DataContext).ServerText);
+        var model = Sta.Run(() => ((MainViewModel)Composition.Create(ClientServices.Real(), new TerminalSettingsStore(Path.Combine(Path.GetTempPath(), "kalterm-none-" + Guid.NewGuid().ToString("N") + ".json")), new FakeToaster(), new FakeTradingGateway()).DataContext).ServerText);
 
         Assert.Equal("no server", model);
     }

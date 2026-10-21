@@ -9,6 +9,7 @@ using KalTerm.Contracts;
 using KalTerm.Security;
 using KalTerm.Terminal.Connect;
 using KalTerm.Terminal.Services;
+using KalTerm.Terminal.Trading;
 
 namespace KalTerm.Terminal.Tests;
 
@@ -710,6 +711,21 @@ internal sealed class FakeDialogs : IDialogs
         Asked.Add($"{title}: {message}");
         NameCheck = Name is null ? null : check(Name);
         return Task.FromResult(Name);
+    }
+
+    /// <summary>The order tickets that were shown.</summary>
+    public List<OrderTicketViewModel> Tickets { get; } = [];
+
+    /// <summary>What happens while a ticket is open (the test plays the person): typing, checking, sending.</summary>
+    public Func<OrderTicketViewModel, Task>? OnTicket { get; set; }
+
+    public async Task ShowOrderTicketAsync(OrderTicketViewModel ticket)
+    {
+        Tickets.Add(ticket);
+        if (OnTicket is { } play)
+        {
+            await play(ticket).ConfigureAwait(true);
+        }
     }
 
     public Task<bool> ConfirmAsync(string title, string message)
