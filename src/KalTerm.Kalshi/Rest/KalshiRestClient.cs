@@ -167,6 +167,13 @@ public sealed partial class KalshiRestClient : IDisposable
             KalshiJsonContext.Default.EventEnvelope,
             $"event {eventTicker}").Event;
 
+    /// <summary>One event by ticker with its markets nested inside it (<c>with_nested_markets=true</c>): the markets of a finished event too, each with its own title.</summary>
+    public async Task<KalshiEvent> EventWithMarketsAsync(string eventTicker, CancellationToken cancellationToken = default) =>
+        KalshiJson.Parse(
+            await GetStringAsync($"/events/{Segment(eventTicker)}", KalshiQuery.Empty.With("with_nested_markets", true), cancellationToken).ConfigureAwait(false),
+            KalshiJsonContext.Default.EventEnvelope,
+            $"event {eventTicker}").Event;
+
     /// <summary>One series by ticker.</summary>
     public async Task<Series> SeriesAsync(string seriesTicker, CancellationToken cancellationToken = default) =>
         KalshiJson.Parse(

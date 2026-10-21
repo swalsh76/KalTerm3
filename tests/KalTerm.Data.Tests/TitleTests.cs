@@ -45,6 +45,26 @@ public class TitleTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
     }
 
     [Fact]
+    public async Task TheTitlesOfStoredMarketsAreSetAndNothingElseHappens()
+    {
+        db.Require();
+        await Markets().UpsertAsync([Market("TT-T-1", "TT-E-T1", "Old title"), Market("TT-T-2", "TT-E-T1"), Market("TT-T-3", "TT-E-T1", "Keeps it")], Now, Ct);
+
+        var changed = await Events().SetMarketTitlesAsync(
+            [("TT-T-1", "New title"), ("TT-T-2", "Gets one"), ("TT-T-3", string.Empty), ("TT-T-GONE", "Not stored"), ("TT-T-2", "Gets the last"), ("TT-T-LONG", new string('y', 600))],
+            Ct);
+
+        Assert.Equal(2, changed);   // 1 and 2; 3 had an empty title offered, GONE and LONG are not stored markets
+        Assert.Equal("New title", await db.ScalarAsync<string>("SELECT title FROM dbo.market WHERE ticker = 'TT-T-1'"));
+        Assert.Equal("Gets the last", await db.ScalarAsync<string>("SELECT title FROM dbo.market WHERE ticker = 'TT-T-2'"));
+        Assert.Equal("Keeps it", await db.ScalarAsync<string>("SELECT title FROM dbo.market WHERE ticker = 'TT-T-3'"));
+        Assert.Equal(0, await db.ScalarAsync<int>("SELECT COUNT(*) FROM dbo.market WHERE ticker IN ('TT-T-GONE', 'TT-T-LONG')"));
+        Assert.Equal(0, await Events().SetMarketTitlesAsync([("TT-T-1", "New title")], Ct));   // the same again changes nothing
+        Assert.Equal(0, await Events().SetMarketTitlesAsync([], Ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Events().SetMarketTitlesAsync(null!, Ct));
+    }
+
+    [Fact]
     public async Task EventsAreInsertedUpdatedAndTheLastOfARepeatedTickerWins()
     {
         db.Require();
