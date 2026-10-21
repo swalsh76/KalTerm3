@@ -29,7 +29,7 @@
         <TextBlock DockPanel.Dock="Top" Text="Loading…" Foreground="Gray" Margin="0,8,0,0" Visibility="{Binding Loading, Converter={StaticResource Visible}}" />
         <Grid Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="380" />
+                <ColumnDefinition Width="340" />
                 <ColumnDefinition Width="16" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -51,14 +51,14 @@
                     <TextBlock DockPanel.Dock="Top" Text="Ticker updates (newest first, live)" FontWeight="Bold" Margin="0,0,0,4" />
                     <DataGrid ItemsSource="{Binding Ticks}" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Time" Binding="{Binding Time}" Width="170" />
+                            <DataGridTextColumn Header="Time" Binding="{Binding Time}" Width="190" />
                             <DataGridTextColumn Header="Price" Binding="{Binding Price}" ElementStyle="{StaticResource Right}" Width="70" />
                             <DataGridTextColumn Header="Bid" Binding="{Binding Bid}" ElementStyle="{StaticResource Right}" Width="70" />
                             <DataGridTextColumn Header="Ask" Binding="{Binding Ask}" ElementStyle="{StaticResource Right}" Width="70" />
-                            <DataGridTextColumn Header="Bid size" Binding="{Binding BidSize}" ElementStyle="{StaticResource Right}" Width="80" />
-                            <DataGridTextColumn Header="Ask size" Binding="{Binding AskSize}" ElementStyle="{StaticResource Right}" Width="80" />
-                            <DataGridTextColumn Header="Volume" Binding="{Binding Volume}" ElementStyle="{StaticResource Right}" Width="*" />
-                            <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" ElementStyle="{StaticResource Right}" Width="100" />
+                            <DataGridTextColumn Header="Bid size" Binding="{Binding BidSize}" ElementStyle="{StaticResource Right}" Width="90" />
+                            <DataGridTextColumn Header="Ask size" Binding="{Binding AskSize}" ElementStyle="{StaticResource Right}" Width="90" />
+                            <DataGridTextColumn Header="Volume" Binding="{Binding Volume}" ElementStyle="{StaticResource Right}" Width="*" MinWidth="90" />
+                            <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" ElementStyle="{StaticResource Right}" Width="120" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -66,7 +66,7 @@
                     <TextBlock DockPanel.Dock="Top" Text="Trades (newest first, every few seconds)" FontWeight="Bold" Margin="0,0,0,4" />
                     <DataGrid ItemsSource="{Binding Trades}" AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Time" Binding="{Binding Time}" Width="170" />
+                            <DataGridTextColumn Header="Time" Binding="{Binding Time}" Width="190" />
                             <DataGridTextColumn Header="Yes price" Binding="{Binding YesPrice}" ElementStyle="{StaticResource Right}" Width="80" />
                             <DataGridTextColumn Header="Contracts" Binding="{Binding Count}" ElementStyle="{StaticResource Right}" Width="90" />
                             <DataGridTextColumn Header="Taker" Binding="{Binding Side}" Width="70" />

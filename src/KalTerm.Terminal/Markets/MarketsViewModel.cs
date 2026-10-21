@@ -286,11 +286,15 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
             if (Set(ref _detail, value))
             {
                 Raise(nameof(ShowingDetail));
+                Raise(nameof(ShowingList));
             }
         }
     }
 
     public bool ShowingDetail => _detail is not null;
+
+    /// <summary>The list can be used: no market is open over it.</summary>
+    public bool ShowingList => _detail is null;
 
     private string? EffectiveSearch => _searchText.Trim().Length >= 2 ? _searchText.Trim() : null;
 

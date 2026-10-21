@@ -26,7 +26,7 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <DockPanel Margin="12">
+        <DockPanel Margin="12" IsEnabled="{Binding ShowingList}">
             <DockPanel DockPanel.Dock="Top" LastChildFill="False">
                 <TextBlock Text="Search" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <TextBox Width="200" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
@@ -35,7 +35,7 @@
                 <TextBlock Text="Min volume" VerticalAlignment="Center" Margin="12,0,0,0" />
                 <TextBox Style="{StaticResource MinVolume}" Text="{Binding MinVolumeText, UpdateSourceTrigger=PropertyChanged}" />
                 <TextBlock Text="Rank by" VerticalAlignment="Center" Margin="12,0,6,0" />
-                <ComboBox Width="140" ItemsSource="{Binding Sorts}" SelectedItem="{Binding Sort}" DisplayMemberPath="Text" />
+                <ComboBox Width="170" ItemsSource="{Binding Sorts}" SelectedItem="{Binding Sort}" DisplayMemberPath="Text" />
                 <Button Content="{Binding OrderText}" Command="{Binding ToggleOrderCommand}" Margin="8,0,0,0" Padding="10,2" MinWidth="100" />
             </DockPanel>
             <DockPanel DockPanel.Dock="Top" Margin="0,8,0,8" LastChildFill="False">
@@ -75,16 +75,16 @@
                         <KeyBinding Key="Return" Command="{Binding OpenCommand}" />
                     </DataGrid.InputBindings>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Ticker" Binding="{Binding Ticker}" Width="260" />
-                        <DataGridTextColumn Header="Yes" Binding="{Binding YesLabel}" Width="*" />
+                        <DataGridTextColumn Header="Ticker" Binding="{Binding Ticker}" Width="2*" MinWidth="200" />
+                        <DataGridTextColumn Header="Yes" Binding="{Binding YesLabel}" Width="*" MinWidth="110" />
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80" />
                         <DataGridTextColumn Header="Last" Binding="{Binding Last}" ElementStyle="{StaticResource Right}" Width="70" />
                         <DataGridTextColumn Header="Bid" Binding="{Binding Bid}" ElementStyle="{StaticResource Right}" Width="70" />
                         <DataGridTextColumn Header="Ask" Binding="{Binding Ask}" ElementStyle="{StaticResource Right}" Width="70" />
-                        <DataGridTextColumn Header="Spread" Binding="{Binding Spread}" ElementStyle="{StaticResource Right}" Width="70" />
-                        <DataGridTextColumn Header="24h change" Binding="{Binding Change}" ElementStyle="{StaticResource Right}" Width="90" />
-                        <DataGridTextColumn Header="24h volume" Binding="{Binding Volume}" ElementStyle="{StaticResource Right}" Width="100" />
-                        <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" ElementStyle="{StaticResource Right}" Width="100" />
+                        <DataGridTextColumn Header="Spread" Binding="{Binding Spread}" ElementStyle="{StaticResource Right}" Width="80" />
+                        <DataGridTextColumn Header="24h change" Binding="{Binding Change}" ElementStyle="{StaticResource Right}" Width="110" />
+                        <DataGridTextColumn Header="24h volume" Binding="{Binding Volume}" ElementStyle="{StaticResource Right}" Width="120" />
+                        <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" ElementStyle="{StaticResource Right}" Width="130" />
                     </DataGrid.Columns>
                 </DataGrid>
                 <TextBlock Text="No markets match." Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -93,7 +93,8 @@
                            Visibility="{Binding Loading, Converter={StaticResource Visible}}" />
             </Grid>
         </DockPanel>
-        <ContentControl Content="{Binding Detail}" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
-                        Visibility="{Binding ShowingDetail, Converter={StaticResource Visible}}" />
+        <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" Visibility="{Binding ShowingDetail, Converter={StaticResource Visible}}">
+            <ContentControl Content="{Binding Detail}" />
+        </Border>
     </Grid>
 </UserControl>
