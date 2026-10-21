@@ -1795,3 +1795,26 @@ Live check after the rollout (GET only): the Markets page's default view, 50 act
 left the open listing) had a market title on 3 and an event title on 4, which showed a second hole: the full discovery pass lists open markets only, so a finished market never gets its title unless Kalshi changes it. Fix, in the same follow-up: the one-by-one lookups
 ask for the event with its markets nested (`KalshiRestClient.EventWithMarketsAsync`, `with_nested_markets=true`; a finalized game's markets come back with their titles) and set the titles of the markets we hold (`IEventStore.SetMarketTitlesAsync`: matched on ticker,
 unknown tickers ignored, an empty title never replaces one), so one request names the event and all its markets, finished ones included.
+
+### 9.7 Slice 7.4: candle charts and the live order book (2026-10-20)
+
+Approved by the owner 2026-10-20 with the four recommended choices: ScottPlot.WPF as the one new package; plotting doubles allowed at the drawing boundary only; detail tabs; the newest candle refreshed over REST every 5 s with the last price live
+from the stream. No server change.
+
+- **The package, checked before use.** ScottPlot.WPF 5.1.59 (MIT, targets net10.0-windows directly) and the 24 packages it brings: all MIT except OpenTK.GLWpfControl (a licence URL; the file is MIT) and OpenTK.redist.glfw (GLFW's zlib licence): all
+  permissive. Restore failed at first on NU1701 (`SkiaSharp.Views.WPF` ships its modern assets for Windows 10.0.19041, not for plain `net10.0-windows`); instead of suppressing the warning and loading .NET Framework assemblies, the terminal and its test project
+  now target `net10.0-windows10.0.19041.0` (Windows 10 2004 or later). A spike came first: a candlestick plot draws to a PNG without a window, and the WPF control builds and lays out on an STA thread.
+- **Chart.** `CandlePlotBuilder` draws a `ChartSeries` onto a plot (candles green at or above the open and red below; the candles a data gap overlaps in pale amber, because this package draws no outline on a body; volume bars on a second axis kept to the
+  bottom fifth; a dashed last-price line; the time axis on the chosen zone's clock; the price axis held inside 0 to 1). `CandleChartViewModel` holds the interval (1m, 5m, 15m, 1h, 4h, 1d) and range (1 day, 1 week, 1 month, all), asks for the latest
+  candles (no start: the server returns the latest N), folds the newest three in every 5 s, throws away an answer that arrives after a newer choice, keeps the last price from the stream (seeded from the newest candle), and says what is under the pointer in
+  exact figures. `CandleChartView` only hosts the control (about 40 lines of code-behind: draw when told, forward the pointer, reset the view).
+- **The one exception, as approved:** plotting needs `double`. `ChartCandle` makes them at the drawing boundary from the API's exact text and uses them for nothing but drawing; the hover line, the headings and the price axis labels (fixed decimals) come
+  from the exact text. Nothing computes with them.
+- **Book.** `OrderBookViewModel`: the yes bids as they come, the asks derived from the no bids (1 minus the price, in whole millionths), cumulative totals in whole hundredths, bar fractions for drawing only, best bid and ask, spread and middle exact, 10, 20 or
+  50 levels, a warning when the server says stale or approximate. `MarketFeed` now carries books as well as ticks (`SetWantedBooks`, one stream, added and dropped live, depth fixed at 50 when the stream opens).
+- **Looked at, not only tested.** A real market's candles from kaldb (an in-play game, price 0.50 to 0.12, three gap candles, a volume spike of millions) were drawn through the real builder to a picture and the three tabs of the real detail view were drawn
+  offscreen with real data; the picture of the chart, the ladder and the Overview tab were looked at. The offscreen harness cannot capture the GPU-backed control itself (it shows blank), so the chart is judged from the builder's own picture.
+- **Found by looking: the watch list.** The 50 markets the server publishes books for (the ingest watch list, chosen long ago) are all quiet, one level a side, so the Book tab is thin for them and says "no book is published" for everything else.
+  Choosing the watch list well (for example the most active markets) is a configuration decision for the owner, not part of this slice.
+- **Tests (about 100 new):** book arithmetic; the series and the plot builder (what is drawn, the zone, the starting view, rendering to a picture); the chart view-model (limits, intervals and ranges, a stale answer, the refresh and its cap, the last price,
+  failures, hover, zone, closing); the book view-model; the feed's books; the detail tabs; the real views (binding errors captured, redraw on zone change, reset view, the pointer). Terminal 303 tests.

@@ -51,6 +51,9 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     private MetricsDto? _metrics;
     private string _heading;
     private string _subHeading = string.Empty;
+    private int _selectedTab;
+    private CandleChartViewModel? _chart;
+    private OrderBookViewModel? _book;
     private bool _loading = true;
     private bool _disposed;
 
@@ -90,6 +93,42 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     {
         get => _subHeading;
         private set => Set(ref _subHeading, value);
+    }
+
+    /// <summary>The tab shown: 0 the overview, 1 the chart, 2 the book. The chart and the book are made, and begin loading, the first time their tab is chosen.</summary>
+    public int SelectedTab
+    {
+        get => _selectedTab;
+        set
+        {
+            if (Set(ref _selectedTab, value))
+            {
+                if (value == 1 && _chart is null)
+                {
+                    Chart = new CandleChartViewModel(Ticker, _api, _feed, _format, _time);
+                    _ = StartAsync(Chart.LoadAsync);
+                }
+                else if (value == 2 && _book is null)
+                {
+                    Book = new OrderBookViewModel(Ticker, _api, _feed, _format);
+                    _ = StartAsync(Book.LoadAsync);
+                }
+            }
+        }
+    }
+
+    /// <summary>The candle chart, or <see langword="null"/> until its tab is first chosen.</summary>
+    public CandleChartViewModel? Chart
+    {
+        get => _chart;
+        private set => Set(ref _chart, value);
+    }
+
+    /// <summary>The order book, or <see langword="null"/> until its tab is first chosen.</summary>
+    public OrderBookViewModel? Book
+    {
+        get => _book;
+        private set => Set(ref _book, value);
     }
 
     public ObservableCollection<DetailLine> About { get; } = [];
@@ -139,10 +178,25 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
         _disposed = true;
         _format.ZoneChanged -= Redraw;
         _feed.Tick -= OnTick;
+        _chart?.Dispose();
+        _book?.Dispose();
         _feed.SetWanted(FeedOwner, []);
         _loops?.Cancel();
         _loops?.Dispose();
         _loops = null;
+    }
+
+    /// <summary>Runs the first load of a tab. A failure is reported by the tab itself; anything unexpected is not allowed to vanish with the discarded task.</summary>
+    private static async Task StartAsync(Func<Task> load)
+    {
+        try
+        {
+            await load().ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is ApiException or ApiUnavailableException or TlsTrustException)
+        {
+            // the tab shows its own error
+        }
     }
 
     private async Task Section(string name, Func<Task> load)
