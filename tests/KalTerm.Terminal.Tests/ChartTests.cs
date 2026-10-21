@@ -213,6 +213,76 @@ public class CandlePlotBuilderTests
         Assert.True(png.Length > 5_000);
     }
 
+    private static Tick[] TicksAfterDrawing(ChartSeries series, TimeZoneInfo zone, int width = 1_200)
+    {
+        var plot = new Plot();
+        CandlePlotBuilder.Draw(plot, series, zone, null);
+        plot.GetImageBytes(width, 400, ImageFormat.Png);   // the ticks are worked out when the plot is drawn
+        return ((CandleGridTicks)plot.Axes.Bottom.TickGenerator).Ticks;
+    }
+
+    [Theory]
+    [InlineData("UTC")]
+    [InlineData("Mountain Standard Time")]
+    public void EveryCandleGetsALineAtItsStartAsTheClockOfTheZoneShowsIt(string zoneId)
+    {
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(zoneId);
+        var series = Series([.. Enumerable.Range(0, 24).Select(h => Samples.Candle(h))]);
+
+        var ticks = TicksAfterDrawing(series, zone);
+
+        foreach (var candle in series.Candles)
+        {
+            var at = TimeZoneInfo.ConvertTimeFromUtc(candle.Start, zone).ToOADate();
+            Assert.Contains(ticks, t => Math.Abs(t.Position - at) < 1e-6);
+        }
+    }
+
+    [Fact]
+    public void AWeekOfHourlyCandlesHasALineForEveryHourAndNotOnlyEveryOtherOne()
+    {
+        var series = Series([.. Enumerable.Range(0, 168).Select(h => Samples.Candle(h))]);
+
+        var ticks = TicksAfterDrawing(series, TimeZoneInfo.Utc);
+
+        var hours = Enumerable.Range(0, 168).Select(h => new DateTime(2026, 10, 20, 0, 0, 0).AddHours(h).ToOADate());
+        Assert.All(hours, hour => Assert.Contains(ticks, t => Math.Abs(t.Position - hour) < 1e-6));
+    }
+
+    [Fact]
+    public void TheLabelledTicksAreStillThereAndNoPositionHasTwoTicks()
+    {
+        var series = Series([.. Enumerable.Range(0, 48).Select(h => Samples.Candle(h))]);
+
+        var ticks = TicksAfterDrawing(series, TimeZoneInfo.Utc);
+
+        Assert.Contains(ticks, t => t.IsMajor && t.Label.Length > 0);
+        Assert.Equal(ticks.Length, ticks.Select(t => Math.Round(t.Position * 1_000_000)).Distinct().Count());
+    }
+
+    [Fact]
+    public void WhenCandlesAreCloserThanFivePixelsThereAreNoLinesForThem()
+    {
+        var series = Series([.. Enumerable.Range(0, 1_000).Select(i => Samples.Candle(0) with { Time = new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc).AddMinutes(i).ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'+00:00'", System.Globalization.CultureInfo.InvariantCulture) })]);
+        series = new ChartSeries(60, series.Candles);
+
+        var ticks = TicksAfterDrawing(series, TimeZoneInfo.Utc, width: 800);
+
+        Assert.True(ticks.Length < 100, $"{ticks.Length} ticks");
+    }
+
+    [Fact]
+    public void AnEmptyChartGoesBackToThePlainDateLabels()
+    {
+        var plot = new Plot();
+        CandlePlotBuilder.Draw(plot, Series(Samples.Candle(12)), TimeZoneInfo.Utc, null);
+        Assert.IsType<CandleGridTicks>(plot.Axes.Bottom.TickGenerator);
+
+        CandlePlotBuilder.Draw(plot, ChartSeries.Empty, TimeZoneInfo.Utc, null);
+
+        Assert.IsType<ScottPlot.TickGenerators.DateTimeAutomatic>(plot.Axes.Bottom.TickGenerator);
+    }
+
     [Fact]
     public void MissingArgumentsAreRefused()
     {

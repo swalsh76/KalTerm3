@@ -5,7 +5,7 @@ namespace KalTerm.Terminal.Markets;
 
 /// <summary>
 /// Draws a <see cref="ChartSeries"/> onto a plot: the candles (green when the close is at or above the open, red below), the candles a data gap overlaps pale amber, the volume as bars along the bottom on a
-/// second axis, and the last price as a dashed line. It holds no state and touches no window, so a test can draw into a plot and look at what is in it, or render it to a picture.
+/// second axis, the last price as a dashed line, and a faint vertical line at the start of every candle (<see cref="CandleGridTicks"/>). It holds no state and touches no window, so a test can draw into a plot and look at what is in it, or render it to a picture.
 /// </summary>
 internal static class CandlePlotBuilder
 {
@@ -29,7 +29,7 @@ internal static class CandlePlotBuilder
         ArgumentNullException.ThrowIfNull(series);
         ArgumentNullException.ThrowIfNull(zone);
         plot.Clear();
-        plot.Axes.DateTimeTicksBottom();
+        plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.DateTimeAutomatic();   // the plain bottom axis: the date axis insists on its own tick generator, and ours wraps the date labels itself
         plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic { LabelFormatter = value => value.ToString("0.00##", CultureInfo.InvariantCulture) };
         plot.Axes.Right.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic { LabelFormatter = value => value.ToString("N0", CultureInfo.InvariantCulture) };
         if (series.Candles.Count == 0)
@@ -39,6 +39,10 @@ internal static class CandlePlotBuilder
         }
 
         var span = TimeSpan.FromSeconds(series.IntervalSeconds);
+        plot.Axes.Bottom.TickGenerator = new CandleGridTicks(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(series.Candles[0].Start, DateTimeKind.Utc), zone).ToOADate(), span.TotalDays);
+        plot.Grid.XAxisStyle.MinorLineStyle.IsVisible = true;   // a faint line at the start of every candle; the labelled ticks keep their stronger ones
+        plot.Grid.XAxisStyle.MinorLineStyle.Color = Colors.Gray.WithAlpha(0.18);
+        plot.Grid.XAxisStyle.MinorLineStyle.Width = 1;
         List<OHLC> whole = [];
         List<OHLC> partial = [];
         List<Bar> bars = [];
