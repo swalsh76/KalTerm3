@@ -263,6 +263,7 @@ public static class ApiEndpoints
             var minVolume = query.MinVolume();
             var after = query.ScreenerCursor();
             var watchlist = query.Watchlist();
+            var search = query.Search();
             if (!query.IsValid)
             {
                 return Invalid(query);
@@ -283,7 +284,7 @@ public static class ApiEndpoints
                 }
             }
 
-            var page = await reader.ReadAsync(new ScreenerQuery(sort, descending, status, minVolume, after, limit, only), cancellationToken).ConfigureAwait(false);
+            var page = await reader.ReadAsync(new ScreenerQuery(sort, descending, status, minVolume, after, limit, only, search), cancellationToken).ConfigureAwait(false);
             var now = time.GetUtcNow().UtcDateTime;
             return Json(
                 new ScreenerPage(

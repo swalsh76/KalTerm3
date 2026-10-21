@@ -1,3 +1,4 @@
+using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Shell;
 using KalTerm.Terminal.Status;
@@ -16,7 +17,8 @@ internal static class Composition
         var format = new Formatting(services.SystemZone);
         var status = new StatusViewModel(format, services.Time);
         MainWindow? window = null;
-        var model = new MainViewModel(services, settings, new WpfDialogs(() => window), format, status);
+        var markets = new MarketsViewModel(format, services.Time);
+        var model = new MainViewModel(services, settings, new WpfDialogs(() => window), format, status, markets);
         window = new MainWindow { DataContext = model };
         return window;
     }

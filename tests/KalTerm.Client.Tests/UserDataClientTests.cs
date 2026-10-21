@@ -126,6 +126,17 @@ public sealed class UserDataClientTests
         Assert.Equal("http://127.0.0.1:5280/v1/screener?watchlist=mine", stub.Requests[0].Uri.AbsoluteUri);
     }
 
+    [Fact]
+    public async Task TheScreenerCarriesTheSearchText()
+    {
+        var stub = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, Json(new ScreenerPage("volume", "desc", null, null, [], null)));
+        using var client = Client(stub);
+
+        await client.GetScreenerAsync(new ScreenQuery(Search: "wash com"), TestContext.Current.CancellationToken);
+
+        Assert.Equal("http://127.0.0.1:5280/v1/screener?q=wash%20com", stub.Requests[0].Uri.AbsoluteUri);
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.Conflict, "already_exists")]
     [InlineData(HttpStatusCode.Conflict, "limit_reached")]
