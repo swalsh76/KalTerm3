@@ -1221,7 +1221,7 @@ public sealed class MarketsViewTests : IDisposable
         var texts = Sta.Run(() =>
         {
             using var errors = BindingErrors.Listen();
-            var window = Composition.Create(_t.Services, _t.Settings);
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
             var model = (KalTerm.Terminal.Shell.MainViewModel)window.DataContext;
             model.Selected = model.Navigation[1];
             VisualTreeKit.Realize(window);

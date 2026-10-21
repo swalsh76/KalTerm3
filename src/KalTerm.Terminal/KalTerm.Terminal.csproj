@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.WinUI.Notifications" />
     <PackageReference Include="ScottPlot.WPF" />
   </ItemGroup>
 

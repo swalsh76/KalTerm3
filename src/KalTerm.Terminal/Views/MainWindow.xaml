@@ -4,6 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:status="clr-namespace:KalTerm.Terminal.Status"
         xmlns:markets="clr-namespace:KalTerm.Terminal.Markets"
+        xmlns:alerts="clr-namespace:KalTerm.Terminal.Alerts"
         xmlns:views="clr-namespace:KalTerm.Terminal.Views"
         Title="KalTerm" Width="1100" Height="720" MinWidth="720" MinHeight="480">
     <Window.Resources>
@@ -12,6 +13,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type markets:MarketsViewModel}">
             <views:MarketsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type alerts:AlertsViewModel}">
+            <views:AlertsView />
         </DataTemplate>
     </Window.Resources>
     <DockPanel>

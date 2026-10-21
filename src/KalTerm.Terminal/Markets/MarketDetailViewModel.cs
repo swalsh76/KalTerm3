@@ -79,11 +79,15 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
         _format = format;
         _time = time;
         BackCommand = new RelayCommand(() => Closed?.Invoke());
+        AlertCommand = new RelayCommand(() => AlertRequested?.Invoke(Ticker));
         _format.ZoneChanged += Redraw;
     }
 
     /// <summary>The person asked to go back to the list.</summary>
     public event Action? Closed;
+
+    /// <summary>The person asked to make an alert on this market.</summary>
+    public event Action<string>? AlertRequested;
 
     public string Ticker { get; }
 
@@ -94,6 +98,8 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     public bool HasWatchlists => Watchlists is not null;
 
     public RelayCommand BackCommand { get; }
+
+    public RelayCommand AlertCommand { get; }
 
     /// <summary>What the market is called (its event's title), the ticker until it is known.</summary>
     public string Heading

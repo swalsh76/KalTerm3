@@ -1,4 +1,5 @@
 using KalTerm.Client;
+using KalTerm.Terminal.Alerts;
 using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Services;
 using KalTerm.Terminal.Shell;
@@ -15,17 +16,24 @@ public sealed class MainViewModelTests : IDisposable
     private readonly Formatting _format = new(TimeZoneInfo.Utc);
     private readonly StatusViewModel _status;
     private readonly MarketsViewModel _markets;
+    private readonly AlertsViewModel _alerts;
+    private readonly AlertNotifier _notifier;
+    private readonly FakeToaster _toaster = new();
     private readonly MainViewModel _model;
 
     public MainViewModelTests()
     {
         _status = new StatusViewModel(_format, _t.Time);
         _markets = new MarketsViewModel(_format, _t.Time);
-        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets);
+        _alerts = new AlertsViewModel(_format, _dialogs);
+        _notifier = new AlertNotifier(_toaster, _format, _t.Settings, _t.Time, () => _alerts.Silent, InlineContext.Instance);
+        _model = new MainViewModel(_t.Services, _t.Settings, _dialogs, _format, _status, _markets, _alerts, _notifier, _toaster);
     }
 
     public void Dispose()
     {
+        _notifier.Dispose();
+        _alerts.Dispose();
         _status.Dispose();
         _markets.Dispose();
         _t.Dispose();
@@ -44,7 +52,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal("connected", _model.StateText);
         Assert.Equal("kaldb:5280", _model.ServerText);
         Assert.True(_status.HasPage);
-        Assert.Equal([Server, Server, Server], _t.Created);   // the status page, then the Markets page's two (its own requests and its live feed)
+        Assert.Equal([Server, Server, Server, Server, Server], _t.Created);   // the status page, the Markets page's two (its own requests and its live feed), the Alerts page and the alert listener
         Assert.Empty(_dialogs.Shown);
     }
 
@@ -84,7 +92,7 @@ public sealed class MainViewModelTests : IDisposable
         await _model.RetryCommand.RunAsync();
 
         Assert.Equal(ConnectionState.Connected, _model.State);
-        Assert.Equal(1 + 3, _t.Created.Count);   // the failed try, then the connection that worked (status, then the two of the Markets page)
+        Assert.Equal(1 + 5, _t.Created.Count);   // the failed try, then the connection that worked (status, the two of the Markets page, the Alerts page and the alert listener)
     }
 
     [Fact]
@@ -275,9 +283,9 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
-    public void TheStatusAndMarketsPagesAreTheOnlyPagesForNow()
+    public void TheStatusMarketsAndAlertsPagesAreThePagesForNow()
     {
-        Assert.Equal(["Status", "Markets"], _model.Navigation.Select(n => n.Title));
+        Assert.Equal(["Status", "Markets", "Alerts"], _model.Navigation.Select(n => n.Title));
         Assert.Same(_status, _model.CurrentPage);
 
         _model.Selected = null;

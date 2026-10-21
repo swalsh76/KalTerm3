@@ -281,17 +281,85 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Task.CompletedTask;
     }
 
-    public Task<AlertListDto> GetAlertsAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>The alerts on the fake server.</summary>
+    public List<AlertDto> AlertRows { get; } = [];
 
-    public Task<AlertDto> CreateAlertAsync(CreateAlertRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>The fires on the fake server, in id order.</summary>
+    public List<AlertFireDto> FireRows { get; } = [];
 
-    public Task SetAlertPausedAsync(int id, bool paused, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>Every alert call made, as <c>verb [args]</c>.</summary>
+    public List<string> AlertCalls { get; } = [];
 
-    public Task DeleteAlertAsync(int id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>When set, the next alert call (not the stream) fails with it.</summary>
+    public Exception? AlertFails { get; set; }
 
-    public Task<AlertFiresPage> GetAlertFiresAsync(long? after = null, int? limit = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>What the alert stream says: a test writes events here and the open stream yields them.</summary>
+    public Channel<AlertStreamEvent> AlertStream { get; } = Channel.CreateUnbounded<AlertStreamEvent>();
 
-    public IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>The ids each alert stream was opened from.</summary>
+    public List<long?> AlertStreamOpens { get; } = [];
+
+    public Exception? AlertStreamFails { get; set; }
+
+    private void AlertCall(string call)
+    {
+        AlertCalls.Add(call);
+        if (AlertFails is { } fail)
+        {
+            AlertFails = null;
+            throw fail;
+        }
+    }
+
+    public Task<AlertListDto> GetAlertsAsync(CancellationToken cancellationToken = default)
+    {
+        AlertCall("list");
+        return Task.FromResult(new AlertListDto([.. AlertRows]));
+    }
+
+    public Task<AlertDto> CreateAlertAsync(CreateAlertRequest request, CancellationToken cancellationToken = default)
+    {
+        AlertCall($"create {request.Ticker} {request.Kind} {request.Threshold} {request.CooldownSeconds}");
+        var made = new AlertDto((AlertRows.Count == 0 ? 0 : AlertRows.Max(a => a.Id)) + 1, request.Ticker, request.Kind, request.Threshold, request.CooldownSeconds ?? 60, false, "2026-10-20T00:00:00+00:00", null, null);
+        AlertRows.Add(made);
+        return Task.FromResult(made);
+    }
+
+    public Task SetAlertPausedAsync(int id, bool paused, CancellationToken cancellationToken = default)
+    {
+        AlertCall($"{(paused ? "pause" : "resume")} {id}");
+        AlertRows[AlertRows.FindIndex(a => a.Id == id)] = AlertRows.Find(a => a.Id == id)! with { Paused = paused };
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAlertAsync(int id, CancellationToken cancellationToken = default)
+    {
+        AlertCall($"delete {id}");
+        _ = AlertRows.RemoveAll(a => a.Id == id);
+        return Task.CompletedTask;
+    }
+
+    public Task<AlertFiresPage> GetAlertFiresAsync(long? after = null, int? limit = null, CancellationToken cancellationToken = default)
+    {
+        AlertCall($"fires {after} {limit}");
+        var matching = after is { } from ? FireRows.Where(f => f.Id > from).Take(limit ?? 50) : FireRows.TakeLast(limit ?? 50);
+        var page = matching.ToList();
+        return Task.FromResult(new AlertFiresPage(page, page.Count == 0 ? null : page.Max(f => f.Id)));
+    }
+
+    public async IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        AlertStreamOpens.Add(after);
+        if (AlertStreamFails is not null)
+        {
+            throw AlertStreamFails;
+        }
+
+        await foreach (var item in AlertStream.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
 
     /// <summary>What the market stream says: a test writes events here and the open stream yields them.</summary>
     public Channel<MarketStreamEvent> Stream { get; } = Channel.CreateUnbounded<MarketStreamEvent>();
@@ -594,4 +662,37 @@ internal sealed class FakeDialogs : IDialogs
         Asked.Add($"{title}: {message}");
         return Task.FromResult(Confirm);
     }
+}
+
+/// <summary>Toasts a test controls: what was shown, and clicks on them.</summary>
+internal sealed class FakeToaster : IToaster
+{
+    private readonly object _gate = new();
+    private readonly List<ToastMessage> _shown = [];
+
+    public event Action<string?>? Activated;
+
+    /// <summary>What was shown, in order.</summary>
+    public IReadOnlyList<ToastMessage> Shown
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _shown];
+            }
+        }
+    }
+
+    public void Show(ToastMessage message)
+    {
+        lock (_gate)
+        {
+            _shown.Add(message);
+        }
+    }
+
+    /// <summary>A click on a toast.</summary>
+    /// <param name="ticker">The market the toast named, if any.</param>
+    public void Click(string? ticker) => Activated?.Invoke(ticker);
 }
