@@ -52,6 +52,7 @@ public sealed record MveSelectedLeg(
 /// <param name="MveSelectedLegs">Multivariate (combo) markets only: the legs.</param>
 /// <param name="IsProvisional">Whether the market is provisional.</param>
 /// <param name="ExchangeIndex">Which exchange shard lists it.</param>
+/// <param name="Title">The market's own title, for example <c>Philadelphia wins</c>.</param>
 public sealed record Market(
     string Ticker,
     string EventTicker,
@@ -85,7 +86,8 @@ public sealed record Market(
     string? MveCollectionTicker = null,
     IReadOnlyList<MveSelectedLeg>? MveSelectedLegs = null,
     bool? IsProvisional = null,
-    int? ExchangeIndex = null)
+    int? ExchangeIndex = null,
+    string Title = "")
 {
     /// <summary>True for a multivariate (combo) market.</summary>
     [JsonIgnore]

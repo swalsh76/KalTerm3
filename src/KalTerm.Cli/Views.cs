@@ -142,6 +142,16 @@ internal static class Views
         var rows = new List<IRenderable> { new Markup($"[bold]{Escape(market.Ticker)}[/]  {StatusMarkup(market.Status)}"), new Text(string.Empty) };
         void Field(string label, string? value) => rows.Add(new Markup($"  [grey]{Escape(label.PadRight(11))}[/] {Escape(value ?? None)}"));
         Field("Event", market.EventTicker);
+        if (market.EventTitle.Length > 0)
+        {
+            Field("Event title", market.EventSubTitle.Length > 0 ? $"{market.EventTitle} ({market.EventSubTitle})" : market.EventTitle);
+        }
+
+        if (market.Title.Length > 0)
+        {
+            Field("Title", market.Title);
+        }
+
         Field("Type", market.Type);
         Field("Yes / No", $"{market.YesLabel} / {market.NoLabel}");
         Field("Opens", market.OpenTime is null ? None : $"{MomentWithZone(market.OpenTime)}");

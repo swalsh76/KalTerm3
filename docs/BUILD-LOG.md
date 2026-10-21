@@ -1764,3 +1764,24 @@ Rolled out 2026-10-20 (API release host-bd54eed; ingest untouched; `/readyz` 200
 top market's ticker returned 50 rows, including that market, every one containing the text in its ticker or yes label; the yes label of the top market typed in capitals matched 50 rows, every one containing it; the text `%%` matched
 0 rows (the wildcards are literal); search plus status `active` plus rank by spread ascending returned 50 rows, all active; a one-character search was refused with `422 invalid_parameter (q)`. The window itself (live prices, the
 detail page) is for the owner to look at.
+
+### 9.6 Slice 7.3b: market and event titles (2026-10-20)
+
+Asked for by the owner after the first look at the Markets page: rows should show what a market is called, not its ticker; the detail shows the market (ticker) as a subheader. A probe of Kalshi (public GETs, four markets, one event) showed that
+the market `title` is the human name ("Philadelphia wins", "Will Republicans win the Senate race in Texas?", "BTC price up in next 15 mins?"), that the yes label alone is ambiguous ("Philadelphia", "Ken Paxton"), and that the event title adds the
+context ("Philadelphia vs New York", sub-title "PHI vs NYK (Oct 20)"). The owner required the event title. About 15,000 events are open (75 pages of 200); an event can be read by ticker even for a settled market.
+
+- **Catalog:** migration 0008 adds `market.title` and `market_event` (event ticker, series, title, sub-title, `known`, `fetched_at`; no foreign key, a market is stored before its event is known) and an index on `market.event_ticker`. `Market` (Kalshi)
+  parses `title`; discovery stores it on every pass, so market titles fill in within 5 minutes of the ingest starting.
+- **Events:** `EventDiscovery`, in its own loop in the runner (`EventInterval`, 5 minutes): every hour (and on the first pass) all open events are read and stored in batches; on every pass up to 100 events that stored markets mention and no event
+  is stored for are read one by one (never-asked first), which fills the history gradually instead of in one burst; an event Kalshi has no record of (404) is stored as unknown and asked again only after 7 days; an unknown never replaces a known one;
+  a failed request stops the pass after storing what it got. Found by the tests: SQL Server allows only one `WHEN MATCHED ... UPDATE` per `MERGE` (two cases became one with `CASE`), and Dapper builds a record from the columns in order (the new
+  screener columns had to sit where the query puts them).
+- **API, CLI:** `MarketDto` and `ScreenerRowDto` carry `title`, `event_title`, `event_sub_title` (empty until stored); the screener search (`q`) matches the ticker, the yes label, the title, the event title and the event sub-title; `kterm market` shows the
+  event title (with its sub-title) and the title.
+- **Terminal:** `MarketNames` (the name is the event title, else the market title, else the yes label, else the ticker; the line under it is the market title when the name is the event's). The list has one folded **Market** column (name in
+  semibold, the market title in grey under it), then Yes, the numbers, and the ticker as a narrow last column. The detail heading is the name; under it the market title and the ticker; the event sub-title is one of the lines. The older layout (ticker
+  first, Yes beside it) is the fallback if the folded one is not liked.
+- **Tests (about 55 new):** the Kalshi title; event discovery (batches, hourly refresh, lookups, the weekly retry, the per-pass limit, failures keep what was read); the runner loop; the stores and readers on real SQL on kaldb (Data 397, Ingest 262, API
+  371); the API wire names; the CLI; the terminal's names, row, folded cell and detail heading with their fallbacks.
+- **Rollout (in this order, each asked for):** the ingest (applies migration 0008; a short gap in ticker and order-book data), then the API, then the owner restarts the terminal. Titles of finished markets arrive over the following hours.

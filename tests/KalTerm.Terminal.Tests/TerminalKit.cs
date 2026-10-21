@@ -332,8 +332,8 @@ internal static class Samples
 
     public static ApiException Unauthorized() => new(HttpStatusCode.Unauthorized, "unauthorized");
 
-    public static ScreenerRowDto Row(string ticker, string? last = "0.560000", string? bid = "0.550000", string? ask = "0.570000", string? spread = "0.020000", string? change = "0.020000", string volume = "1234.00", string? openInterest = "99.00", string status = "active", string label = "Yes") =>
-        new(ticker, "EV-" + ticker, status, label, "2026-10-18T22:58:00.000000+00:00", "2026-10-18T22:59:00.000000+00:00", last, change, volume, 7, openInterest, bid, ask, spread, null, null, null, null, false);
+    public static ScreenerRowDto Row(string ticker, string? last = "0.560000", string? bid = "0.550000", string? ask = "0.570000", string? spread = "0.020000", string? change = "0.020000", string volume = "1234.00", string? openInterest = "99.00", string status = "active", string label = "Yes", string title = "", string eventTitle = "", string eventSubTitle = "") =>
+        new(ticker, "EV-" + ticker, status, label, "2026-10-18T22:58:00.000000+00:00", "2026-10-18T22:59:00.000000+00:00", last, change, volume, 7, openInterest, bid, ask, spread, null, null, null, null, false, title, eventTitle, eventSubTitle);
 
     public static TickDto Tick(string time = "2026-10-18T22:59:30.250000+00:00", string? price = "0.570000", string? bid = "0.560000", string? ask = "0.580000", string? openInterest = "100.00") =>
         new(time, price, bid, ask, "5.00", "6.00", "5000.00", openInterest, null);
@@ -342,8 +342,8 @@ internal static class Samples
 
     public static TradeDto Trade(string id, string time = "2026-10-18T22:59:00.000000+00:00", string side = "yes", bool block = false) => new(time, id, "0.560000", "0.440000", "3.00", side, block);
 
-    public static MarketDto Market(string ticker) =>
-        new(ticker, "EV-" + ticker, "binary", "active", "Washington", "San Francisco", "2026-10-18T14:00:00.000000+00:00", "2026-10-19T04:00:00.000000+00:00", "2026-10-26T04:00:00.000000+00:00", string.Empty, null, null, "2026-10-17T00:00:00.000000+00:00", "2026-10-18T22:00:00.000000+00:00");
+    public static MarketDto Market(string ticker, string title = "Washington wins", string eventTitle = "Washington vs San Francisco", string eventSubTitle = "WAS vs SF (Oct 18)") =>
+        new(ticker, "EV-" + ticker, "binary", "active", "Washington", "San Francisco", "2026-10-18T14:00:00.000000+00:00", "2026-10-19T04:00:00.000000+00:00", "2026-10-26T04:00:00.000000+00:00", string.Empty, null, null, "2026-10-17T00:00:00.000000+00:00", "2026-10-18T22:00:00.000000+00:00", title, eventTitle, eventSubTitle);
 
     public static MetricsDto Metrics(string ticker) =>
         new(ticker, "2026-10-18T22:58:00.000000+00:00", "2026-10-18T22:59:00.000000+00:00", "0.560000", "0.020000", "1234.00", 7, "99.00", "0.550000", "0.570000", "0.020000", "0.551000", "0.540000", "0.530000", "0.012000", false);

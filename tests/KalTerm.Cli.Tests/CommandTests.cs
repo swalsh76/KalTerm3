@@ -112,6 +112,37 @@ public sealed class CommandTests : IDisposable
     }
 
     [Fact]
+    public async Task OneMarketShowsItsEventTitleAndItsOwnTitleWhenTheyAreStored()
+    {
+        _cli.Api.Market = Samples.Market("A-1") with { Title = "Philadelphia wins", EventTitle = "Philadelphia vs New York", EventSubTitle = "PHI vs NYK (Oct 20)" };
+
+        await _cli.RunAsync("market", "A-1");
+
+        Assert.Contains("Event title", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("Philadelphia vs New York (PHI vs NYK (Oct 20))", _cli.Output, StringComparison.Ordinal);
+        Assert.Contains("Philadelphia wins", _cli.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnEventTitleWithoutASubTitleIsShownAloneAndNothingIsShownWhenNoTitleIsStored()
+    {
+        _cli.Api.Market = Samples.Market("A-1") with { EventTitle = "Philadelphia vs New York" };
+        await _cli.RunAsync("market", "A-1");
+        var withEvent = _cli.Output;
+
+        Assert.Contains("Philadelphia vs New York", withEvent, StringComparison.Ordinal);
+        Assert.DoesNotContain("(", withEvent[withEvent.IndexOf("Event title", StringComparison.Ordinal)..].Split('\n')[0], StringComparison.Ordinal);
+
+        _cli.Api.Market = Samples.Market("A-1");
+        var plain = new Harness();
+        plain.Api.Market = Samples.Market("A-1");
+        await plain.RunAsync("market", "A-1");
+        Assert.DoesNotContain("Event title", plain.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Title ", plain.Output, StringComparison.Ordinal);
+        plain.Dispose();
+    }
+
+    [Fact]
     public async Task OneMarketShowsDetailsTheLatestTickAndRecentTrades()
     {
         _cli.Api.Trades = new TradePage([Trade("t-1", "yes"), Trade("t-2", "no", true), Trade("t-3", null)], null);

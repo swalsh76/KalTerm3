@@ -106,8 +106,46 @@ public class MarketFormattingTests
     }
 }
 
+public class MarketNamesTests
+{
+    [Theory]
+    [InlineData("Philadelphia vs New York", "Philadelphia wins", "Philadelphia", "KX-1", "Philadelphia vs New York")]
+    [InlineData("", "Philadelphia wins", "Philadelphia", "KX-1", "Philadelphia wins")]
+    [InlineData("", "", "Philadelphia", "KX-1", "Philadelphia")]
+    [InlineData("", "", "", "KX-1", "KX-1")]
+    public void TheNameIsTheEventTitleElseTheMarketTitleElseTheYesLabelElseTheTicker(string eventTitle, string title, string yes, string ticker, string expected) =>
+        Assert.Equal(expected, MarketNames.Name(eventTitle, title, yes, ticker));
+
+    [Theory]
+    [InlineData("Philadelphia vs New York", "Philadelphia wins", "Philadelphia wins")]
+    [InlineData("Philadelphia vs New York", "", "")]
+    [InlineData("", "Philadelphia wins", "")]
+    [InlineData("Same", "Same", "")]
+    [InlineData("", "", "")]
+    public void TheLineUnderItIsTheMarketTitleOnlyWhenTheNameIsTheEventsAndTheyDiffer(string eventTitle, string title, string expected) =>
+        Assert.Equal(expected, MarketNames.Under(eventTitle, title));
+}
+
 public class MarketRowTests
 {
+    [Fact]
+    public void ARowIsNamedByItsEventWithItsMarketTitleUnderIt()
+    {
+        var row = new MarketRowViewModel(Samples.Row("KX-A", title: "Philadelphia wins", eventTitle: "Philadelphia vs New York", eventSubTitle: "PHI vs NYK (Oct 20)"));
+
+        Assert.Equal(("Philadelphia vs New York", "Philadelphia wins", true, "KX-A", "Yes"), (row.Name, row.Under, row.HasUnder, row.Ticker, row.YesLabel));
+    }
+
+    [Fact]
+    public void ARowWhoseTitlesAreNotStoredYetFallsBackToTheYesLabelAndThenTheTicker()
+    {
+        var withLabel = new MarketRowViewModel(Samples.Row("KX-A", label: "Seattle"));
+        var bare = new MarketRowViewModel(Samples.Row("KX-B", label: string.Empty));
+
+        Assert.Equal(("Seattle", string.Empty, false), (withLabel.Name, withLabel.Under, withLabel.HasUnder));
+        Assert.Equal(("KX-B", false), (bare.Name, bare.HasUnder));
+    }
+
     private static List<string> Changed(MarketRowViewModel row)
     {
         var names = new List<string>();
@@ -789,12 +827,47 @@ public sealed class MarketDetailViewModelTests : IDisposable
 
         var detail = await LoadedAsync();
 
-        Assert.Equal(("KX-A  ·  Washington", false, false), (detail.Heading, detail.Loading, detail.HasError));
+        Assert.Equal(("Washington vs San Francisco", "Washington wins  ·  KX-A", false, false), (detail.Heading, detail.SubHeading, detail.Loading, detail.HasError));
         Assert.Equal(["0.51", "0.50"], detail.Ticks.Select(t => t.Price));
         Assert.Equal("2026-10-18 22:59:02.000", detail.Ticks[0].Time);
         Assert.Equal(["t2", "t1"], detail.Trades.Select(t => t.Source.TradeId));
         Assert.Equal(("no", "block", "0.56", "3"), (detail.Trades[0].Side, detail.Trades[0].Kind, detail.Trades[0].YesPrice, detail.Trades[0].Count));
         Assert.Equal(200, _t.Api.TickQueries.Single().Limit);
+    }
+
+    [Fact]
+    public async Task TheHeadingFallsBackToTheMarketTitleThenTheYesLabelAndTheSubheaderIsWhateverElseIsKnown()
+    {
+        _t.Api.Market = Samples.Market("KX-A", eventTitle: string.Empty);
+        var onlyTitle = Make();
+        await onlyTitle.LoadAsync();
+        onlyTitle.Dispose();
+
+        _t.Api.Market = Samples.Market("KX-A", title: string.Empty, eventTitle: string.Empty);
+        var onlyLabel = new MarketDetailViewModel("KX-A", _t.Api, _feed, _format, _t.Time);
+        await onlyLabel.LoadAsync();
+        onlyLabel.Dispose();
+
+        Assert.Equal(("Washington wins", "KX-A"), (onlyTitle.Heading, onlyTitle.SubHeading));
+        Assert.Equal(("Washington", "KX-A"), (onlyLabel.Heading, onlyLabel.SubHeading));
+    }
+
+    [Fact]
+    public async Task ATickerIsNotRepeatedWhenItIsTheOnlyNameThereIs()
+    {
+        _t.Api.Market = Samples.Market("KX-A", title: string.Empty, eventTitle: string.Empty) with { YesLabel = string.Empty };
+
+        var detail = await LoadedAsync();
+
+        Assert.Equal(("KX-A", string.Empty), (detail.Heading, detail.SubHeading));
+    }
+
+    [Fact]
+    public async Task TheEventSubTitleIsOneOfTheLines()
+    {
+        var detail = await LoadedAsync();
+
+        Assert.Contains(detail.About, l => l is { Label: "Event sub-title", Text: "WAS vs SF (Oct 18)" });
     }
 
     [Fact]
@@ -1026,6 +1099,28 @@ public sealed class MarketsViewTests : IDisposable
     }
 
     [Fact]
+    public void TheListShowsTheEventTitleWithTheMarketTitleUnderItAndTheTickerInItsOwnColumn()
+    {
+        _t.Api.ScreenerRows.Clear();
+        _t.Api.ScreenerRows.AddRange([Samples.Row("KX-A", title: "Philadelphia wins", eventTitle: "Philadelphia vs New York"), Samples.Row("KX-B", label: "Seattle")]);
+
+        var texts = Sta.Run(() =>
+        {
+            using var errors = BindingErrors.Listen();
+            using var model = Loaded(new Formatting(TimeZoneInfo.Utc));
+            var view = new MarketsView { DataContext = model };
+            VisualTreeKit.Realize(view);
+            Assert.Empty(errors.Messages);
+            return VisualTreeKit.Texts(view).ToList();
+        });
+
+        Assert.Contains("Philadelphia vs New York", texts);
+        Assert.Contains("Philadelphia wins", texts);
+        Assert.Contains("KX-A", texts);
+        Assert.Equal(2, texts.Count(t => t == "Seattle"));   // no titles stored yet: the yes label is the name, and the Yes column shows it as well
+    }
+
+    [Fact]
     public void AnEmptyAnswerSaysNoMarketsMatch()
     {
         _t.Api.ScreenerRows.Clear();
@@ -1078,7 +1173,8 @@ public sealed class MarketsViewTests : IDisposable
             return VisualTreeKit.Texts(view).ToList();
         });
 
-        Assert.Contains("KX-A  ·  Washington", texts);
+        Assert.Contains("Washington vs San Francisco", texts);
+        Assert.Contains("Washington wins  ·  KX-A", texts);
         Assert.Contains("Market", texts);
         Assert.Contains("Metrics", texts);
         Assert.Contains("Washington / San Francisco", texts);

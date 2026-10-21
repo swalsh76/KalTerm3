@@ -137,6 +137,20 @@ public class KalshiRestEndpointTests
     }
 
     [Fact]
+    public async Task AMarketCarriesItsOwnTitleAndAMarketWithoutOneHasAnEmptyTitle()
+    {
+        var withTitle = "{\"ticker\":\"KXA-1\",\"event_ticker\":\"EV-1\",\"market_type\":\"binary\",\"status\":\"active\",\"title\":\"Philadelphia wins\",\"yes_sub_title\":\"Philadelphia\"}";
+        var stub = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, "{\"market\":" + withTitle + "}").Respond(HttpStatusCode.OK, "{\"market\":" + Market("KXB-1") + "}");
+        using var client = Client(stub, new AutoAdvanceTimeProvider());
+
+        var titled = await client.MarketAsync("KXA-1", TestContext.Current.CancellationToken);
+        var plain = await client.MarketAsync("KXB-1", TestContext.Current.CancellationToken);
+
+        Assert.Equal(("Philadelphia wins", "Philadelphia"), (titled.Title, titled.YesSubTitle));
+        Assert.Equal(string.Empty, plain.Title);
+    }
+
+    [Fact]
     public async Task AnEventAndASeriesAreUnwrappedFromTheirEnvelopes()
     {
         var stub = new StubHttpMessageHandler()

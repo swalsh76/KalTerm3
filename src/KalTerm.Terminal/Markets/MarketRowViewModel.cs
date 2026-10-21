@@ -25,6 +25,8 @@ internal sealed class MarketRowViewModel : ObservableObject
         EventTicker = row.EventTicker;
         Status = row.Status;
         YesLabel = row.YesLabel;
+        Name = MarketNames.Name(row.EventTitle, row.Title, row.YesLabel, row.Ticker);
+        Under = MarketNames.Under(row.EventTitle, row.Title);
         Change = Formatting.Signed(row.Change24h);
         Volume = Formatting.Count(row.Volume24h);
         _bidText = row.YesBid;
@@ -43,6 +45,15 @@ internal sealed class MarketRowViewModel : ObservableObject
     public string Status { get; }
 
     public string YesLabel { get; }
+
+    /// <summary>What the market is called: its event's title, else its own, else the yes label, else the ticker.</summary>
+    public string Name { get; }
+
+    /// <summary>Under the name: the market's own title when the name is the event's; empty otherwise.</summary>
+    public string Under { get; }
+
+    /// <summary>Whether there is a line to show under the name.</summary>
+    public bool HasUnder => Under.Length > 0;
 
     /// <summary>As of the analyzer's last run.</summary>
     public string Change { get; }

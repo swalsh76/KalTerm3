@@ -20,7 +20,10 @@ public sealed record StoredMarket(
     string Result,
     long? SettlementValueE6,
     DateTime FirstSeenAt,
-    DateTime LastSeenAt);
+    DateTime LastSeenAt,
+    string Title = "",
+    string EventTitle = "",
+    string EventSubTitle = "");
 
 /// <summary>A ticker update.</summary>
 public sealed record StoredTick(

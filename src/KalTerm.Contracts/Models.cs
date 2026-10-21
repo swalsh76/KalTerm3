@@ -19,6 +19,9 @@ namespace KalTerm.Contracts;
 /// <param name="SettlementTime">When it settled.</param>
 /// <param name="FirstSeenAt">When discovery first saw it.</param>
 /// <param name="LastSeenAt">When discovery last saw it.</param>
+/// <param name="Title">The market's own title, for example <c>Philadelphia wins</c>; empty until discovery has stored it.</param>
+/// <param name="EventTitle">Its event's title, for example <c>Philadelphia vs New York</c>; empty until stored.</param>
+/// <param name="EventSubTitle">Its event's sub-title, for example <c>PHI vs NYK (Oct 20)</c>; empty until stored.</param>
 public sealed record MarketDto(
     string Ticker,
     string EventTicker,
@@ -33,7 +36,10 @@ public sealed record MarketDto(
     string? SettlementValue,
     string? SettlementTime,
     string FirstSeenAt,
-    string LastSeenAt);
+    string LastSeenAt,
+    string Title = "",
+    string EventTitle = "",
+    string EventSubTitle = "");
 
 /// <summary>A page of markets in ticker order.</summary>
 /// <param name="Markets">The markets.</param>
@@ -161,6 +167,9 @@ public sealed record MetricsDto(
 /// <param name="Sma50">The mean of the last 50 hourly closes, dollars.</param>
 /// <param name="Volatility24h">The standard deviation of hourly changes, dollars.</param>
 /// <param name="Partial">Whether a gap may have left a figure incomplete.</param>
+/// <param name="Title">The market's own title; empty until stored.</param>
+/// <param name="EventTitle">Its event's title; empty until stored.</param>
+/// <param name="EventSubTitle">Its event's sub-title; empty until stored.</param>
 public sealed record ScreenerRowDto(
     string Ticker,
     string EventTicker,
@@ -180,7 +189,10 @@ public sealed record ScreenerRowDto(
     string? Sma20,
     string? Sma50,
     string? Volatility24h,
-    bool Partial);
+    bool Partial,
+    string Title = "",
+    string EventTitle = "",
+    string EventSubTitle = "");
 
 /// <summary>A page of the screener.</summary>
 /// <param name="Sort">What the list is ranked by.</param>

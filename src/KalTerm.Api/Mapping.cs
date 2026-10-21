@@ -29,7 +29,10 @@ public static class Mapping
             ApiFormat.Dollars(market.SettlementValueE6),
             ApiFormat.Moment(market.SettlementTs),
             ApiFormat.Moment(market.FirstSeenAt),
-            ApiFormat.Moment(market.LastSeenAt));
+            ApiFormat.Moment(market.LastSeenAt),
+            market.Title,
+            market.EventTitle,
+            market.EventSubTitle);
     }
 
     /// <summary>A ticker update.</summary>
@@ -126,7 +129,10 @@ public static class Mapping
             ApiFormat.Dollars(m.Sma20E6),
             ApiFormat.Dollars(m.Sma50E6),
             ApiFormat.Dollars(m.Volatility24hE6),
-            m.Partial);
+            m.Partial,
+            row.Title,
+            row.EventTitle,
+            row.EventSubTitle);
     }
 
     /// <summary>A trade.</summary>

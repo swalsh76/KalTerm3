@@ -26,6 +26,7 @@ public class IngestRunnerTests
         BackfillInterval = TimeSpan.FromMilliseconds(30),
         BackupCheckInterval = TimeSpan.FromMilliseconds(30),
         CandleInterval = TimeSpan.FromMilliseconds(30),
+        EventInterval = TimeSpan.FromMilliseconds(30),
         AnalyzerCheckInterval = TimeSpan.FromMilliseconds(30),
         Schedule = now => (now.AddMilliseconds(30), PassKind.Incremental),
     };
@@ -36,7 +37,7 @@ public class IngestRunnerTests
         private readonly CancellationTokenSource _stop = new();
         private int _listings;
 
-        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null, KalTerm.Ingest.Backfill.ITradeBackfiller? backfiller = null, KalTerm.Backup.IBackupJob? backup = null, KalTerm.Ingest.Candles.ICandleJob? candles = null, KalTerm.Ingest.Analytics.IAnalyzerRunner? analyzers = null)
+        public Rig(Func<int, Task<IStreamSession>> open, IEnumerable<Market>? catalog = null, Exception? firstListingFails = null, IngestRunnerOptions? options = null, IBookKeeper? books = null, KalTerm.Data.Governor.IStorageGovernor? governor = null, KalTerm.Ingest.Backfill.ITradeBackfiller? backfiller = null, KalTerm.Backup.IBackupJob? backup = null, KalTerm.Ingest.Candles.ICandleJob? candles = null, KalTerm.Ingest.Analytics.IAnalyzerRunner? analyzers = null, IEventCatalog? events = null)
         {
             var markets = catalog?.ToList() ?? [];
             Source = new ScriptedSource(open);
@@ -68,7 +69,8 @@ public class IngestRunnerTests
                 backfiller,
                 backup,
                 candles,
-                analyzers is null ? null : [analyzers]);
+                analyzers is null ? null : [analyzers],
+                events);
         }
 
         public FakeMarketStore Store { get; } = new();
@@ -650,6 +652,23 @@ public class IngestRunnerTests
         Assert.Contains(rig.Log.Lines, l => l.Contains("candles broke", StringComparison.Ordinal));
         Assert.True(rig.State.Writes(IngestStateKeys.Running) > 0);
     }
+
+    [Fact]
+    public async Task TheEventTitlesAreKeptOnTheirOwnIntervalAndAFailureNeverStopsTheRun()
+    {
+        var events = new FakeEventCatalog { Failure = new InvalidOperationException("events broke") };
+        using var rig = new Rig(Sessions([]), events: events);
+
+        rig.Start();
+        await Wait.UntilAsync(() => events.Calls >= 3, "three passes of the event titles");
+        await rig.StopAsync();
+
+        Assert.Contains(rig.Log.Lines, l => l.Contains("events broke", StringComparison.Ordinal));
+        Assert.True(rig.State.Writes(IngestStateKeys.Running) > 0);
+    }
+
+    [Fact]
+    public void TheEventIntervalMustBePositive() => Assert.Throws<ArgumentOutOfRangeException>(() => new IngestRunnerOptions { EventInterval = TimeSpan.Zero }.Validate());
 
     [Fact]
     public async Task TheAnalyzerRunnerIsCalledOnItsIntervalAndAFailureNeverStopsTheRun()

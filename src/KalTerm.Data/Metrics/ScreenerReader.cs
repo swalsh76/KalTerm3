@@ -41,7 +41,7 @@ public sealed record ScreenerPosition(long Key, int MarketId);
 /// <param name="After">Continue after this position, or <see langword="null"/> for the first page.</param>
 /// <param name="Limit">Rows per page, 1 to 1,000.</param>
 /// <param name="OnlyMarkets">Only these markets (the ids of a watchlist), or <see langword="null"/> for every market.</param>
-/// <param name="Search">Only markets whose ticker or yes label contains this text (matched literally, any case), or <see langword="null"/>.</param>
+/// <param name="Search">Only markets whose ticker, yes label, title, event title or event sub-title contains this text (matched literally, any case), or <see langword="null"/>.</param>
 public sealed record ScreenerQuery(ScreenerSort Sort, bool Descending, string? Status, long? MinVolumeE2, ScreenerPosition? After, int Limit, IReadOnlyCollection<int>? OnlyMarkets = null, string? Search = null);
 
 /// <summary>One market in the screener: its catalog identity and its stored metrics.</summary>
@@ -52,7 +52,10 @@ public sealed record ScreenerQuery(ScreenerSort Sort, bool Descending, string? S
 /// <param name="YesSubTitle">The yes outcome's label.</param>
 /// <param name="ChangedAt">When these figures last changed (UTC).</param>
 /// <param name="Metrics">The figures (the <c>AsOf</c> is the run that last wrote them, see <see cref="ScreenerResult.RefreshedAt"/>).</param>
-public sealed record ScreenerRow(int MarketId, string Ticker, string EventTicker, string Status, string YesSubTitle, DateTime ChangedAt, MarketMetrics Metrics);
+/// <param name="Title">The market's own title, for example <c>Philadelphia wins</c>; empty when not stored yet.</param>
+/// <param name="EventTitle">Its event's title, for example <c>Philadelphia vs New York</c>; empty when not stored yet.</param>
+/// <param name="EventSubTitle">Its event's sub-title.</param>
+public sealed record ScreenerRow(int MarketId, string Ticker, string EventTicker, string Status, string YesSubTitle, DateTime ChangedAt, MarketMetrics Metrics, string Title = "", string EventTitle = "", string EventSubTitle = "");
 
 /// <summary>A page of the screener.</summary>
 /// <param name="Rows">The markets, in order.</param>
@@ -96,16 +99,19 @@ public sealed class ScreenerReader(DataSource source) : IScreenerReader
         var rows = (await connection.QueryAsync<Row>(new CommandDefinition(
             $"""
             SELECT TOP (@take) m.market_id AS MarketId, m.ticker AS Ticker, m.event_ticker AS EventTicker, m.status AS Status, m.yes_sub_title AS YesSubTitle,
+                   m.title AS Title, ISNULL(ev.title, N'') AS EventTitle, ISNULL(ev.sub_title, N'') AS EventSubTitle,
                    t.changed_at AS ChangedAt, t.last_time AS LastTime, t.last_e6 AS LastE6, t.change_24h_e6 AS Change24hE6, t.volume_e2 AS VolumeE2, t.trade_count AS TradeCount,
                    t.open_interest_e2 AS OpenInterestE2, t.yes_bid_e6 AS YesBidE6, t.yes_ask_e6 AS YesAskE6, t.spread_e6 AS SpreadE6, t.vwap_e6 AS Vwap24hE6,
                    t.sma20_e6 AS Sma20E6, t.sma50_e6 AS Sma50E6, t.volatility_e6 AS Volatility24hE6, t.is_partial AS Partial, k.v AS SortKey
             FROM dbo.market_metrics t
             JOIN dbo.market m ON m.market_id = t.market_id
+            LEFT JOIN dbo.market_event ev ON ev.event_ticker = m.event_ticker
             CROSS APPLY (SELECT ISNULL(t.{column}, @nullKey) AS v) k
             WHERE (@status IS NULL OR m.status = @status)
               AND (@minVolume IS NULL OR t.volume_e2 >= @minVolume)
               AND (@onlyIds IS NULL OR t.market_id IN (SELECT CAST([value] AS int) FROM OPENJSON(@onlyIds)))
-              AND (@pattern IS NULL OR m.ticker LIKE @pattern ESCAPE '\' OR m.yes_sub_title LIKE @pattern ESCAPE '\')
+              AND (@pattern IS NULL OR m.ticker LIKE @pattern ESCAPE '\' OR m.yes_sub_title LIKE @pattern ESCAPE '\' OR m.title LIKE @pattern ESCAPE '\'
+                   OR ev.title LIKE @pattern ESCAPE '\' OR ev.sub_title LIKE @pattern ESCAPE '\')
               AND (@afterId IS NULL OR k.v {past} @afterKey OR (k.v = @afterKey AND t.market_id > @afterId))
             ORDER BY k.v {direction}, t.market_id
             """,
@@ -168,7 +174,10 @@ public sealed class ScreenerReader(DataSource source) : IScreenerReader
             r.Sma20E6,
             r.Sma50E6,
             r.Volatility24hE6,
-            r.Partial));
+            r.Partial),
+        r.Title,
+        r.EventTitle,
+        r.EventSubTitle);
 
     private sealed record Row(
         int MarketId,
@@ -176,6 +185,9 @@ public sealed class ScreenerReader(DataSource source) : IScreenerReader
         string EventTicker,
         string Status,
         string YesSubTitle,
+        string Title,
+        string EventTitle,
+        string EventSubTitle,
         DateTime ChangedAt,
         DateTime? LastTime,
         long? LastE6,

@@ -16,7 +16,8 @@ public sealed record MarketRecord(
     DateTime? LatestExpirationTime = null,
     DateTime? SettlementTs = null,
     string Result = "",
-    long? SettlementValueE6 = null);
+    long? SettlementValueE6 = null,
+    string Title = "");
 
 /// <summary>What one upsert did.</summary>
 /// <param name="Ids">The <c>market_id</c> of every ticker in the batch, new and existing alike.</param>

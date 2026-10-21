@@ -127,6 +127,34 @@ public sealed class EndpointTests : IAsyncLifetime
         await AssertInvalidAsync("/v1/markets/bad%20ticker", "ticker");
     }
 
+    [Fact]
+    public async Task AMarketAndAScreenerRowCarryTheirTitlesUnderTheirWireNames()
+    {
+        Fakes.Markets.ByTicker["KX-T"] = Market("KX-T") with { Title = "Philadelphia wins", EventTitle = "Philadelphia vs New York", EventSubTitle = "PHI vs NYK (Oct 20)" };
+        Fakes.Screener.Result = new ScreenerResult([Row(1, "KX-T", 123_456) with { Title = "Philadelphia wins", EventTitle = "Philadelphia vs New York", EventSubTitle = "PHI vs NYK (Oct 20)" }], null, NowUtc.AddSeconds(-90));
+
+        var market = await _api.GetAsync<MarketDto>("/v1/markets/KX-T");
+        var (_, marketBody) = await _api.GetAsync("/v1/markets/KX-T");
+        var (_, screenerBody) = await _api.GetAsync("/v1/screener");
+        var row = ApiJson.Deserialize<ScreenerPage>(screenerBody)!.Rows.Single();
+
+        Assert.Equal(("Philadelphia wins", "Philadelphia vs New York", "PHI vs NYK (Oct 20)"), (market.Title, market.EventTitle, market.EventSubTitle));
+        Assert.Contains("\"event_title\":\"Philadelphia vs New York\"", marketBody, StringComparison.Ordinal);
+        Assert.Contains("\"event_sub_title\":\"PHI vs NYK (Oct 20)\"", marketBody, StringComparison.Ordinal);
+        Assert.Equal(("Philadelphia wins", "Philadelphia vs New York", "PHI vs NYK (Oct 20)"), (row.Title, row.EventTitle, row.EventSubTitle));
+        Assert.Contains("\"title\":\"Philadelphia wins\"", screenerBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AMarketWhoseTitlesAreNotStoredYetHasEmptyOnes()
+    {
+        Fakes.Markets.ByTicker["KX-N"] = Market("KX-N");
+
+        var market = await _api.GetAsync<MarketDto>("/v1/markets/KX-N");
+
+        Assert.Equal((string.Empty, string.Empty, string.Empty), (market.Title, market.EventTitle, market.EventSubTitle));
+    }
+
     // ---- ticks ----------------------------------------------------------------------------------------------------------------------
 
     [Fact]
