@@ -488,6 +488,63 @@ public sealed class WatchlistViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task ClickingAColumnRanksByItLargestFirstAndAgainFlipsTheDirectionWithOneAskEach()
+    {
+        await OpenAsync();
+        var asked = _t.Api.ScreenQueries.Count;
+
+        _model.SortBy("spread");
+        await Wait.UntilAsync(() => _t.Api.ScreenQueries.Count == asked + 1);
+        Assert.Equal(("spread", "desc"), (_t.Api.ScreenQueries[^1].Sort, _t.Api.ScreenQueries[^1].Order));
+        Assert.Equal(("Spread", "Largest first"), (_model.Sort.Text, _model.OrderText));
+
+        _model.SortBy("spread");
+        await Wait.UntilAsync(() => _t.Api.ScreenQueries.Count == asked + 2);
+        Assert.Equal(("spread", "asc"), (_t.Api.ScreenQueries[^1].Sort, _t.Api.ScreenQueries[^1].Order));
+        Assert.Equal("Smallest first", _model.OrderText);
+
+        _model.SortBy("change");
+        await Wait.UntilAsync(() => _t.Api.ScreenQueries.Count == asked + 3);
+        Assert.Equal(("change", "desc"), (_t.Api.ScreenQueries[^1].Sort, _t.Api.ScreenQueries[^1].Order));
+
+        _model.SortBy("ticker");   // not a ranking the server has: ignored
+        _model.SortBy(string.Empty);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+        Assert.Equal(asked + 3, _t.Api.ScreenQueries.Count);
+    }
+
+    [Fact]
+    public async Task OnlyTheColumnsTheServerCanRankAreSortableAndAClickAsksTheViewModelAndShowsTheArrow()
+    {
+        await OpenAsync();
+        var (sortable, first, second, key, handled) = Sta.Run(() =>
+        {
+            using var errors = BindingErrors.Listen();
+            using var model = Page();
+            var view = new MarketsView { DataContext = model };
+            VisualTreeKit.Realize(view);
+            var grid = VisualTreeKit.All<DataGrid>(view).Single();
+            var keys = grid.Columns.Where(c => c.CanUserSort).Select(c => c.SortMemberPath).ToList();
+            var onSorting = typeof(MarketsView).GetMethod("OnSorting", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+
+            var args = new DataGridSortingEventArgs(grid.Columns.Single(c => c.SortMemberPath == "volume"));
+            onSorting.Invoke(view, [grid, args]);
+            var arrows1 = grid.Columns.Select(c => c.SortDirection).ToList();
+            onSorting.Invoke(view, [grid, new DataGridSortingEventArgs(grid.Columns.Single(c => c.SortMemberPath == "spread"))]);
+            var arrows2 = grid.Columns.Select(c => c.SortDirection).ToList();
+            Assert.Empty(errors.Messages);
+            return (keys, arrows1, arrows2, model.Sort.Key, args.Handled);
+        });
+
+        Assert.Equal(["last", "spread", "change", "volume", "open_interest"], sortable);
+        Assert.True(handled);
+        Assert.Equal("spread", key);
+        Assert.Single(first, d => d is not null);
+        Assert.Single(second, d => d is not null);
+        Assert.NotEqual(first.Select(d => d is not null), second.Select(d => d is not null));
+    }
+
+    [Fact]
     public async Task ClearFiltersPutsTheSearchStatusVolumeAndListBackWithOneReloadAndKeepsTheRanking()
     {
         await OpenAsync();

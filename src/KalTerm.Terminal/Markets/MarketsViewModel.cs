@@ -274,6 +274,28 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// A column header was clicked: rank by that column, largest first, or, when the list is already ranked by it, flip the direction. A key that is not one of the rankings is ignored. The server ranks the whole list, so the list
+    /// is asked once, not twice.
+    /// </summary>
+    /// <param name="key">The ranking's key (<see cref="SortChoice.Key"/>).</param>
+    public void SortBy(string key)
+    {
+        var chosen = Sorts.FirstOrDefault(s => s.Key == key);
+        if (chosen is null)
+        {
+            return;
+        }
+
+        var sameColumn = ReferenceEquals(chosen, _sort);
+        _sort = chosen;
+        _descending = !sameColumn || !_descending;
+        Raise(nameof(Sort));
+        Raise(nameof(Descending));
+        Raise(nameof(OrderText));
+        ReloadSoon(immediately: true);
+    }
+
     /// <summary>Largest first (the default) or smallest first; a market without a value for the ranking is last either way.</summary>
     public bool Descending
     {
