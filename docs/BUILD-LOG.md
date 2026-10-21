@@ -1905,3 +1905,30 @@ kill and resume; one phrase covering any funding transfer) and the live-check pr
   (opens at start, a failure never blocks, Trade on a market) and the real views.
 - **Live check (still to do, owner present):** reads compared with `kterm balance`, `positions`, `orders` and `fills`; a Check on a tiny order (nothing sent); then each real write only after the owner's go in chat on the exact order: one tiny resting limit order far from the market (at most $1), its change, its cancel, and the kill switch;
   the assistant verifies each step from `audit.jsonl` and Kalshi's own order list.
+
+### 9.13 Slice 7.9: M7 close-out (2026-10-21)
+
+Approved by the owner 2026-10-21: the live alert test as described (one throwaway alert set on the owner\'s account, deleted afterwards), the live kill switch skipped, a terminal user guide, and a list (not a deletion) of the merged remote branches.
+
+**The M7 gate, with its evidence**
+
+| Gate item | Evidence | When |
+|---|---|---|
+| The terminal starts and connects with a pinned certificate and token | Used daily by the owner; the pin and token files are shared with `kterm` | 7.1, ongoing |
+| Live data from the push streams | The stream delivered every tick the REST history had once the margin was 3 s (9.4); the owner watched live prices and books | 7.2 to 7.4 |
+| Alerts notify | A real toast through the toolkit from an unpackaged exe (9.9); then end to end on 2026-10-21: three throwaway alerts on very active markets, two fired within about 30 seconds (the server\'s fire history shows fires 4 and 5 at 10:04:07 local, the value equal to each threshold); all three removed afterwards | 7.6, 7.9 |
+| Layouts persist | Rolled out (9.11); the server holds the owner\'s own layouts (`default` and one the owner made with Save as), saved by the terminal in real use | 7.7, 7.9 |
+| The trading panel works under the tiny limits with the owner\'s go | One tiny resting order placed, changed and cancelled on the real account, verified from `audit.jsonl` and Kalshi\'s own lists (9.12) | 7.8 |
+
+- **The alert test, in full.** The first attempt used a 15-minute BTC market that was settling: its price jumped past the threshold before the alert\'s first evaluation, so by the design (an alert never fires for what was already true) nothing fired; the alerts were being judged
+  (their last-evaluated time moved) and were removed. The second attempt used a very active market that moves a cent at a time and an in-play tennis market, with the thresholds one step beyond the last price: both fired in about 30 seconds. What the owner saw on screen (the toast\'s
+  header name and icon) is theirs to say; it was not verified from here.
+- **The kill switch** was not run live in 7.8 (nothing was resting, so it could only exercise the "nothing to cancel" path and would halt trading until Resume). Covered by tests and by M6\'s own live check of `kterm kill`.
+- **Documentation.** `docs/TERMINAL.md` is new (how to use every page, the trading safety rules, layouts, where the files are); the README (which still said "planning, no code yet") and CLAUDE.md\'s status and terminal command (with how to start it on the real account for one process only) are current.
+- **Numbers at the end of M7** (CI on main, 2026-10-21): 8,231 tests; line coverage per assembly: Api 97.9%, Backup 92.0%, Client 97.2%, Contracts 100%, Core 98.3%, Data 98.0%, Ingest 97.2%, Kalshi 96.8%, Security 100%, **Terminal 93.5%**, Trading 95.3%, kterm 96.8%, kalterm-admin 100%
+  (the gate is 90%, 95% for Core and Data).
+- **Known limits, in one place.** Toasts show only while the terminal runs (a toast on start covers the time it was closed); the kill switch is not live-checked from the terminal; two terminals saving the same layout overwrite each other (the last save wins); a market in a watchlist with no metrics row yet is counted but not
+  shown in the grid; one tick in the first post-margin stream comparison was unexplained (9.4); the watched-market list for order books (the ingest watch list) is quiet markets and is a configuration choice for the owner.
+- **Parked for later** (PLAN section 9): right-click Trade on the grid, manual shard transfers, batch cancel and decrease, fill-or-kill and order groups, editing risk limits in the terminal, order markers on the chart; showing and hiding Markets columns, dockable panels, sharing layouts, a `kterm layout` command; an administrator GUI for the host server; and the
+  owner\'s trading-panel workflow adjustments (not yet specified).
+- **Next:** the review gate (PLAN 6.9) with its own plan for approval before any change, then M8.
