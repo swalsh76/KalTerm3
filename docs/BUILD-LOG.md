@@ -1732,3 +1732,7 @@ Decision (owner, 2026-10-20, option A): `MarketStreamOptions.TickLag` is 3 secon
 about 0.85 s of margin. A tick that is later than that is still missed silently; a client that needs every tick reads REST after a reconnect. Not done, and parked as an option if it ever matters: re-reading a trailing window with a
 per-stream list of what was sent, which would keep the latency at 2 to 3 s and recover late rows. The same live check, with the corrected window, showed the live add (`subscribed` with its start time, no tick before it) and the removal
 (`unsubscribed`, no tick for the market after it) behave as designed.
+
+Rolled out 2026-10-21 (API release host-9cc6bad; ingest untouched; `/readyz` 200). The live comparison was repeated 8 times on the 3 busiest watched markets plus one market added and removed live (windows moved out to match the 3-second margin).
+Seven runs matched REST exactly, for the added market and for the original three, 40 to 120 ticks each; no tick came before an added market's start or after its removal. One run (the first after the rollout) showed the stream one tick
+ahead of REST (84 against 83) in the original three; it was not seen again in the five runs after it that printed the difference, and it is not explained (a tick REST did not return is not a tick the stream lost; kept here so a repeat is recognised).
