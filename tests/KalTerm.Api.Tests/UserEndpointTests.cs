@@ -104,6 +104,10 @@ public sealed class UserEndpointTests : IAsyncLifetime
             (HttpMethod.Patch, "/v1/alerts/1", """{"paused":true}"""),
             (HttpMethod.Delete, "/v1/alerts/1", null),
             (HttpMethod.Get, "/v1/alerts/fires", null),
+            (HttpMethod.Get, "/v1/me/layouts", null),
+            (HttpMethod.Get, "/v1/me/layouts/x", null),
+            (HttpMethod.Put, "/v1/me/layouts/x", """{"version":1}"""),
+            (HttpMethod.Delete, "/v1/me/layouts/x", null),
             (HttpMethod.Get, "/v1/me/settings/time_zone", null),
             (HttpMethod.Put, "/v1/me/settings/time_zone", """{"value":"UTC"}"""),
             (HttpMethod.Delete, "/v1/me/settings/time_zone", null),
@@ -392,6 +396,83 @@ public sealed class UserEndpointTests : IAsyncLifetime
         await AssertInvalidAsync(HttpMethod.Put, "/v1/me/settings/time_zone", json, "value");
 
         Assert.Empty(Fakes.UserData.Calls);
+    }
+
+    [Fact]
+    public async Task LayoutsAreListedAndOneIsReadWithItsBodyAsJson()
+    {
+        Fakes.UserData.LayoutList = [new LayoutSummary("desk", NowUtc), new LayoutSummary("laptop", NowUtc)];
+        Fakes.UserData.Layout = new LayoutDetail("desk", NowUtc, """{"version":1,"window":{"width":1100}}""");
+
+        var list = await _api.GetAsync<LayoutListDto>("/v1/me/layouts");
+        var one = await _api.GetAsync<LayoutDto>("/v1/me/layouts/desk");
+
+        Assert.Equal(["desk", "laptop"], list.Layouts.Select(l => l.Name));
+        Assert.Equal(1100, one.Body.GetProperty("window").GetProperty("width").GetInt32());
+        Assert.Contains(Fakes.UserData.Calls, c => c.StartsWith("get-layout ", StringComparison.Ordinal) && c.EndsWith(" desk", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AMissingLayoutIsNotFoundAndABadNameIsRefused()
+    {
+        Fakes.UserData.Layout = null;
+
+        var (missing, _) = await _api.GetAsync("/v1/me/layouts/nothing");
+
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        await AssertInvalidAsync(HttpMethod.Get, "/v1/me/layouts/Bad%20Name", null, "name");
+        await AssertInvalidAsync(HttpMethod.Put, "/v1/me/layouts/Bad%20Name", "{}", "name");
+        await AssertInvalidAsync(HttpMethod.Delete, "/v1/me/layouts/Bad%20Name", null, "name");
+    }
+
+    [Fact]
+    public async Task ALayoutIsSavedAsItWasSentAndTheLimitIsAConflict()
+    {
+        var (saved, savedBody) = await _api.SendAsync(HttpMethod.Put, "/v1/me/layouts/desk", """{"version":1,"page":"Markets"}""");
+        Fakes.UserData.Outcome = StoreOutcome.LimitReached;
+        var (full, fullBody) = await _api.SendAsync(HttpMethod.Put, "/v1/me/layouts/another", """{"version":1}""");
+
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        Assert.Equal("Markets", ApiJson.Deserialize<LayoutDto>(savedBody)!.Body.GetProperty("page").GetString());
+        Assert.Contains(Fakes.UserData.Calls, c => c.EndsWith(" desk {\"version\":1,\"page\":\"Markets\"}", StringComparison.Ordinal));
+        Assert.Equal((HttpStatusCode.Conflict, "limit_reached"), (full.StatusCode, ApiJson.Deserialize<ErrorDto>(fullBody)!.Error));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not json")]
+    [InlineData("[1,2,3]")]
+    [InlineData("\"just text\"")]
+    [InlineData("42")]
+    [InlineData("null")]
+    public async Task ALayoutBodyMustBeAJsonObject(string json)
+    {
+        await AssertInvalidAsync(HttpMethod.Put, "/v1/me/layouts/desk", json, "body");
+
+        Assert.DoesNotContain(Fakes.UserData.Calls, c => c.StartsWith("put-layout", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ALayoutBodyOverThirtyTwoKilobytesIsRefusedAndOneJustUnderIsKept()
+    {
+        var big = "{\"x\":\"" + new string('a', 33_000) + "\"}";
+        var fits = "{\"x\":\"" + new string('a', 30_000) + "\"}";
+
+        await AssertInvalidAsync(HttpMethod.Put, "/v1/me/layouts/desk", big, "body");
+        var (kept, _) = await _api.SendAsync(HttpMethod.Put, "/v1/me/layouts/desk", fits);
+
+        Assert.Equal(HttpStatusCode.OK, kept.StatusCode);
+    }
+
+    [Fact]
+    public async Task ALayoutIsDeletedWith204OrIsNotFound()
+    {
+        var (gone, _) = await _api.SendAsync(HttpMethod.Delete, "/v1/me/layouts/desk");
+        Fakes.UserData.Outcome = StoreOutcome.NotFound;
+        var (missing, _) = await _api.SendAsync(HttpMethod.Delete, "/v1/me/layouts/desk");
+
+        Assert.Equal(HttpStatusCode.NoContent, gone.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
     }
 
     [Fact]

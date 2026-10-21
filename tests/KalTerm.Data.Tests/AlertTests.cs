@@ -240,6 +240,69 @@ public class UserDataStoreTests(DatabaseFixture db) : IClassFixture<DatabaseFixt
     }
 
     [Fact]
+    public async Task ALayoutIsSavedReplacedListedReadAndDeleted()
+    {
+        db.Require();
+        var u = await UserAsync("ud-layouts");
+        var store = Store();
+
+        Assert.Equal(StoreOutcome.Ok, await store.PutLayoutAsync(u, "desk", """{"version":1,"page":"Markets"}""", Now, TestContext.Current.CancellationToken));
+        Assert.Equal(StoreOutcome.Ok, await store.PutLayoutAsync(u, "laptop", """{"version":1}""", Now, TestContext.Current.CancellationToken));
+        Assert.Equal(StoreOutcome.Ok, await store.PutLayoutAsync(u, "desk", """{"version":1,"page":"Alerts"}""", Now.AddMinutes(5), TestContext.Current.CancellationToken));   // replaced
+
+        var list = await store.ListLayoutsAsync(u, TestContext.Current.CancellationToken);
+        var desk = (await store.GetLayoutAsync(u, "desk", TestContext.Current.CancellationToken))!;
+        Assert.Equal(["desk", "laptop"], list.Select(l => l.Name));
+        Assert.Equal(DateTimeKind.Utc, list[0].UpdatedAt.Kind);
+        Assert.Equal((Now.AddMinutes(5), """{"version":1,"page":"Alerts"}"""), (desk.UpdatedAt, desk.Body));
+        Assert.Null(await store.GetLayoutAsync(u, "nothing", TestContext.Current.CancellationToken));
+
+        Assert.Equal(StoreOutcome.Ok, await store.DeleteLayoutAsync(u, "desk", TestContext.Current.CancellationToken));
+        Assert.Equal(StoreOutcome.NotFound, await store.DeleteLayoutAsync(u, "desk", TestContext.Current.CancellationToken));
+        Assert.Equal(["laptop"], (await store.ListLayoutsAsync(u, TestContext.Current.CancellationToken)).Select(l => l.Name));
+    }
+
+    [Fact]
+    public async Task ALayoutBodyThatIsNotJsonNeverReachesTheTable()
+    {
+        db.Require();
+        var u = await UserAsync("ud-layout-json");
+
+        await Assert.ThrowsAnyAsync<Microsoft.Data.SqlClient.SqlException>(() => Store().PutLayoutAsync(u, "bad", "not json at all", Now, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UsersNeverSeeOrChangeEachOthersLayouts()
+    {
+        db.Require();
+        var ann = await UserAsync("ud-layout-ann");
+        var bob = await UserAsync("ud-layout-bob");
+        var store = Store();
+        await store.PutLayoutAsync(ann, "shared-name", """{"a":1}""", Now, TestContext.Current.CancellationToken);
+
+        Assert.Empty(await store.ListLayoutsAsync(bob, TestContext.Current.CancellationToken));
+        Assert.Null(await store.GetLayoutAsync(bob, "shared-name", TestContext.Current.CancellationToken));
+        Assert.Equal(StoreOutcome.NotFound, await store.DeleteLayoutAsync(bob, "shared-name", TestContext.Current.CancellationToken));
+        Assert.Equal(StoreOutcome.Ok, await store.PutLayoutAsync(bob, "shared-name", """{"b":2}""", Now, TestContext.Current.CancellationToken));   // the same name is fine for another user
+        Assert.Equal("""{"a":1}""", (await store.GetLayoutAsync(ann, "shared-name", TestContext.Current.CancellationToken))!.Body);
+    }
+
+    [Fact]
+    public async Task AUserCannotHaveMoreThanTwentyLayoutsButMayReplaceOneWhenFull()
+    {
+        db.Require();
+        var u = await UserAsync("ud-many-layouts");
+        var store = Store();
+        for (var i = 0; i < UserDataStore.MaxLayouts; i++)
+        {
+            Assert.Equal(StoreOutcome.Ok, await store.PutLayoutAsync(u, "l" + i, "{}", Now, TestContext.Current.CancellationToken));
+        }
+
+        Assert.Equal(StoreOutcome.LimitReached, await store.PutLayoutAsync(u, "one-more", "{}", Now, TestContext.Current.CancellationToken));
+        Assert.Equal(StoreOutcome.Ok, await store.PutLayoutAsync(u, "l3", """{"changed":true}""", Now, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task AUserCannotHaveMoreThanTwentyWatchlists()
     {
         db.Require();

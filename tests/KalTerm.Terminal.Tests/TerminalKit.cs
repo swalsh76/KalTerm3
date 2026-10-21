@@ -281,6 +281,61 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Task.CompletedTask;
     }
 
+    /// <summary>The layouts on the fake server: name to body.</summary>
+    public Dictionary<string, System.Text.Json.JsonElement> LayoutRows { get; } = [];
+
+    /// <summary>Every layout call made, as <c>verb [name]</c>.</summary>
+    public List<string> LayoutCalls { get; } = [];
+
+    /// <summary>When set, the next layout call fails with it.</summary>
+    public Exception? LayoutFails { get; set; }
+
+    private void LayoutCall(string call)
+    {
+        LayoutCalls.Add(call);
+        if (LayoutFails is { } fail)
+        {
+            LayoutFails = null;
+            throw fail;
+        }
+    }
+
+    public Task<LayoutListDto> GetLayoutsAsync(CancellationToken cancellationToken = default)
+    {
+        LayoutCall("list");
+        return Task.FromResult(new LayoutListDto([.. LayoutRows.Keys.Order(StringComparer.Ordinal).Select(n => new LayoutSummaryDto(n, "2026-10-20T00:00:00+00:00"))]));
+    }
+
+    public Task<LayoutDto> GetLayoutAsync(string name, CancellationToken cancellationToken = default)
+    {
+        LayoutCall($"get {name}");
+        return LayoutRows.TryGetValue(name, out var body)
+            ? Task.FromResult(new LayoutDto(name, "2026-10-20T00:00:00+00:00", body))
+            : Task.FromException<LayoutDto>(new ApiException(HttpStatusCode.NotFound, "not_found"));
+    }
+
+    /// <summary>When set, saving a layout does not answer until the test completes this (or the call is cancelled).</summary>
+    public TaskCompletionSource? LayoutPutHold { get; set; }
+
+    public async Task<LayoutDto> PutLayoutAsync(string name, System.Text.Json.JsonElement body, CancellationToken cancellationToken = default)
+    {
+        LayoutCall($"put {name}");
+        if (LayoutPutHold is { } hold)
+        {
+            await hold.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        LayoutRows[name] = body;
+        return new LayoutDto(name, "2026-10-20T00:00:00+00:00", body);
+    }
+
+    public Task DeleteLayoutAsync(string name, CancellationToken cancellationToken = default)
+    {
+        LayoutCall($"delete {name}");
+        _ = LayoutRows.Remove(name);
+        return Task.CompletedTask;
+    }
+
     /// <summary>The alerts on the fake server.</summary>
     public List<AlertDto> AlertRows { get; } = [];
 

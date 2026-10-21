@@ -91,6 +91,18 @@ public class ContractTests
     }
 
     [Fact]
+    public void LayoutsCarryTheirBodyAsJsonNotAsText()
+    {
+        var body = System.Text.Json.JsonDocument.Parse("""{"version":1,"window":{"width":1100}}""").RootElement;
+        Assert.Equal("""{"name":"desk","updated_at":"2026-10-20T20:00:00.000000+00:00"}""", ApiJson.Serialize(new LayoutSummaryDto("desk", "2026-10-20T20:00:00.000000+00:00")));
+        Assert.Equal("""{"layouts":[{"name":"desk","updated_at":"2026-10-20T20:00:00.000000+00:00"}]}""", ApiJson.Serialize(new LayoutListDto([new LayoutSummaryDto("desk", "2026-10-20T20:00:00.000000+00:00")])));
+        Assert.Equal("""{"name":"desk","updated_at":"2026-10-20T20:00:00.000000+00:00","body":{"version":1,"window":{"width":1100}}}""", ApiJson.Serialize(new LayoutDto("desk", "2026-10-20T20:00:00.000000+00:00", body)));
+
+        var read = ApiJson.Deserialize<LayoutDto>("""{"name":"desk","updated_at":"2026-10-20T20:00:00.000000+00:00","body":{"version":1}}""")!;
+        Assert.Equal(("desk", 1), (read.Name, read.Body.GetProperty("version").GetInt32()));
+    }
+
+    [Fact]
     public void AlertsTheirRequestsAndTheirFires()
     {
         var alert = new AlertDto(7, "KX-1", "price_above", "0.600000", 60, false, "2026-10-18T20:00:00.000000+00:00", "2026-10-18T22:00:00.000000+00:00", null);

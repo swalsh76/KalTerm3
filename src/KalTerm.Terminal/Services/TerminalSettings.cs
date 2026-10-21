@@ -39,15 +39,32 @@ internal sealed class TerminalSettingsStore(string path)
         Write(stored with { LastFires = fires });
     }
 
+    /// <summary>The layout last used on this computer with a server, or <see langword="null"/>.</summary>
+    /// <param name="serverKey">The server.</param>
+    /// <returns>The layout's name.</returns>
+    public string? LoadLayoutName(string serverKey) =>
+        Read().Layouts is { } names && names.TryGetValue(serverKey, out var name) ? name : null;
+
+    /// <summary>Remembers the layout in use on this computer with a server.</summary>
+    /// <param name="serverKey">The server.</param>
+    /// <param name="name">The layout's name.</param>
+    public void SaveLayoutName(string serverKey, string name)
+    {
+        var stored = Read();
+        var names = stored.Layouts is { } known ? new Dictionary<string, string>(known, StringComparer.Ordinal) : new Dictionary<string, string>(StringComparer.Ordinal);
+        names[serverKey] = name;
+        Write(stored with { Layouts = names });
+    }
+
     private Stored Read()
     {
         try
         {
-            return File.Exists(path) && JsonSerializer.Deserialize<Stored>(File.ReadAllText(path), Options) is { } stored ? stored : new Stored(null, null);
+            return File.Exists(path) && JsonSerializer.Deserialize<Stored>(File.ReadAllText(path), Options) is { } stored ? stored : new Stored(null, null, null);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
-            return new Stored(null, null);
+            return new Stored(null, null, null);
         }
     }
 
@@ -59,5 +76,5 @@ internal sealed class TerminalSettingsStore(string path)
         File.Move(temp, path, overwrite: true);
     }
 
-    private sealed record Stored(string? Server, Dictionary<string, long>? LastFires);
+    private sealed record Stored(string? Server, Dictionary<string, long>? LastFires, Dictionary<string, string>? Layouts);
 }

@@ -223,6 +223,21 @@ public sealed record WatchlistDto(string Name, string CreatedAt, IReadOnlyList<s
 /// <param name="Name">A name of lower-case letters, digits, dots, dashes and underscores, starting with a letter or digit, up to 64 characters.</param>
 public sealed record CreateWatchlistRequest(string Name);
 
+/// <summary>A saved layout in a list.</summary>
+/// <param name="Name">The name.</param>
+/// <param name="UpdatedAt">When it was last saved (UTC).</param>
+public sealed record LayoutSummaryDto(string Name, string UpdatedAt);
+
+/// <summary>The caller's layouts.</summary>
+/// <param name="Layouts">The layouts, by name.</param>
+public sealed record LayoutListDto(IReadOnlyList<LayoutSummaryDto> Layouts);
+
+/// <summary>A saved layout: how one user likes the terminal laid out. The server stores the body and never reads it.</summary>
+/// <param name="Name">The name: lower-case letters, digits, dots, dashes and underscores, starting with a letter or digit, up to 64 characters.</param>
+/// <param name="UpdatedAt">When it was last saved (UTC).</param>
+/// <param name="Body">A JSON object of at most 32 KB.</param>
+public sealed record LayoutDto(string Name, string UpdatedAt, System.Text.Json.JsonElement Body);
+
 /// <summary>An alert of the caller. <c>Threshold</c> and the fire <c>Value</c> are in the unit of the kind: dollars for <c>price_above</c>, <c>price_below</c> and <c>spread_above</c>; a whole factor for <c>volume_spike</c>; contracts for <c>oi_change</c>.</summary>
 /// <param name="Id">The alert's id.</param>
 /// <param name="Ticker">The market it watches.</param>

@@ -1,6 +1,7 @@
 using System.Globalization;
 using KalTerm.Client;
 using KalTerm.Contracts;
+using KalTerm.Terminal.Layouts;
 using KalTerm.Terminal.Mvvm;
 using KalTerm.Terminal.Services;
 
@@ -66,9 +67,12 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
     private string _error = string.Empty;
     private bool _loading = true;
     private bool _disposed;
+    private readonly ViewPreferences? _preferences;
 
-    public CandleChartViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format, TimeProvider time)
+    /// <param name="preferences">The interval and range the chart starts with, and where its choices are remembered for the next one; without it the chart starts with its own defaults.</param>
+    public CandleChartViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format, TimeProvider time, ViewPreferences? preferences = null)
     {
+        _preferences = preferences;
         ArgumentNullException.ThrowIfNull(ticker);
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(feed);
@@ -88,9 +92,9 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
             new IntervalChoice("4h", "4h", 14400),
             new IntervalChoice("1d", "1d", 86400),
         ];
-        _interval = Intervals[3];
+        _interval = Intervals.FirstOrDefault(i => i.Text == preferences?.ChartInterval) ?? Intervals[3];
         _ranges = RangesFor(_interval);
-        _range = _ranges.Single(r => r.Text == "1 week");
+        _range = _ranges.FirstOrDefault(r => r.Text == preferences?.ChartRange) ?? (preferences?.ChartInterval is null ? _ranges.Single(r => r.Text == "1 week") : DefaultRangeFor(_ranges, _interval));
         _format.ZoneChanged += OnZoneChanged;
     }
 
@@ -135,6 +139,7 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
             _range = _ranges.FirstOrDefault(r => r.Text == _range.Text) ?? DefaultRangeFor(_ranges, value);
             Raise(nameof(Ranges));
             Raise(nameof(Range));
+            _preferences?.SetChart(_interval.Text, _range.Text);
             _ = SafeLoadAsync();
         }
     }
@@ -146,6 +151,7 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
         {
             if ((object?)value is not null && Set(ref _range, value))   // a combo box whose choices were just replaced may offer null: ignored
             {
+                _preferences?.SetChart(_interval.Text, _range.Text);
                 _ = SafeLoadAsync();
             }
         }

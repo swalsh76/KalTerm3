@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using KalTerm.Client;
 using KalTerm.Contracts;
+using KalTerm.Terminal.Layouts;
 using KalTerm.Terminal.Mvvm;
 using KalTerm.Terminal.Services;
 
@@ -56,6 +57,7 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     private OrderBookViewModel? _book;
     private bool _loading = true;
     private bool _disposed;
+    private readonly ViewPreferences? _preferences;
 
     /// <summary>Opens a market.</summary>
     /// <param name="ticker">The market.</param>
@@ -64,8 +66,10 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     /// <param name="format">How values and times look.</param>
     /// <param name="time">The clock the waits use.</param>
     /// <param name="watchlists">The menu that adds the market to a watchlist; owned by the detail and disposed with it. Without it the detail has no such button.</param>
-    public MarketDetailViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format, TimeProvider time, WatchlistMenu? watchlists = null)
+    /// <param name="preferences">What the chart and the book start with, and where their choices are remembered.</param>
+    public MarketDetailViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format, TimeProvider time, WatchlistMenu? watchlists = null, ViewPreferences? preferences = null)
     {
+        _preferences = preferences;
         Watchlists = watchlists;
         ArgumentNullException.ThrowIfNull(ticker);
         ArgumentNullException.ThrowIfNull(api);
@@ -125,12 +129,12 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
             {
                 if (value == 1 && _chart is null)
                 {
-                    Chart = new CandleChartViewModel(Ticker, _api, _feed, _format, _time);
+                    Chart = new CandleChartViewModel(Ticker, _api, _feed, _format, _time, _preferences);
                     _ = StartAsync(Chart.LoadAsync);
                 }
                 else if (value == 2 && _book is null)
                 {
-                    Book = new OrderBookViewModel(Ticker, _api, _feed, _format);
+                    Book = new OrderBookViewModel(Ticker, _api, _feed, _format, _preferences);
                     _ = StartAsync(Book.LoadAsync);
                 }
             }

@@ -1865,3 +1865,24 @@ the push stream), so this slice is terminal only: no server change and no rollou
 ### 9.10 Slice 7.6b: column sorting (2026-10-20)
 
 Approved by the owner 2026-10-20 (PLAN 7.6b). Terminal only, no server change, no rollout. A click on the header of a column the server can rank (Last, Spread, 24h change, 24h volume, Open interest) ranks the whole list by it, largest first, and a second click flips the direction; the list is asked once for each click. The grid does not sort its 50 rows itself (the `Sorting` event is handled and passed to `MarketsViewModel.SortBy`), and the arrow on the active header follows the ranking, also when it was changed with the "Rank by" box. Market, Yes, Status, Bid, Ask, Lists and Ticker are not sort keys on the server and their headers do nothing; trades and volatility stay reachable only through the "Rank by" box because the grid has no such columns. 2 new tests (Terminal 462).
+
+### 9.11 Slice 7.7: layouts and the zone label (2026-10-21)
+
+Approved by the owner 2026-10-21 with all four plan choices: named layouts with a box in the top bar and "the one last used on this computer"; the content list (window, page, Markets filters and ranking, grid columns, chart interval and range, book depth, the Sound
+box); an opaque JSON body of at most 32 KB, 20 layouts per user and no CLI command; and the rollout order (ingest, then the API). The first M7 slice with a server change.
+
+- **Server.** Migration `0009_layouts.sql`: `user_layout (user_id, name, body nvarchar(max), updated_at)`, primary key `(user_id, name)`, foreign key to `app_user`, and `CHECK (ISJSON(body) = 1)`. `UserDataStore` gets list, get, put (an update, else an insert after the
+  limit check; two first saves at the same moment end as one save and one replacement) and delete. Endpoints `GET /v1/me/layouts`, `GET|PUT|DELETE /v1/me/layouts/{name}`: the name rule of watchlists, a body that must be a JSON object of at most 32 KB (read with its
+  own limit; the other endpoints keep their 4 KB), `409 limit_reached` past 20. The body goes in and out as JSON, not as text (`LayoutDto.Body` is a `JsonElement`). The server never reads it, so a later change to what the terminal saves needs no server change.
+- **Terminal.** `LayoutState` (with a `version`; parts that are absent leave the terminal as it is, fields a newer terminal added are ignored); `LayoutService` (read, save, delete as sentences; a layout that is missing is fine, one that cannot be used is a problem);
+  `LayoutCoordinator` (the box, Save as, Delete, saving about 2 s after the last change, switching, the bounded save on close); `ViewPreferences` (the chart's interval and range and the book's depth, shared by every market opened and restored by a layout);
+  `WindowPlacement.Fit` (the saved place is moved back so a grabbable part of the window is on a screen, and kept no bigger than the screens). Connecting now reads the layout first and then opens the pages, so they load once and laid out (the Markets page keeps the
+  filters a layout set when it is attached; before, attaching reset them).
+- **Never writes over what it did not read.** Saving starts only after the layout in use was read or was found missing: a server that cannot be reached, a layout from a newer terminal and a body that is not a layout all leave saving off, with a line saying so,
+  until the person saves under another name.
+- **The zone box.** Windows names a zone with its standard-time offset ("(UTC-07:00) Mountain Time"), which is wrong while daylight saving applies. The box now reads "Mountain Time (US & Canada), now UTC-06:00": the name without that prefix and the offset in effect now.
+- **Found on the way.** `Dispatcher.Yield()` is needed before closing the window from the end of its own Closing event (an answer that comes at once would otherwise throw).
+- **Tests (about 120 new).** Data (on kaldb: save, replace, list, read, delete, isolation between users, the 20 limit and replacing when full, a non-JSON body refused by the table), API (routes, name and body rules, size limit, conflict, unauthorised), client (requests and
+  escaping), contract pins; in the terminal the model, placement arithmetic, the service, the coordinator (every path above), the Markets page applying and capturing layouts, chart and book preferences, the wiring in the main window, the zone text, and the real views with binding
+  errors captured. Terminal 518 tests, Api 382, Data 404, Ingest 269 (the last three run on kaldb).
+- **Rollout (needs the owner's go):** ingest first, because it applies migration 9 at its start (a short pause, logged as an `ingest_down` gap), then the API.

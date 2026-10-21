@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using KalTerm.Client;
 using KalTerm.Contracts;
+using KalTerm.Terminal.Layouts;
 using KalTerm.Terminal.Mvvm;
 using KalTerm.Terminal.Services;
 
@@ -41,6 +42,7 @@ internal sealed class OrderBookViewModel : ObservableObject, IDisposable
     private readonly MarketFeed _feed;
     private readonly Formatting _format;
     private OrderBookDto? _last;
+    private readonly ViewPreferences? _preferences;
     private int _depth = 10;
     private bool _noBook;
     private bool _stale;
@@ -54,8 +56,15 @@ internal sealed class OrderBookViewModel : ObservableObject, IDisposable
     private string _asOf = string.Empty;
     private bool _disposed;
 
-    public OrderBookViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format)
+    /// <param name="preferences">The depth the book starts with, and where the depth chosen is remembered for the next one; without it the book starts with its own.</param>
+    public OrderBookViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format, ViewPreferences? preferences = null)
     {
+        _preferences = preferences;
+        if (preferences?.BookDepth is { } depth && Depths.Contains(depth))
+        {
+            _depth = depth;
+        }
+
         ArgumentNullException.ThrowIfNull(ticker);
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(feed);
@@ -83,6 +92,7 @@ internal sealed class OrderBookViewModel : ObservableObject, IDisposable
         {
             if (Set(ref _depth, value))
             {
+                _preferences?.SetBookDepth(value);
                 Redraw();
             }
         }
