@@ -15,11 +15,14 @@ public sealed class AlertAnalyzer(IAlertEngineStore store, IAlertDataReader read
     /// <summary>The analyzer's name.</summary>
     public const string AnalyzerName = "alerts";
 
+    /// <summary>How often the analyzer runs unless told otherwise.</summary>
+    public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(10);
+
     /// <inheritdoc/>
     public string Name => AnalyzerName;
 
     /// <inheritdoc/>
-    public TimeSpan Interval { get; } = interval ?? TimeSpan.FromSeconds(10);
+    public TimeSpan Interval { get; } = interval ?? DefaultInterval;
 
     /// <inheritdoc/>
     public async Task<AnalyzerOutcome> RunAsync(AnalysisContext context, CancellationToken cancellationToken = default)

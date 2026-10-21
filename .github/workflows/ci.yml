@@ -32,6 +32,13 @@ jobs:
       - name: Build
         run: dotnet build KalTerm.sln --configuration Release --no-restore
 
+      - name: Vulnerable packages
+        shell: pwsh
+        run: |
+          $report = dotnet list KalTerm.sln package --vulnerable --include-transitive 2>&1 | Out-String
+          Write-Host $report
+          if ($LASTEXITCODE -ne 0 -or $report -match '(?m)^\s+>\s') { throw 'a package with a known vulnerability is in use' }
+
       - name: Test
         run: >
           dotnet test --solution KalTerm.sln --configuration Release --no-build

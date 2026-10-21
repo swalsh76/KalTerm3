@@ -1933,3 +1933,18 @@ Approved by the owner 2026-10-21: the live alert test as described (one throwawa
 - **Parked for later** (PLAN section 9): right-click Trade on the grid, manual shard transfers, batch cancel and decrease, fill-or-kill and order groups, editing risk limits in the terminal, order markers on the chart; showing and hiding Markets columns, dockable panels, sharing layouts, a `kterm layout` command; an administrator GUI for the host server; and the
   owner\'s trading-panel workflow adjustments (not yet specified).
 - **Next:** the review gate (PLAN 6.9) with its own plan for approval before any change, then M8.
+
+## 10. Review gate (started 2026-10-21)
+
+The whole-codebase review of PLAN 6.9, in three batches, risk first. Findings that describe an open weakness are kept in a local file and not committed; this section lists what was fixed.
+
+### 10.1 Batch 1 fixes (2026-10-21)
+
+- **API token over plain http.** The client library, the CLI and the terminal refuse to send a token over `http://` to another computer (`KalTermApiClient.IsSafeForToken`: https, or http to this computer). A remembered server that fails the rule is not reused.
+- **Neutral names.** The tracked files no longer name the real server, its address, the NAS or the user profile; `tools/kaldb` is now `tools/server`; examples use `srv01` and `203.0.113.x`. History is not rewritten.
+- **Expired pinned certificate.** A certificate that matches the pin but has expired is refused with its own message (`TrustFailure.Expired`) and the terminal opens the trust dialog; what the handshake saw is kept as one atomic value.
+- **Audit detail.** The order audit lines now say what the order was (side, count, price, worst-case cost, funding), never a secret.
+- **API limits.** Kestrel: 64 KB request body, 200 connections, 15 s for headers, a minimum body data rate, no `Server` header (`KestrelLimits`).
+- **Named timings.** The analyzers' default intervals and the alert baseline window are named constants.
+- **CI.** A step fails the build when `dotnet list package --vulnerable --include-transitive` finds anything.
+- **Rollout:** the API change (limits) needs an API rollout to the server; nothing else touches the running services.
