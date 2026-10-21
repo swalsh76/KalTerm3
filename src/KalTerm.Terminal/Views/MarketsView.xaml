@@ -76,7 +76,7 @@
             </DockPanel>
             <Grid>
                 <DataGrid x:Name="Grid" PreviewMouseRightButtonDown="OnRightClick" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
-                          CanUserSortColumns="False" CanUserAddRows="False" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                          CanUserSortColumns="True" Sorting="OnSorting" CanUserAddRows="False" SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Style>
                         <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
                             <Style.Triggers>
@@ -94,7 +94,7 @@
                         <KeyBinding Key="Return" Command="{Binding OpenCommand}" />
                     </DataGrid.InputBindings>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Market" Width="2*" MinWidth="220">
+                        <DataGridTemplateColumn Header="Market" Width="2*" MinWidth="220" CanUserSort="False">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="0,2">
@@ -105,17 +105,17 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Yes" Binding="{Binding YesLabel}" Width="*" MinWidth="110" />
-                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80" />
-                        <DataGridTextColumn Header="Last" Binding="{Binding Last}" ElementStyle="{StaticResource Right}" Width="70" />
-                        <DataGridTextColumn Header="Bid" Binding="{Binding Bid}" ElementStyle="{StaticResource Right}" Width="70" />
-                        <DataGridTextColumn Header="Ask" Binding="{Binding Ask}" ElementStyle="{StaticResource Right}" Width="70" />
-                        <DataGridTextColumn Header="Spread" Binding="{Binding Spread}" ElementStyle="{StaticResource Right}" Width="80" />
-                        <DataGridTextColumn Header="24h change" Binding="{Binding Change}" ElementStyle="{StaticResource Right}" Width="110" />
-                        <DataGridTextColumn Header="24h volume" Binding="{Binding Volume}" ElementStyle="{StaticResource Right}" Width="120" />
-                        <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" ElementStyle="{StaticResource Right}" Width="130" />
-                        <DataGridTextColumn Header="Lists" Binding="{Binding Lists}" Width="110" />
-                        <DataGridTextColumn Header="Ticker" Binding="{Binding Ticker}" Width="190" />
+                        <DataGridTextColumn Header="Yes" Binding="{Binding YesLabel}" Width="*" MinWidth="110" CanUserSort="False" />
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80" CanUserSort="False" />
+                        <DataGridTextColumn Header="Last" Binding="{Binding Last}" SortMemberPath="last" ElementStyle="{StaticResource Right}" Width="70" />
+                        <DataGridTextColumn Header="Bid" Binding="{Binding Bid}" ElementStyle="{StaticResource Right}" Width="70" CanUserSort="False" />
+                        <DataGridTextColumn Header="Ask" Binding="{Binding Ask}" ElementStyle="{StaticResource Right}" Width="70" CanUserSort="False" />
+                        <DataGridTextColumn Header="Spread" Binding="{Binding Spread}" SortMemberPath="spread" ElementStyle="{StaticResource Right}" Width="80" />
+                        <DataGridTextColumn Header="24h change" Binding="{Binding Change}" SortMemberPath="change" ElementStyle="{StaticResource Right}" Width="110" />
+                        <DataGridTextColumn Header="24h volume" Binding="{Binding Volume}" SortMemberPath="volume" ElementStyle="{StaticResource Right}" Width="120" />
+                        <DataGridTextColumn Header="Open interest" Binding="{Binding OpenInterest}" SortMemberPath="open_interest" ElementStyle="{StaticResource Right}" Width="130" />
+                        <DataGridTextColumn Header="Lists" Binding="{Binding Lists}" Width="110" CanUserSort="False" />
+                        <DataGridTextColumn Header="Ticker" Binding="{Binding Ticker}" Width="190" CanUserSort="False" />
                     </DataGrid.Columns>
                 </DataGrid>
                 <TextBlock Text="No markets match." Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"
