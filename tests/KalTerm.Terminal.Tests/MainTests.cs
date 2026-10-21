@@ -154,6 +154,19 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task AnExpiredCertificateOpensTheDialogAndSaysSo()
+    {
+        _t.Settings.SaveServer(Server);
+        _t.Api.StatusFails = new TlsTrustException(TrustFailure.Expired, "srv01:5280", Samples.Fingerprint, Samples.Fingerprint, new InvalidOperationException(), new DateTimeOffset(2026, 3, 4, 0, 0, 0, TimeSpan.Zero));
+
+        await _model.StartAsync();
+
+        var connect = Assert.Single(_dialogs.Shown);
+        Assert.True(connect.OnTrust);
+        Assert.Contains("EXPIRED on 2026-03-04", connect.Warning, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task OnlyOneDialogIsOpenAtATime()
     {
         _dialogs.Pending = new TaskCompletionSource<Uri?>();

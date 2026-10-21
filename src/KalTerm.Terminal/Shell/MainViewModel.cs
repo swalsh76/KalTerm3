@@ -233,7 +233,12 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
         {
             case TlsTrustException trust:
                 State = ConnectionState.NeedsAttention;
-                StateText = trust.Failure == TrustFailure.Changed ? "the server's certificate changed" : "the server's certificate is not trusted";
+                StateText = trust.Failure switch
+                {
+                    TrustFailure.Changed => "the server's certificate changed",
+                    TrustFailure.Expired => "the server's certificate has expired",
+                    _ => "the server's certificate is not trusted",
+                };
                 _ = ConnectDialogAsync(trust);
                 break;
             case ApiException { Code: "unauthorized" }:
@@ -268,7 +273,7 @@ internal sealed partial class MainViewModel : ObservableObject, ILayoutTarget
             var connect = new ConnectViewModel(_services, _server);
             switch (reason)
             {
-                case TlsTrustException { Failure: TrustFailure.Changed } changed:
+                case TlsTrustException { Failure: TrustFailure.Changed or TrustFailure.Expired } changed:
                     await connect.StartAtTrustAsync(_server!, changed.Message).ConfigureAwait(true);
                     break;
                 case TlsTrustException:
