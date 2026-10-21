@@ -52,8 +52,11 @@ public sealed class CandleChartViewModelTests : IDisposable
     }
 
     [Theory]
-    [InlineData("1m", "1 day", 1_000)]   // 1,440 would not fit: the chart holds at most a thousand
+    [InlineData("1m", "12 hours", 720)]
+    [InlineData("5m", "1 day", 288)]
+    [InlineData("15m", "1 week", 672)]
     [InlineData("1h", "1 day", 24)]
+    [InlineData("1h", "1 month", 720)]
     [InlineData("4h", "1 week", 42)]
     [InlineData("1d", "1 month", 30)]
     [InlineData("5m", "All", 1_000)]
@@ -61,12 +64,86 @@ public sealed class CandleChartViewModelTests : IDisposable
     {
         var chart = await LoadedAsync();
 
-        chart.Range = chart.Ranges.Single(r => r.Text == range);
         chart.Interval = chart.Intervals.Single(i => i.Text == interval);
+        chart.Range = chart.Ranges.Single(r => r.Text == range);
 
         var last = _t.Api.CandleQueries[^1];
         Assert.Equal((interval, limit), (last.Interval, last.Query.Limit));
         Assert.Equal(chart.Interval.Seconds, chart.Series.IntervalSeconds);
+    }
+
+    [Theory]
+    [InlineData("1m", new[] { "1 hour", "3 hours", "6 hours", "12 hours", "All" })]
+    [InlineData("5m", new[] { "1 hour", "3 hours", "6 hours", "12 hours", "1 day", "3 days", "All" })]
+    [InlineData("15m", new[] { "3 hours", "6 hours", "12 hours", "1 day", "3 days", "1 week", "All" })]
+    [InlineData("1h", new[] { "12 hours", "1 day", "3 days", "1 week", "1 month", "All" })]
+    [InlineData("4h", new[] { "3 days", "1 week", "1 month", "3 months", "All" })]
+    [InlineData("1d", new[] { "1 month", "3 months", "1 year", "All" })]
+    public async Task EachIntervalOffersOnlyTheRangesThatGiveASensibleNumberOfCandles(string interval, string[] offered)
+    {
+        var chart = await LoadedAsync();
+
+        chart.Interval = chart.Intervals.Single(i => i.Text == interval);
+
+        Assert.Equal(offered, chart.Ranges.Select(r => r.Text));
+        Assert.Equal(offered, CandleChartViewModel.RangesFor(chart.Interval).Select(r => r.Text));
+        Assert.All(chart.Ranges.Where(r => r.Span is not null), r => Assert.InRange(r.Span!.Value.TotalSeconds / chart.Interval.Seconds, CandleChartViewModel.MinCandles, CandleChartViewModel.MaxCandles));
+        Assert.Contains(chart.Range, chart.Ranges);   // what is selected is always one of what is offered
+    }
+
+    [Theory]
+    [InlineData("1h", "1m", "3 hours")]   // a week (where it starts) is not offered at 1m: the comfortable one is, at most 200 candles
+    [InlineData("1h", "5m", "12 hours")]
+    [InlineData("1h", "1d", "3 months")]
+    [InlineData("1h", "15m", "1 week")]   // still offered: kept
+    [InlineData("1m", "15m", "3 hours")]   // 3 hours (where it is at 1m) is still offered at 15m: kept
+    [InlineData("1m", "1h", "1 week")]   // 3 hours is not offered at 1h: the comfortable one
+    [InlineData("1m", "4h", "1 month")]
+    public async Task ChangingTheIntervalKeepsTheRangeWhenItIsStillOfferedAndOtherwiseTakesTheComfortableOne(string first, string second, string expected)
+    {
+        var chart = await LoadedAsync();
+        chart.Interval = chart.Intervals.Single(i => i.Text == first);
+
+        chart.Interval = chart.Intervals.Single(i => i.Text == second);
+
+        Assert.Equal(expected, chart.Range.Text);
+    }
+
+    [Fact]
+    public async Task ChangingTheIntervalKeepsTheRangeChosenWhenItIsStillOfferedAndOtherwiseTakesTheNewIntervalsOwn()
+    {
+        var chart = await LoadedAsync();
+        Assert.Equal("1 week", chart.Range.Text);
+        var asked = _t.Api.CandleQueries.Count;
+
+        chart.Interval = chart.Intervals.Single(i => i.Text == "15m");   // a week of 15-minute candles is 672: fine
+        Assert.Equal(("1 week", 672), (chart.Range.Text, _t.Api.CandleQueries[^1].Query.Limit));
+        chart.Interval = chart.Intervals.Single(i => i.Text == "1m");   // a week of minutes is 10,080: not offered
+        Assert.Equal(("3 hours", 180), (chart.Range.Text, _t.Api.CandleQueries[^1].Query.Limit));
+        chart.Interval = chart.Intervals.Single(i => i.Text == "1d");   // and 3 hours is not offered at 1d
+        Assert.Equal("3 months", chart.Range.Text);
+
+        Assert.Equal(asked + 3, _t.Api.CandleQueries.Count);   // each change asked once, not once for the interval and again for the range
+    }
+
+    [Fact]
+    public async Task ChangingTheIntervalAnnouncesNewRangesAndANullChoiceFromTheBoxIsIgnored()
+    {
+        var chart = await LoadedAsync();
+        var raised = new List<string>();
+        chart.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+        var asked = _t.Api.CandleQueries.Count;
+
+        chart.Interval = chart.Intervals.Single(i => i.Text == "5m");
+        chart.Range = null!;
+        chart.Interval = null!;
+
+        Assert.Contains("Ranges", raised);
+        Assert.Contains("Range", raised);
+        Assert.NotNull(chart.Range);
+        Assert.Equal("5m", chart.Interval.Text);
+        Assert.Equal(asked + 1, _t.Api.CandleQueries.Count);
+        Assert.Throws<ArgumentNullException>(() => CandleChartViewModel.RangesFor(null!));
     }
 
     [Fact]

@@ -25,6 +25,26 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
     /// <summary>How often the newest candles are asked for again.</summary>
     public static readonly TimeSpan RefreshEvery = TimeSpan.FromSeconds(5);
 
+    /// <summary>The fewest candles a range may give at an interval, for the range to be offered (fewer is a chart of a handful of bars).</summary>
+    public const int MinCandles = 12;
+
+    /// <summary>The most candles the default range gives at an interval.</summary>
+    private const int DefaultCandles = 200;
+
+    private static readonly (string Text, TimeSpan Span)[] AllRanges =
+    [
+        ("1 hour", TimeSpan.FromHours(1)),
+        ("3 hours", TimeSpan.FromHours(3)),
+        ("6 hours", TimeSpan.FromHours(6)),
+        ("12 hours", TimeSpan.FromHours(12)),
+        ("1 day", TimeSpan.FromDays(1)),
+        ("3 days", TimeSpan.FromDays(3)),
+        ("1 week", TimeSpan.FromDays(7)),
+        ("1 month", TimeSpan.FromDays(30)),
+        ("3 months", TimeSpan.FromDays(90)),
+        ("1 year", TimeSpan.FromDays(365)),
+    ];
+
     /// <summary>How many of the newest candles a refresh asks for (the one forming, and the one before it in case it closed).</summary>
     private const int RefreshCandles = 3;
 
@@ -38,6 +58,7 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _loop;
     private IntervalChoice _interval;
     private RangeChoice _range;
+    private IReadOnlyList<RangeChoice> _ranges;
     private ChartSeries _series = ChartSeries.Empty;
     private string? _lastPrice;
     private string _hoverText = string.Empty;
@@ -67,15 +88,9 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
             new IntervalChoice("4h", "4h", 14400),
             new IntervalChoice("1d", "1d", 86400),
         ];
-        Ranges =
-        [
-            new RangeChoice("1 day", TimeSpan.FromDays(1)),
-            new RangeChoice("1 week", TimeSpan.FromDays(7)),
-            new RangeChoice("1 month", TimeSpan.FromDays(30)),
-            new RangeChoice("All", null),
-        ];
         _interval = Intervals[3];
-        _range = Ranges[1];
+        _ranges = RangesFor(_interval);
+        _range = _ranges.Single(r => r.Text == "1 week");
         _format.ZoneChanged += OnZoneChanged;
     }
 
@@ -83,7 +98,24 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<IntervalChoice> Intervals { get; }
 
-    public IReadOnlyList<RangeChoice> Ranges { get; }
+    /// <summary>The ranges that make sense at the interval chosen: those that give between <see cref="MinCandles"/> and <see cref="MaxCandles"/> candles, and all the chart holds.</summary>
+    public IReadOnlyList<RangeChoice> Ranges => _ranges;
+
+    /// <summary>The ranges worth offering at an interval: each span that gives at least <see cref="MinCandles"/> and at most <see cref="MaxCandles"/> candles, then "All" (as many as the chart holds).</summary>
+    /// <param name="interval">The candle length.</param>
+    /// <returns>The choices, shortest first.</returns>
+    public static IReadOnlyList<RangeChoice> RangesFor(IntervalChoice interval)
+    {
+        ArgumentNullException.ThrowIfNull(interval);
+        return
+        [
+            .. AllRanges.Where(r => r.Span.TotalSeconds / interval.Seconds is { } candles && candles >= MinCandles && candles <= MaxCandles).Select(r => new RangeChoice(r.Text, r.Span)),
+            new RangeChoice("All", null),
+        ];
+    }
+
+    private static RangeChoice DefaultRangeFor(IReadOnlyList<RangeChoice> ranges, IntervalChoice interval) =>
+        ranges.LastOrDefault(r => r.Span is { } span && span.TotalSeconds / interval.Seconds <= DefaultCandles) ?? ranges[0];
 
     /// <summary>The drawing needs doing again: new candles, a new last price, or another time zone.</summary>
     public event Action? SeriesChanged;
@@ -93,10 +125,17 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
         get => _interval;
         set
         {
-            if (Set(ref _interval, value))
+            if ((object?)value is null || !Set(ref _interval, value))
             {
-                _ = SafeLoadAsync();
+                return;
             }
+
+            // The ranges offered depend on the interval: keep the one chosen if it is still offered, otherwise take the one that gives a comfortable number of candles.
+            _ranges = RangesFor(value);
+            _range = _ranges.FirstOrDefault(r => r.Text == _range.Text) ?? DefaultRangeFor(_ranges, value);
+            Raise(nameof(Ranges));
+            Raise(nameof(Range));
+            _ = SafeLoadAsync();
         }
     }
 
@@ -105,7 +144,7 @@ internal sealed class CandleChartViewModel : ObservableObject, IDisposable
         get => _range;
         set
         {
-            if (Set(ref _range, value))
+            if ((object?)value is not null && Set(ref _range, value))   // a combo box whose choices were just replaced may offer null: ignored
             {
                 _ = SafeLoadAsync();
             }

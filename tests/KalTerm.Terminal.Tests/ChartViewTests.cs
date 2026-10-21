@@ -156,6 +156,37 @@ public sealed class ChartViewTests : IDisposable
     }
 
     [Fact]
+    public void TheRangeBoxFollowsTheIntervalAndKeepsAValidSelection()
+    {
+        var (before, after, selected, back) = Sta.Run(() =>
+        {
+            using var errors = BindingErrors.Listen();
+            var (chart, feed) = Loaded(new Formatting(TimeZoneInfo.Utc));
+            using var disposeFeed = feed;
+            using var disposeChart = chart;
+            var view = new CandleChartView { DataContext = chart };
+            VisualTreeKit.Realize(view);
+            var range = VisualTreeKit.All<ComboBox>(view).Single(c => c.ItemsSource == chart.Ranges || c.Items.OfType<RangeChoice>().Any());
+            var first = range.Items.OfType<RangeChoice>().Select(r => r.Text).ToList();
+
+            chart.Interval = chart.Intervals.Single(i => i.Text == "5m");
+            VisualTreeKit.Realize(view);
+            var second = range.Items.OfType<RangeChoice>().Select(r => r.Text).ToList();
+            var shown = (range.SelectedItem as RangeChoice)?.Text;
+
+            chart.Interval = chart.Intervals.Single(i => i.Text == "1h");
+            VisualTreeKit.Realize(view);
+            Assert.Empty(errors.Messages);
+            return (first, second, shown, (range.SelectedItem as RangeChoice)?.Text);
+        });
+
+        Assert.Equal(["12 hours", "1 day", "3 days", "1 week", "1 month", "All"], before);
+        Assert.Equal(["1 hour", "3 hours", "6 hours", "12 hours", "1 day", "3 days", "All"], after);
+        Assert.Equal("12 hours", selected);
+        Assert.Equal("12 hours", back);   // 12 hours is offered at 1h too, so it stays
+    }
+
+    [Fact]
     public void ALegendUnderTheChartNamesEveryColorAndLine()
     {
         var texts = Sta.Run(() =>
