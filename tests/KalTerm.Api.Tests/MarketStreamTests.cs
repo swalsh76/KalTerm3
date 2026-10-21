@@ -33,11 +33,11 @@ public sealed class MarketStreamHubTests
     private static StreamTick Row(string ticker, DateTime ts, long price = 560_000) => new(ticker, Tick(ts, price));
 
     [Fact]
-    public void TheDefaultsAreFivePerUserFiftyInAllFiftyMarketsAndATwoSecondLag()
+    public void TheDefaultsAreFivePerUserFiftyInAllFiftyMarketsAndAThreeSecondLag()
     {
         var options = new MarketStreamOptions();
 
-        Assert.Equal((5, 50, 50, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)), (options.MaxPerUser, options.MaxTotal, options.MaxMarkets, options.KeepAlive, options.TokenCheck, options.Poll, options.TickLag));
+        Assert.Equal((5, 50, 50, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3)), (options.MaxPerUser, options.MaxTotal, options.MaxMarkets, options.KeepAlive, options.TokenCheck, options.Poll, options.TickLag));
         Assert.Equal((10, 100, TimeSpan.FromMinutes(10)), (options.DefaultDepth, options.MaxDepth, options.MaxReplay));
     }
 
@@ -84,21 +84,21 @@ public sealed class MarketStreamHubTests
         using var two = (await hub.TryOpenAsync(2, Set("KX-2"), Set(), Ct))!;
         _reader.Rows.AddRange([Row("KX-1", NowUtc.AddSeconds(-1)), Row("KX-2", NowUtc.AddSeconds(1)), Row("KX-1", NowUtc.AddSeconds(2.5)), Row("KX-1", NowUtc.AddSeconds(4))]);
 
-        _time.Advance(TimeSpan.FromSeconds(5));   // now 23:00:05: rows older than 23:00:03 are due
+        _time.Advance(TimeSpan.FromSeconds(6));   // now 23:00:06: rows older than 23:00:03 are due
         await hub.PollAsync(Ct);
         var first = (Drain(one).Cast<TickItem>().ToList(), Drain(two).Cast<TickItem>().ToList());
         _time.Advance(TimeSpan.FromSeconds(2));
         await hub.PollAsync(Ct);
         var second = (Drain(one).Cast<TickItem>().ToList(), Drain(two));
 
-        Assert.Equal([NowUtc.AddSeconds(-1), NowUtc.AddSeconds(2.5)], first.Item1.Select(t => t.Tick.Ts));   // from the moment the stream began (22:59:58), up to 2 s behind now
+        Assert.Equal([NowUtc.AddSeconds(-1), NowUtc.AddSeconds(2.5)], first.Item1.Select(t => t.Tick.Ts));   // from the moment the stream began (22:59:57), up to 3 s behind now
         Assert.Equal(["KX-2"], first.Item2.Select(t => t.Ticker));
         Assert.Equal([NowUtc.AddSeconds(4)], second.Item1.Select(t => t.Tick.Ts));
         Assert.Empty(second.Item2);
     }
 
     [Fact]
-    public async Task EachPollReadsFromWhereTheLastEndedAndTwoSecondsBehindNow()
+    public async Task EachPollReadsFromWhereTheLastEndedAndThreeSecondsBehindNow()
     {
         using var hub = Hub();
         using var session = (await hub.TryOpenAsync(1, Set("KX-1"), Set(), Ct))!;
@@ -108,8 +108,8 @@ public sealed class MarketStreamHubTests
         _time.Advance(TimeSpan.FromSeconds(3));
         await hub.PollAsync(Ct);
 
-        Assert.Equal(NowUtc.AddSeconds(-2), session.JoinCursor);
-        Assert.Equal([(NowUtc.AddSeconds(-2), NowUtc.AddSeconds(3)), (NowUtc.AddSeconds(3), NowUtc.AddSeconds(6))], _reader.Reads.Select(r => (r.From, r.Until)));
+        Assert.Equal(NowUtc.AddSeconds(-3), session.JoinCursor);
+        Assert.Equal([(NowUtc.AddSeconds(-3), NowUtc.AddSeconds(2)), (NowUtc.AddSeconds(2), NowUtc.AddSeconds(5))], _reader.Reads.Select(r => (r.From, r.Until)));
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public sealed class MarketStreamHubTests
         _time.Advance(TimeSpan.FromSeconds(1));
         using var late = (await hub.TryOpenAsync(2, Set("KX-2"), Set(), Ct))!;
 
-        Assert.Equal(NowUtc.AddSeconds(3), late.JoinCursor);   // the end of the last poll: nothing between it and the next poll is missed
+        Assert.Equal(NowUtc.AddSeconds(2), late.JoinCursor);   // the end of the last poll: nothing between it and the next poll is missed
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public sealed class MarketStreamHubTests
 
         using var again = (await hub.TryOpenAsync(1, Set("KX-1"), Set(), Ct))!;
 
-        Assert.Equal(NowUtc.AddMinutes(5).AddSeconds(-2), again.JoinCursor);
+        Assert.Equal(NowUtc.AddMinutes(5).AddSeconds(-3), again.JoinCursor);
     }
 
     [Fact]
@@ -330,11 +330,11 @@ public sealed class MarketStreamEndpointTests : IAsyncLifetime
         var ready = await NextAsync(reader);
 
         Assert.Equal(("text/event-stream", "no-cache"), (response.Content.Headers.ContentType!.MediaType, response.Headers.CacheControl!.ToString()));
-        Assert.Equal($"id: {At(-2)}", ready[0]);
+        Assert.Equal($"id: {At(-3)}", ready[0]);
         Assert.Equal("event: ready", ready[1]);
         var dto = Data<StreamReadyDto>(ready);
         Assert.Equal(16, dto.StreamId.Length);
-        Assert.Equal((At(-2), 10), (dto.ResumeFrom, dto.Depth));
+        Assert.Equal((At(-3), 10), (dto.ResumeFrom, dto.Depth));
         Assert.Equal(["KX-1"], dto.Ticks);
         Assert.Equal(["KX-1", "KX-2"], dto.Books);
         Assert.Equal(["KX-9"], dto.Unknown);
