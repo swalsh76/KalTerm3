@@ -208,6 +208,9 @@ public enum TrustFailure
 
     /// <summary>The server presented a different certificate from the one trusted: a rotation, or something else answering.</summary>
     Changed,
+
+    /// <summary>The server presented the certificate that was trusted, but it has expired.</summary>
+    Expired,
 }
 
 /// <summary>The server's certificate is not the one the user trusted (or none was trusted yet). The message says which, and what to do.</summary>
@@ -243,13 +246,15 @@ public sealed class TlsTrustException : Exception
     /// <param name="trusted">The fingerprint that was trusted, if any.</param>
     /// <param name="observed">The fingerprint the server presented.</param>
     /// <param name="inner">The cause.</param>
-    public TlsTrustException(TrustFailure failure, string endpoint, string? trusted, string? observed, Exception inner)
-        : base(Describe(failure, endpoint, trusted, observed), inner)
+    /// <param name="expiredOn">When the certificate expired, for <see cref="TrustFailure.Expired"/>.</param>
+    public TlsTrustException(TrustFailure failure, string endpoint, string? trusted, string? observed, Exception inner, DateTimeOffset? expiredOn = null)
+        : base(Describe(failure, endpoint, trusted, observed, expiredOn), inner)
     {
         Failure = failure;
         Endpoint = endpoint;
         Trusted = trusted;
         Observed = observed;
+        ExpiredOn = expiredOn;
     }
 
     /// <summary>Why.</summary>
@@ -264,9 +269,15 @@ public sealed class TlsTrustException : Exception
     /// <summary>The fingerprint the server presented.</summary>
     public string? Observed { get; }
 
-    private static string Describe(TrustFailure failure, string endpoint, string? trusted, string? observed) => failure == TrustFailure.NotTrusted
-        ? $"{endpoint} has not been trusted yet; check its certificate fingerprint with the person who runs the server and run: kterm trust {endpoint}"
-        : $"WARNING: the certificate of {endpoint} CHANGED. Trusted {Show(trusted)}, but the server presented {Show(observed)}. If the server's certificate was rotated on purpose, confirm the new fingerprint and run: kterm trust {endpoint}. Otherwise do not continue: something else may be answering.";
+    /// <summary>When the trusted certificate expired, when that is why the connection was refused.</summary>
+    public DateTimeOffset? ExpiredOn { get; }
+
+    private static string Describe(TrustFailure failure, string endpoint, string? trusted, string? observed, DateTimeOffset? expiredOn) => failure switch
+    {
+        TrustFailure.Expired => $"the certificate of {endpoint} that you trusted EXPIRED on {expiredOn:yyyy-MM-dd}. Ask the person who runs the server for a new one (kalterm-admin cert rotate), confirm its fingerprint and run: kterm trust {endpoint}",
+        TrustFailure.NotTrusted => $"{endpoint} has not been trusted yet; check its certificate fingerprint with the person who runs the server and run: kterm trust {endpoint}",
+        _ => $"WARNING: the certificate of {endpoint} CHANGED. Trusted {Show(trusted)}, but the server presented {Show(observed)}. If the server's certificate was rotated on purpose, confirm the new fingerprint and run: kterm trust {endpoint}. Otherwise do not continue: something else may be answering.",
+    };
 
     private static string Show(string? fingerprint) => fingerprint is null ? "(none)" : CertificateFingerprint.Format(fingerprint);
 }
@@ -289,13 +300,40 @@ public static class PinnedTransport
         return pinned is not null && observed is not null && string.Equals(pinned, observed, StringComparison.Ordinal);
     }
 
-    /// <summary>Makes a client for an address: https addresses accept only the pinned certificate; http ones (loopback) are plain.</summary>
+    /// <summary>Whether the pinned certificate is the one presented and is still within its validity.</summary>
+    /// <param name="pinned">The trusted fingerprint, if any.</param>
+    /// <param name="presented">The certificate the server presented.</param>
+    /// <param name="now">The current time.</param>
+    /// <param name="observed">Its fingerprint.</param>
+    /// <param name="expiredOn">When it expired, when it matches the pin but has expired.</param>
+    /// <returns>True only when it matches the pin exactly and has not expired.</returns>
+    public static bool Accepts(string? pinned, X509Certificate? presented, DateTimeOffset now, out string? observed, out DateTimeOffset? expiredOn)
+    {
+        expiredOn = null;
+        if (!Accepts(pinned, presented, out observed))
+        {
+            return false;
+        }
+
+        using var certificate = new X509Certificate2(presented!);
+        var notAfter = new DateTimeOffset(certificate.NotAfter.ToUniversalTime());
+        if (notAfter < now)
+        {
+            expiredOn = notAfter;
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Makes a client for an address: https addresses accept only the pinned certificate (while it is valid); http ones (loopback) are plain.</summary>
     /// <param name="address">The API address.</param>
     /// <param name="pins">The trusted certificates.</param>
     /// <param name="token">The API token to send, if any.</param>
     /// <param name="timeout">How long one call may take.</param>
+    /// <param name="time">The clock the certificate's expiry is judged by; the system clock when omitted.</param>
     /// <returns>The client.</returns>
-    public static KalTermApiClient CreateClient(Uri address, PinStore pins, string? token, TimeSpan? timeout = null)
+    public static KalTermApiClient CreateClient(Uri address, PinStore pins, string? token, TimeSpan? timeout = null, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(address);
         ArgumentNullException.ThrowIfNull(pins);
@@ -306,22 +344,30 @@ public static class PinnedTransport
 
         var key = EndpointKey.Of(address);
         var pinned = pins.Get(key)?.Fingerprint;
+        var clock = time ?? TimeProvider.System;
         var seen = new Seen();
         var sockets = new SocketsHttpHandler();
         sockets.SslOptions.EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
         sockets.SslOptions.RemoteCertificateValidationCallback = (_, certificate, _, _) =>
         {
-            var accepted = Accepts(pinned, certificate, out var observed);
-            seen.Fingerprint = observed;
+            var accepted = Accepts(pinned, certificate, clock.GetUtcNow(), out var observed, out var expiredOn);
+            seen.Record(observed, expiredOn);
             return accepted;
         };
         return KalTermApiClient.Create(address, new TranslatingHandler(sockets, key, pinned, seen), timeout, token);
     }
 
+    /// <summary>What the last handshake saw, kept as one value so that concurrent handshakes can never leave a fingerprint from one and an expiry from another.</summary>
     private sealed class Seen
     {
-        public string? Fingerprint { get; set; }
+        private Observation? _last;
+
+        public Observation? Last => Volatile.Read(ref _last);
+
+        public void Record(string? fingerprint, DateTimeOffset? expiredOn) => Volatile.Write(ref _last, new Observation(fingerprint, expiredOn));
     }
+
+    private sealed record Observation(string? Fingerprint, DateTimeOffset? ExpiredOn);
 
     private sealed class TranslatingHandler(HttpMessageHandler inner, string key, string? pinned, Seen seen) : DelegatingHandler(inner)
     {
@@ -331,9 +377,10 @@ public static class PinnedTransport
             {
                 return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
-            catch (HttpRequestException ex) when (ex.InnerException is AuthenticationException && seen.Fingerprint is not null)
+            catch (HttpRequestException ex) when (ex.InnerException is AuthenticationException && seen.Last is { Fingerprint: not null } last)
             {
-                throw new TlsTrustException(pinned is null ? TrustFailure.NotTrusted : TrustFailure.Changed, key, pinned, seen.Fingerprint, ex);
+                var failure = last.ExpiredOn is not null ? TrustFailure.Expired : pinned is null ? TrustFailure.NotTrusted : TrustFailure.Changed;
+                throw new TlsTrustException(failure, key, pinned, last.Fingerprint, ex, last.ExpiredOn);
             }
         }
     }

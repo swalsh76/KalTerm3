@@ -402,8 +402,8 @@ public class OrderServiceTests
         await service.KillAsync("test", Ct);
         await tracker.DisposeAsync();
 
-        Assert.Contains("risk.prepare KXA-1 approved", recorded);
-        Assert.Contains("risk.execute KXA-1 approved", recorded);
+        Assert.Contains(recorded, entry => entry.StartsWith("risk.prepare KXA-1 approved | BUY ", StringComparison.Ordinal) && entry.Contains(" YES at $", StringComparison.Ordinal) && entry.Contains("worst-case $", StringComparison.Ordinal));
+        Assert.Contains(recorded, entry => entry.StartsWith("risk.execute KXA-1 approved | BUY ", StringComparison.Ordinal));
         Assert.Contains("kill all test", recorded);
     }
 

@@ -215,6 +215,56 @@ public sealed class TrustTests : IDisposable
         Assert.Null(none);
     }
 
+    [Fact]
+    public void ACertificateThatMatchesThePinIsRefusedOnceItHasExpired()
+    {
+        using var certificate = ServerCertificate.Create(["localhost"], [IPAddress.Loopback], TimeSpan.FromDays(30), DateTimeOffset.UtcNow);
+        var fingerprint = CertificateFingerprint.Of(certificate);
+        var notAfter = new DateTimeOffset(certificate.NotAfter.ToUniversalTime());
+
+        Assert.True(PinnedTransport.Accepts(fingerprint, certificate, notAfter.AddDays(-1), out _, out var none));
+        Assert.Null(none);
+        Assert.False(PinnedTransport.Accepts(fingerprint, certificate, notAfter.AddDays(1), out var observed, out var expiredOn));
+        Assert.Equal(fingerprint, observed);
+        Assert.Equal(notAfter, expiredOn);
+        Assert.False(PinnedTransport.Accepts(new string('0', 64), certificate, notAfter.AddDays(1), out _, out var other));
+        Assert.Null(other);
+    }
+
+    [Fact]
+    public void TheExpiredMessageSaysWhenAndWhatToDo()
+    {
+        var thrown = new TlsTrustException(TrustFailure.Expired, "srv01:5280", "a", "a", new InvalidOperationException(), new DateTimeOffset(2026, 3, 4, 0, 0, 0, TimeSpan.Zero));
+
+        Assert.Equal(new DateTimeOffset(2026, 3, 4, 0, 0, 0, TimeSpan.Zero), thrown.ExpiredOn);
+        Assert.Contains("EXPIRED on 2026-03-04", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("kterm trust srv01:5280", thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ATrustedCertificateThatHasExpiredIsAHardErrorAndNeverSendsTheRequest()
+    {
+        using var certificate = Certificate();
+        await using var server = new MiniTlsServer(new X509Certificate2(certificate));
+        server.Start();
+        var address = new Uri($"https://localhost:{server.Port}");
+        var pins = Pins();
+        pins.Set(EndpointKey.Of(address), CertificateFingerprint.Of(certificate), Now);
+        var later = new FixedTime(DateTimeOffset.UtcNow.AddDays(60));
+        using var client = PinnedTransport.CreateClient(address, pins, "kt_the-token", null, later);
+
+        var thrown = await Assert.ThrowsAsync<TlsTrustException>(() => client.GetGapsAsync(new WindowQuery(), TestContext.Current.CancellationToken));
+
+        Assert.Equal(TrustFailure.Expired, thrown.Failure);
+        Assert.NotNull(thrown.ExpiredOn);
+        Assert.Null(server.Authorization);
+    }
+
+    private sealed class FixedTime(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
     // ---- over a real TLS connection -------------------------------------------------------------------------------------------------
 
     [Fact]

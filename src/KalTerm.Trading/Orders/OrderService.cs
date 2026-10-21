@@ -438,7 +438,7 @@ public sealed class OrderService : IAsyncDisposable
         var (side, price) = ToV2(request.Outcome, request.Action, intent.PriceE6);
         Wire(request, intent, side, price, "preview").Members();   // a price finer than Kalshi takes must fail here
         var verdict = await VerdictAsync(intent, market, null, cancellationToken).ConfigureAwait(false);
-        Record("prepare", request.Ticker, verdict);
+        Record("prepare", request.Ticker, verdict, intent);
         return new Prepared(request, market, intent, verdict, side, price);
     }
 
@@ -485,7 +485,7 @@ public sealed class OrderService : IAsyncDisposable
         var (side, sentPrice) = ToV2(TradeOutcome.Yes, current.Action, yesPrice);
         Wire(request, intent, side, sentPrice, "preview").Members();
         var verdict = await VerdictAsync(intent, market, orderId, cancellationToken).ConfigureAwait(false);
-        Record("prepare_amend", orderId, verdict);
+        Record("prepare_amend", orderId, verdict, intent);
         return new Prepared(request, market, intent, verdict, side, sentPrice, orderId, total);
     }
 
@@ -740,8 +740,20 @@ public sealed class OrderService : IAsyncDisposable
     private static OrderRequest Wire(TradeRequest request, OrderIntent intent, BookSide side, long yesPriceE6, string clientOrderId) =>
         new(request.Ticker, intent.ExchangeIndex, side, intent.CountE2, yesPriceE6, clientOrderId, request.TimeInForce, PostOnly: request.PostOnly);
 
-    private void Record(string what, string reference, Verdict verdict) =>
-        _audit?.Record(_time.GetUtcNow(), "risk." + what, reference, null, verdict.Ok ? "approved" : "refused: " + string.Join(",", verdict.Refusals.Select(r => RiskCodes.Name(r.Code))));
+    private void Record(string what, string reference, Verdict verdict, OrderIntent intent) =>
+        _audit?.Record(_time.GetUtcNow(), "risk." + what, reference, null, (verdict.Ok ? "approved" : "refused: " + string.Join(",", verdict.Refusals.Select(r => RiskCodes.Name(r.Code)))) + " | " + Summary(intent, verdict));
+
+    /// <summary>What the audit log keeps of an order: the side, count and price, the worst-case cost and the funding. No secret is in any of it.</summary>
+    private static string Summary(OrderIntent intent, Verdict verdict)
+    {
+        var text = $"{intent.Action.ToString().ToUpperInvariant()} {RiskChecker.CountText(intent.CountE2)} {intent.Outcome.ToString().ToUpperInvariant()} at {RiskChecker.DollarsText(intent.PriceE6)}";
+        if (verdict.WorstCaseCostE6 is { } cost)
+        {
+            text += $"; worst-case {RiskChecker.DollarsText(cost)}";
+        }
+
+        return verdict.Funding.Count == 0 ? text : text + "; funding " + string.Join(", ", verdict.Funding.Select(t => $"{RiskChecker.DollarsText(t.AmountE6)} shard {t.Source} to {t.Destination}"));
+    }
 
     private async Task<Verdict> VerdictAsync(OrderIntent intent, MarketInfo market, string? replaces, CancellationToken cancellationToken)
     {
@@ -764,7 +776,7 @@ public sealed class OrderService : IAsyncDisposable
         }
 
         var fresh = await VerdictAsync(prepared.Intent, prepared.Market, prepared.Replaces, cancellationToken).ConfigureAwait(false);
-        Record("execute", prepared.Replaces ?? prepared.Request.Ticker, fresh);
+        Record("execute", prepared.Replaces ?? prepared.Request.Ticker, fresh, prepared.Intent);
         if (fresh.TripKill && !_tracker.State.Halted)
         {
             await KillAsync("daily loss limit reached", cancellationToken).ConfigureAwait(false);
