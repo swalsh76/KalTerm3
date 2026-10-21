@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\KalTerm.Terminal\KalTerm.Terminal.csproj" />
     <ProjectReference Include="..\KalTerm.TestSupport\KalTerm.TestSupport.csproj" />
+    <ProjectReference Include="..\KalTerm.TestSupport.Api\KalTerm.TestSupport.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,5 +29,6 @@
     <Using Include="System.Net.Http" />
     <Using Include="System.Globalization" />
     <Using Include="KalTerm.TestSupport" />
+    <Using Include="KalTerm.TestSupport.Api" />
   </ItemGroup>
 </Project>

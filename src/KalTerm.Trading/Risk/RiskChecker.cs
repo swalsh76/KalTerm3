@@ -174,7 +174,7 @@ public static class RiskChecker
         return need <= 0 ? plan : null;
     }
 
-    /// <summary>Dollars to four places, or six when the value is finer than a centicent.</summary>
+    /// <summary>Dollars to four places, or six when the value is finer than a centicent. This is the risk layer's own text for refusals and the audit log, from whole numbers; it is not the display format of <c>ValueText</c>.</summary>
     /// <param name="valueE6">The amount in millionths of a dollar.</param>
     /// <returns>For example <c>$0.2200</c>.</returns>
     public static string DollarsText(long valueE6)

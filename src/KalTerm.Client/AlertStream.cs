@@ -1,4 +1,3 @@
-using System.Text.Json;
 using KalTerm.Contracts;
 
 namespace KalTerm.Client;
@@ -74,9 +73,6 @@ internal static class ServerSentEvents
 /// <param name="time">The clock the waits use.</param>
 public sealed class AlertWatcher(Func<long?, CancellationToken, IAsyncEnumerable<AlertStreamEvent>> open, TimeProvider? time = null)
 {
-    private static readonly TimeSpan FirstWait = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan LongestWait = TimeSpan.FromSeconds(30);
-
     private readonly TimeProvider _time = time ?? TimeProvider.System;
 
     /// <summary>Watches until cancelled.</summary>
@@ -91,7 +87,7 @@ public sealed class AlertWatcher(Func<long?, CancellationToken, IAsyncEnumerable
         ArgumentNullException.ThrowIfNull(onFire);
         ArgumentNullException.ThrowIfNull(onNotice);
         var last = after;
-        var wait = FirstWait;
+        var wait = StreamReconnect.FirstWait;
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -99,7 +95,7 @@ public sealed class AlertWatcher(Func<long?, CancellationToken, IAsyncEnumerable
                 await foreach (var item in open(last, cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
                     last = item.Id;
-                    wait = FirstWait;
+                    wait = StreamReconnect.FirstWait;
                     if (item.Fire is { } fire)
                     {
                         await onFire(fire).ConfigureAwait(false);
@@ -112,34 +108,21 @@ public sealed class AlertWatcher(Func<long?, CancellationToken, IAsyncEnumerable
             {
                 return;
             }
-            catch (ApiUnavailableException ex)
+            catch (Exception ex) when (StreamReconnect.TryDescribe(ex, out var notice, out var longWait))
             {
-                onNotice(ex.Message);
-            }
-            catch (IOException ex)
-            {
-                onNotice("the connection dropped: " + ex.Message);
-            }
-            catch (ApiException ex) when (ex.Code is "too_many_streams" or "http_error")
-            {
-                onNotice(ex.Code == "too_many_streams" ? "the server has too many streams open for you; waiting" : $"the server answered {(ex.Status is { } status ? (int)status : 0)}; waiting");
-                wait = LongestWait;
-            }
-            catch (JsonException)
-            {
-                onNotice("the server sent something unreadable; reconnecting");
+                onNotice(notice);
+                if (longWait)
+                {
+                    wait = StreamReconnect.LongestWait;
+                }
             }
 
-            try
-            {
-                await Task.Delay(wait, _time, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
+            if (!await StreamReconnect.WaitAsync(wait, _time, cancellationToken).ConfigureAwait(false))
             {
                 return;
             }
 
-            wait = TimeSpan.FromSeconds(Math.Min(LongestWait.TotalSeconds, wait.TotalSeconds * 2));
+            wait = StreamReconnect.Next(wait);
         }
     }
 }

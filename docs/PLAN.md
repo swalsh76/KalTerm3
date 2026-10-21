@@ -425,3 +425,4 @@ and the API contract tests.
   log-rate runs on the target server (S-1d is done, the server is available); measure order book delta and trade layouts.
 - S-4 follow-ups: an install pass on a clean Windows 11 machine (topology A); disabling SQL Server telemetry from the configuration file;
   a pass with a network attached (Windows Update, download paths).
+- Review gate, parked small tidy-ups (owner 2026-10-21): one SQL identifier-quoting helper (Backup and Data), one watchlist-name rule constant in Contracts, one metrics-row record (MetricsCalculator and ScreenerReader), a shared context for BackupService and RestoreService, a shared helper for the API stream test set-up.
