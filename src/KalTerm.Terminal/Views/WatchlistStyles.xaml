@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- One line of the watchlist menu: the lists, checked when the market is in them, then "New watchlist…". Shared by the grid's row menu and the detail's button. -->
+    <Style x:Key="WatchlistItem" TargetType="MenuItem">
+        <Setter Property="Header" Value="{Binding Text}" />
+        <Setter Property="IsCheckable" Value="{Binding IsCheckable, Mode=OneWay}" />
+        <Setter Property="IsChecked" Value="{Binding IsMember, Mode=OneWay}" />
+        <Setter Property="Command" Value="{Binding Command}" />
+    </Style>
+</ResourceDictionary>

@@ -10,6 +10,7 @@ namespace KalTerm.Terminal.Markets;
 /// </summary>
 internal sealed class MarketRowViewModel : ObservableObject
 {
+    private string _lists = string.Empty;
     private string? _bidText;
     private string? _askText;
     private string _last;
@@ -39,6 +40,17 @@ internal sealed class MarketRowViewModel : ObservableObject
     }
 
     public string Ticker { get; }
+
+    /// <summary>The watchlists the market is in, by name, comma separated; empty when it is in none.</summary>
+    public string Lists
+    {
+        get => _lists;
+        private set => Set(ref _lists, value);
+    }
+
+    /// <summary>Tells the row which watchlists it is in.</summary>
+    /// <param name="names">The names of the lists.</param>
+    public void SetLists(IReadOnlyList<string> names) => Lists = string.Join(", ", names);
 
     public string EventTicker { get; }
 

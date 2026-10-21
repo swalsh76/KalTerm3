@@ -29,6 +29,11 @@ internal static class Sta
             {
                 failure = ex;
             }
+            finally
+            {
+                // WPF keeps helper threads for a thread that used it until its dispatcher is shut down; left alone they outlive the tests and hold the test process open past its exit.
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
+            }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
@@ -201,17 +206,72 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return ScreenerAnswer is { } answer ? answer(query) : new ScreenerPage("volume", "desc", "2026-10-18T22:58:00.000000+00:00", 120, [.. ScreenerRows], null);
     }
 
-    public Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>The person's watchlists on the fake server: name to tickers.</summary>
+    public Dictionary<string, List<string>> Lists { get; } = [];
 
-    public Task<WatchlistDto> GetWatchlistAsync(string name, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>Every watchlist call made, as <c>verb NAME [TICKER]</c>.</summary>
+    public List<string> ListCalls { get; } = [];
 
-    public Task<WatchlistDto> CreateWatchlistAsync(string name, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>When set, the next watchlist call fails with it.</summary>
+    public Exception? ListFails { get; set; }
 
-    public Task DeleteWatchlistAsync(string name, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>When set, reading the lists fails with it (changes still work).</summary>
+    public Exception? ListReadFails { get; set; }
 
-    public Task AddToWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    private void ListCall(string call)
+    {
+        ListCalls.Add(call);
+        if (ListFails is { } fail)
+        {
+            ListFails = null;
+            throw fail;
+        }
+    }
 
-    public Task RemoveFromWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default)
+    {
+        ListCall("list");
+        if (ListReadFails is not null)
+        {
+            return Task.FromException<WatchlistListDto>(ListReadFails);
+        }
+
+        return Task.FromResult(new WatchlistListDto([.. Lists.Select(l => new WatchlistSummaryDto(l.Key, l.Value.Count, "2026-10-20T00:00:00+00:00"))]));
+    }
+
+    public Task<WatchlistDto> GetWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ListCall($"get {name}");
+        return Task.FromResult(new WatchlistDto(name, "2026-10-20T00:00:00+00:00", [.. Lists[name]]));
+    }
+
+    public Task<WatchlistDto> CreateWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ListCall($"create {name}");
+        Lists[name] = [];
+        return Task.FromResult(new WatchlistDto(name, "2026-10-20T00:00:00+00:00", []));
+    }
+
+    public Task DeleteWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ListCall($"delete {name}");
+        _ = Lists.Remove(name);
+        return Task.CompletedTask;
+    }
+
+    public Task AddToWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
+    {
+        ListCall($"add {name} {ticker}");
+        Lists[name].Add(ticker);
+        return Task.CompletedTask;
+    }
+
+    public Task RemoveFromWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
+    {
+        ListCall($"remove {name} {ticker}");
+        _ = Lists[name].Remove(ticker);
+        return Task.CompletedTask;
+    }
 
     public Task<AlertListDto> GetAlertsAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
@@ -500,5 +560,30 @@ internal sealed class FakeDialogs : IDialogs
     {
         Shown.Add(connect);
         return Pending is { } pending ? pending.Task : Task.FromResult(Answer(connect));
+    }
+
+    /// <summary>What <see cref="AskNameAsync"/> answers (null: the person gave up).</summary>
+    public string? Name { get; set; }
+
+    /// <summary>What <see cref="ConfirmAsync"/> answers.</summary>
+    public bool Confirm { get; set; } = true;
+
+    /// <summary>The messages the person was shown, as <c>title: message</c>.</summary>
+    public List<string> Asked { get; } = [];
+
+    /// <summary>What the name check said about the answer when it was given.</summary>
+    public string? NameCheck { get; private set; }
+
+    public Task<string?> AskNameAsync(string title, string message, Func<string, string?> check)
+    {
+        Asked.Add($"{title}: {message}");
+        NameCheck = Name is null ? null : check(Name);
+        return Task.FromResult(Name);
+    }
+
+    public Task<bool> ConfirmAsync(string title, string message)
+    {
+        Asked.Add($"{title}: {message}");
+        return Task.FromResult(Confirm);
     }
 }

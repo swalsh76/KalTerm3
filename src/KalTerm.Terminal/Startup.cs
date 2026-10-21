@@ -17,8 +17,9 @@ internal static class Composition
         var format = new Formatting(services.SystemZone);
         var status = new StatusViewModel(format, services.Time);
         MainWindow? window = null;
-        var markets = new MarketsViewModel(format, services.Time);
-        var model = new MainViewModel(services, settings, new WpfDialogs(() => window), format, status, markets);
+        var dialogs = new WpfDialogs(() => window);
+        var markets = new MarketsViewModel(format, services.Time, dialogs: dialogs);
+        var model = new MainViewModel(services, settings, dialogs, format, status, markets);
         window = new MainWindow { DataContext = model };
         return window;
     }

@@ -57,8 +57,16 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     private bool _loading = true;
     private bool _disposed;
 
-    public MarketDetailViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format, TimeProvider time)
+    /// <summary>Opens a market.</summary>
+    /// <param name="ticker">The market.</param>
+    /// <param name="api">The client for its requests.</param>
+    /// <param name="feed">The live feed.</param>
+    /// <param name="format">How values and times look.</param>
+    /// <param name="time">The clock the waits use.</param>
+    /// <param name="watchlists">The menu that adds the market to a watchlist; owned by the detail and disposed with it. Without it the detail has no such button.</param>
+    public MarketDetailViewModel(string ticker, IKalTermApi api, MarketFeed feed, Formatting format, TimeProvider time, WatchlistMenu? watchlists = null)
     {
+        Watchlists = watchlists;
         ArgumentNullException.ThrowIfNull(ticker);
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(feed);
@@ -78,6 +86,12 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
     public event Action? Closed;
 
     public string Ticker { get; }
+
+    /// <summary>The menu that puts the market in a watchlist or takes it out, or <see langword="null"/> when the detail was opened without one.</summary>
+    public WatchlistMenu? Watchlists { get; }
+
+    /// <summary>Whether there is a menu to show.</summary>
+    public bool HasWatchlists => Watchlists is not null;
 
     public RelayCommand BackCommand { get; }
 
@@ -178,6 +192,7 @@ internal sealed class MarketDetailViewModel : ObservableObject, IDisposable
         _disposed = true;
         _format.ZoneChanged -= Redraw;
         _feed.Tick -= OnTick;
+        Watchlists?.Dispose();
         _chart?.Dispose();
         _book?.Dispose();
         _feed.SetWanted(FeedOwner, []);

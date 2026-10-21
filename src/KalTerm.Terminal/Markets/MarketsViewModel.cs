@@ -13,6 +13,28 @@ internal sealed record SortChoice(string Key, string Text);
 /// <summary>A status to show; a <see langword="null"/> value is every status.</summary>
 internal sealed record StatusChoice(string? Value, string Text);
 
+/// <summary>A choice in the list box: every market (no name) or one of the person's watchlists.</summary>
+internal sealed class ListChoice : ObservableObject
+{
+    private string _text;
+
+    public ListChoice(string? name, string text)
+    {
+        Name = name;
+        _text = text;
+    }
+
+    /// <summary>The watchlist's name; <see langword="null"/> for every market.</summary>
+    public string? Name { get; }
+
+    /// <summary>What the person reads: the name and how many markets it holds.</summary>
+    public string Text
+    {
+        get => _text;
+        set => Set(ref _text, value);
+    }
+}
+
 /// <summary>
 /// The Markets page: the screener as a grid, 50 markets at a time, ranked on the server by the chosen figure, filtered by status, minimum volume and a search text, with live prices for the rows on show. Next and
 /// Previous move between pages (the server's cursor only goes forward, so the cursors of the pages visited are kept). The markets on show are the ones the feed watches; when the page, the ranking or a filter changes the
@@ -62,16 +84,30 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     private bool _hasRun;
     private MarketRowViewModel? _selected;
     private MarketDetailViewModel? _detail;
+    private readonly IDialogs? _dialogs;
+    private readonly WatchlistService _watchlists = new();
+    private readonly ListChoice _allMarkets = new(null, "All markets");
+    private ListChoice _listFilter;
+    private StatusChoice? _statusBeforeList;
 
     /// <summary>Creates the page.</summary>
     /// <param name="format">How values and times look.</param>
     /// <param name="time">The clock the waits use.</param>
     /// <param name="context">Where the feed raises its events; the UI thread's context at <see cref="Attach"/> when omitted.</param>
-    public MarketsViewModel(Formatting format, TimeProvider time, SynchronizationContext? context = null)
+    /// <param name="dialogs">Asks for a watchlist's name and for confirmation to delete one; without it those commands do nothing.</param>
+    public MarketsViewModel(Formatting format, TimeProvider time, SynchronizationContext? context = null, IDialogs? dialogs = null)
     {
         _format = format;
         _time = time;
         _context = context;
+        _dialogs = dialogs;
+        _listFilter = _allMarkets;
+        ListChoices = [_allMarkets];
+        Menu = new WatchlistMenu(_watchlists, dialogs, ReportProblem);
+        _watchlists.Changed += OnWatchlistsChanged;
+        NewListCommand = new AsyncCommand(NewListAsync, ex => Error = ex.Message, () => _dialogs is not null && _api is not null);
+        DeleteListCommand = new AsyncCommand(DeleteListAsync, ex => Error = ex.Message, () => _dialogs is not null && _listFilter.Name is not null);
+        RefreshListsCommand = new AsyncCommand(LoadListsAsync, ex => Error = ex.Message, () => _api is not null);
         Statuses =
         [
             new StatusChoice(null, "Any status"),
@@ -108,6 +144,50 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     public IReadOnlyList<StatusChoice> Statuses { get; }
 
     public IReadOnlyList<SortChoice> Sorts { get; }
+
+    /// <summary>"All markets" and then one choice for each watchlist.</summary>
+    public ObservableCollection<ListChoice> ListChoices { get; }
+
+    /// <summary>The menu that adds the selected market to a watchlist and removes it.</summary>
+    public WatchlistMenu Menu { get; }
+
+    public AsyncCommand NewListCommand { get; }
+
+    public AsyncCommand DeleteListCommand { get; }
+
+    public AsyncCommand RefreshListsCommand { get; }
+
+    /// <summary>
+    /// Which markets to list: all, or those in one watchlist. Choosing a list shows markets of every status (a list may hold finished ones that "Active" would hide); going back to all markets restores
+    /// the status that was chosen before.
+    /// </summary>
+    public ListChoice ListFilter
+    {
+        get => _listFilter;
+        set
+        {
+            if ((object?)value is null || !Set(ref _listFilter, value))
+            {
+                return;
+            }
+
+            if (value.Name is not null && _statusBeforeList is null)
+            {
+                _statusBeforeList = _status;
+                _status = Statuses[0];
+                Raise(nameof(StatusFilter));
+            }
+            else if (value.Name is null && _statusBeforeList is { } before)
+            {
+                _status = before;
+                _statusBeforeList = null;
+                Raise(nameof(StatusFilter));
+            }
+
+            DeleteListCommand.RaiseCanExecuteChanged();
+            ReloadSoon(immediately: true);
+        }
+    }
 
     public AsyncCommand NextCommand { get; }
 
@@ -272,6 +352,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         {
             if (Set(ref _selected, value))
             {
+                Menu.Ticker = value?.Ticker;
                 OpenCommand.RaiseCanExecuteChanged();
             }
         }
@@ -307,6 +388,9 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(create);
         Detach();
         _api = create();
+        _watchlists.Attach(_api);
+        NewListCommand.RaiseCanExecuteChanged();
+        RefreshListsCommand.RaiseCanExecuteChanged();
         _feed = new MarketFeed(create(), _time, _context);
         _feed.Tick += OnTick;
         _feed.StateChanged += OnFeedState;
@@ -340,6 +424,19 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
 
         (_api as IDisposable)?.Dispose();
         _api = null;
+        _watchlists.Attach(null);
+        _listFilter = _allMarkets;
+        Raise(nameof(ListFilter));
+        if (_statusBeforeList is { } before)
+        {
+            _status = before;
+            _statusBeforeList = null;
+            Raise(nameof(StatusFilter));
+        }
+
+        NewListCommand.RaiseCanExecuteChanged();
+        DeleteListCommand.RaiseCanExecuteChanged();
+        RefreshListsCommand.RaiseCanExecuteChanged();
         Rows.Clear();
         _byTicker.Clear();
         _cursors.Clear();
@@ -355,13 +452,109 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         RaiseNavigation();
     }
 
-    public void Dispose() => Detach();
+    public void Dispose()
+    {
+        Detach();
+        _watchlists.Changed -= OnWatchlistsChanged;
+        Menu.Dispose();
+    }
 
     /// <summary>Loads the first page again (used when the ranking, a filter or the search changes, and to start).</summary>
     /// <returns>A task that completes when the page is shown or has failed.</returns>
     public async Task LoadAsync()
     {
         await FetchAsync(0, null).ConfigureAwait(true);
+        if (!_watchlists.Loaded)
+        {
+            await LoadListsAsync().ConfigureAwait(true);   // after the page, so the page shows at once and a failure here is not wiped by it
+        }
+    }
+
+    private async Task LoadListsAsync()
+    {
+        if (await _watchlists.LoadAsync().ConfigureAwait(true) is { } problem)
+        {
+            ReportProblem(problem);
+        }
+    }
+
+    private void ReportProblem(string problem) => Error = problem;
+
+    private async Task NewListAsync()
+    {
+        if (_dialogs is null)
+        {
+            return;
+        }
+
+        var name = await _dialogs.AskNameAsync("New watchlist", "A name for the new watchlist.", s => WatchlistService.NameProblem(s)).ConfigureAwait(true);
+        if (name is not null && await _watchlists.CreateAsync(name).ConfigureAwait(true) is { } problem)
+        {
+            ReportProblem(problem);
+        }
+    }
+
+    private async Task DeleteListAsync()
+    {
+        if (_dialogs is null || _listFilter.Name is not { } name)
+        {
+            return;
+        }
+
+        if (await _dialogs.ConfirmAsync("Delete watchlist", $"Delete the watchlist {name}? The markets in it are not affected.").ConfigureAwait(true)
+            && await _watchlists.DeleteAsync(name).ConfigureAwait(true) is { } problem)
+        {
+            ReportProblem(problem);
+        }
+    }
+
+    private void OnWatchlistsChanged()
+    {
+        var present = _watchlists.Lists;
+        for (var i = ListChoices.Count - 1; i >= 1; i--)
+        {
+            if (!present.Any(l => l.Name == ListChoices[i].Name))
+            {
+                ListChoices.RemoveAt(i);
+            }
+        }
+
+        foreach (var info in present)
+        {
+            var text = $"{info.Name} ({info.Count})";
+            var existing = ListChoices.FirstOrDefault(c => c.Name == info.Name);
+            if (existing is null)
+            {
+                var at = 1;
+                while (at < ListChoices.Count && string.CompareOrdinal(ListChoices[at].Name, info.Name) < 0)
+                {
+                    at++;
+                }
+
+                ListChoices.Insert(at, new ListChoice(info.Name, text));
+            }
+            else
+            {
+                existing.Text = text;
+            }
+        }
+
+        foreach (var row in Rows)
+        {
+            row.SetLists(_watchlists.ListsOf(row.Ticker));
+        }
+
+        if (_listFilter.Name is { } viewed)
+        {
+            if (!present.Any(l => l.Name == viewed))
+            {
+                ListFilter = _allMarkets;
+            }
+            else if (Rows.Any(r => !_watchlists.IsMember(viewed, r.Ticker)))
+            {
+                _ = SafeAsync(RefreshAsync);   // a market was taken out of the list on show
+            }
+        }
     }
 
     /// <summary>Loads the page being shown again, with fresh figures.</summary>
@@ -383,7 +576,8 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         }
 
         CloseDetail();
-        var detail = new MarketDetailViewModel(row.Ticker, _api, _feed, _format, _time);
+        var menu = new WatchlistMenu(_watchlists, _dialogs, ReportProblem) { Ticker = row.Ticker };
+        var detail = new MarketDetailViewModel(row.Ticker, _api, _feed, _format, _time, menu);
         detail.Closed += CloseDetail;
         Detail = detail;
         await detail.LoadAsync().ConfigureAwait(true);
@@ -417,7 +611,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         Loading = true;
         try
         {
-            var shown = await _api.GetScreenerAsync(new ScreenQuery(Sort.Key, _descending ? "desc" : "asc", StatusFilter.Value, MinVolume, PageSize, cursor, null, EffectiveSearch), token).ConfigureAwait(true);
+            var shown = await _api.GetScreenerAsync(new ScreenQuery(Sort.Key, _descending ? "desc" : "asc", StatusFilter.Value, MinVolume, PageSize, cursor, _listFilter.Name, EffectiveSearch), token).ConfigureAwait(true);
             if (token.IsCancellationRequested)
             {
                 return;
@@ -465,6 +659,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         foreach (var row in shown.Rows)
         {
             var model = new MarketRowViewModel(row);
+            model.SetLists(_watchlists.ListsOf(row.Ticker));
             Rows.Add(model);
             _byTicker[row.Ticker] = model;
         }
