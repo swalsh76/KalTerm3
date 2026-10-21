@@ -1717,3 +1717,18 @@ history is the client's to load over REST.
   lookup), the endpoint over a test server (every route and refusal, the confirmations, the book after its confirmation, a book subscribed again, another user's token), the client calls and events, the watcher (live, between connections,
   before `ready`, refusals, an empty list) and `kterm watch` (typed lines, bad lines, refusals, confirmations, JSON, piped input), and one end-to-end test on a real database. Run on kaldb: API 368.
 - Rollout: the API only (no migration, ingest untouched). The live check after it adds a watched market to a running stream and compares its stream ticks with REST for the same window.
+
+### 9.4 The stream's tick margin is 3 seconds (2026-10-20)
+
+The live check of 7.2b (API release host-707ba8f) compared a stream's ticks with the same window read over REST, three times, on the busiest watched markets. Two of the three runs were each one tick short, on markets the stream had
+watched from the start and on one added live (about 3 ticks in 900), and one miss fell 8.7 s before the end of the window, so it was not a boundary effect. The cause is the 2-second margin of 7.2: a poll reads rows up to 2 s old once a
+second, and a row that reaches the table after the poll has gone past its time is never sent.
+
+Measured on kaldb itself (a read-only script polling the ticker table of the 6 busiest markets every 0.19 s for 3 minutes, 1,015 ticks, the server's own clock): a row is readable a median of 1.13 s after its time, 90% within 1.39 s, 99% within
+1.95 s, at most 2.15 s; 6 of 1,015 took longer than 2 s. (Measured through the REST endpoint from a workstation the same rows looked about 0.8 s later: the request and the polling add to it; that figure is not the table's.) With a poll every second,
+a row that is readable after 2 + u seconds (u between 0 and 1) is lost, which matches about one in 300.
+
+Decision (owner, 2026-10-20, option A): `MarketStreamOptions.TickLag` is 3 seconds. Ticks reach a client 3 to 4 seconds after they happen (the 2 to 3 seconds approved for 7.2 was optimistic by one second); the largest delay measured leaves
+about 0.85 s of margin. A tick that is later than that is still missed silently; a client that needs every tick reads REST after a reconnect. Not done, and parked as an option if it ever matters: re-reading a trailing window with a
+per-stream list of what was sent, which would keep the latency at 2 to 3 s and recover late rows. The same live check, with the corrected window, showed the live add (`subscribed` with its start time, no tick before it) and the removal
+(`unsubscribed`, no tick for the market after it) behave as designed.

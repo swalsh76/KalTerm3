@@ -34,9 +34,10 @@ public sealed record MarketStreamOptions
 
     /// <summary>
     /// How far behind now the ticker table is read. The ingest writes in batches that flush at least once a second, and a row can land just after rows with a later time; reading only what is at least this old means
-    /// the rows of a moment are all there before they are read. Default 2 seconds.
+    /// the rows of a moment are all there before they are read. Measured on the server (BUILD-LOG 9.4): a row is readable a median of 1.1 s after its time, 99% within 2 s, at most 2.15 s in three minutes; a 2-second margin lost
+    /// about one tick in 300, so the margin is 3 seconds. Default 3 seconds.
     /// </summary>
-    public TimeSpan TickLag { get; init; } = TimeSpan.FromSeconds(2);
+    public TimeSpan TickLag { get; init; } = TimeSpan.FromSeconds(3);
 
     /// <summary>The most ticker rows one poll reads. Default 20,000.</summary>
     public int PollRows { get; init; } = 20_000;

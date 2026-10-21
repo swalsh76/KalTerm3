@@ -36,7 +36,7 @@ public sealed class MarketStreamChangeHubTests
     {
         using var hub = Hub();
         using var session = (await hub.TryOpenAsync(1, Set("KX-1"), Set(), Ct))!;
-        _time.Advance(TimeSpan.FromSeconds(5));
+        _time.Advance(TimeSpan.FromSeconds(6));
         await hub.PollAsync(Ct);
         Drain(session);
         _time.Advance(TimeSpan.FromSeconds(1));
@@ -270,7 +270,7 @@ public sealed class MarketStreamChangeEndpointTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.NoContent, put.StatusCode);
         Assert.Equal("event: subscribed", confirmation[0]);
-        Assert.Equal(new StreamSubscriptionDto("ticks", "KX-2", At(-2), false, false), Data<StreamSubscriptionDto>(confirmation));
+        Assert.Equal(new StreamSubscriptionDto("ticks", "KX-2", At(-3), false, false), Data<StreamSubscriptionDto>(confirmation));
         Fakes.StreamReader.Rows.Add(new StreamTick("KX-2", Tick(NowUtc.AddSeconds(-1), 575_000)));
         Fakes.StreamTime.Advance(TimeSpan.FromSeconds(5));
         await Fakes.StreamHub.PollAsync(TestContext.Current.CancellationToken);
