@@ -334,7 +334,7 @@ internal sealed class Harness : IDisposable
     public TokenStore Tokens { get; }
 
     /// <summary>What the server presents when <c>trust</c> reads its certificate.</summary>
-    public ServerIdentity Identity { get; set; } = new(new KalTerm.Security.CertificateInfo("CN=kaldb, O=KalTerm", new string('A', 8) + new string('B', 56), new DateTime(2026, 10, 19, 0, 0, 0, DateTimeKind.Utc), new DateTime(2028, 10, 18, 0, 0, 0, DateTimeKind.Utc), ["kaldb", "192.168.1.20"]));
+    public ServerIdentity Identity { get; set; } = new(new KalTerm.Security.CertificateInfo("CN=srv01, O=KalTerm", new string('A', 8) + new string('B', 56), new DateTime(2026, 10, 19, 0, 0, 0, DateTimeKind.Utc), new DateTime(2028, 10, 18, 0, 0, 0, DateTimeKind.Utc), ["srv01", "203.0.113.20"]));
 
     public Exception? ProbeFails { get; set; }
 

@@ -16,19 +16,19 @@ public sealed class ConnectViewModelTests : IDisposable
     [Fact]
     public void ItStartsAtTheAddressAndRemembersTheServerGiven()
     {
-        var model = Model(new Uri("https://kaldb:5280/"));
+        var model = Model(new Uri("https://srv01:5280/"));
 
         Assert.True(model.OnAddress);
-        Assert.Equal("https://kaldb:5280", model.Address);
+        Assert.Equal("https://srv01:5280", model.Address);
         Assert.Equal("Connect to a KalTerm server", model.Heading);
         Assert.True(model.NextCommand.CanExecute(null));
         Assert.False(Model().NextCommand.CanExecute(null));
     }
 
     [Theory]
-    [InlineData("kaldb")]
+    [InlineData("srv01")]
     [InlineData("http://example.invalid:5280")]
-    [InlineData("kaldb:99999")]
+    [InlineData("srv01:99999")]
     public async Task AnAddressThatIsNotAServerIsRefusedWithAnExample(string address)
     {
         var model = Model();
@@ -37,7 +37,7 @@ public sealed class ConnectViewModelTests : IDisposable
         await model.NextCommand.RunAsync();
 
         Assert.True(model.HasMessage);
-        Assert.Contains("kaldb:5280", model.Message, StringComparison.Ordinal);
+        Assert.Contains("srv01:5280", model.Message, StringComparison.Ordinal);
         Assert.Empty(_t.Probed);
     }
 
@@ -45,16 +45,16 @@ public sealed class ConnectViewModelTests : IDisposable
     public async Task AServerNotTrustedYetShowsItsCertificateAndOnlyTheTypedStartTrustsIt()
     {
         var model = Model();
-        model.Address = "kaldb:5280";
+        model.Address = "srv01:5280";
 
         await model.NextCommand.RunAsync();
 
         Assert.True(model.OnTrust);
-        Assert.Equal([("kaldb", 5280)], _t.Probed);
-        Assert.Equal("kaldb:5280", model.ServerName);
-        Assert.Equal("CN=kaldb, O=KalTerm", model.Subject);
+        Assert.Equal([("srv01", 5280)], _t.Probed);
+        Assert.Equal("srv01:5280", model.ServerName);
+        Assert.Equal("CN=srv01, O=KalTerm", model.Subject);
         Assert.Equal("valid 2026-10-19 to 2028-10-18", model.Validity);
-        Assert.Equal("kaldb, 192.168.1.20", model.Names);
+        Assert.Equal("srv01, 203.0.113.20", model.Names);
         Assert.StartsWith("AB:CD:EF:01:23:45:67:89", model.Fingerprint, StringComparison.Ordinal);
         Assert.Contains(Start, model.ConfirmHint, StringComparison.Ordinal);
         Assert.False(model.TrustCommand.CanExecute(null));
@@ -78,13 +78,13 @@ public sealed class ConnectViewModelTests : IDisposable
         _t.Pins.Set(TestServices.Key, Samples.Fingerprint, Samples.Now.UtcDateTime);
         _t.Tokens.Set(TestServices.Key, Samples.Token);
         var model = Model();
-        model.Address = "https://kaldb:5280";
+        model.Address = "https://srv01:5280";
         var closed = 0;
         model.Closed += () => closed++;
 
         await model.NextCommand.RunAsync();
 
-        Assert.Equal(new Uri("https://kaldb:5280"), model.Result);
+        Assert.Equal(new Uri("https://srv01:5280"), model.Result);
         Assert.Equal(1, closed);
         Assert.Empty(_t.Probed);
     }
@@ -94,7 +94,7 @@ public sealed class ConnectViewModelTests : IDisposable
     {
         _t.Pins.Set(TestServices.Key, Samples.Fingerprint, Samples.Now.UtcDateTime);
         var model = Model();
-        model.Address = "kaldb:5280";
+        model.Address = "srv01:5280";
 
         await model.NextCommand.RunAsync();
 
@@ -170,7 +170,7 @@ public sealed class ConnectViewModelTests : IDisposable
     {
         _t.ProbeFails = new HttpRequestException("no route to host");
         var model = Model();
-        model.Address = "kaldb:5280";
+        model.Address = "srv01:5280";
 
         await model.NextCommand.RunAsync();
 
@@ -198,7 +198,7 @@ public sealed class ConnectViewModelTests : IDisposable
         _t.Tokens.Set(TestServices.Key, Samples.Token);
         var model = Model();
 
-        await model.StartAtTrustAsync(new Uri("https://kaldb:5280"), "WARNING: the certificate CHANGED");
+        await model.StartAtTrustAsync(new Uri("https://srv01:5280"), "WARNING: the certificate CHANGED");
 
         Assert.True(model.OnTrust);
         Assert.True(model.HasWarning);
@@ -206,7 +206,7 @@ public sealed class ConnectViewModelTests : IDisposable
         model.ConfirmText = Start;
         model.TrustCommand.Execute(null);
         Assert.Equal(Samples.Fingerprint, _t.Pins.Get(TestServices.Key)!.Fingerprint);
-        Assert.Equal(new Uri("https://kaldb:5280"), model.Result);   // the token was already stored: connected
+        Assert.Equal(new Uri("https://srv01:5280"), model.Result);   // the token was already stored: connected
         Assert.False(model.HasWarning);
     }
 
@@ -216,7 +216,7 @@ public sealed class ConnectViewModelTests : IDisposable
         _t.ProbeFails = new IOException("connection reset");
         var model = Model();
 
-        await model.StartAtTrustAsync(new Uri("https://kaldb:5280"), string.Empty);
+        await model.StartAtTrustAsync(new Uri("https://srv01:5280"), string.Empty);
 
         Assert.Equal("Cannot reach the server: connection reset", model.Message);
         Assert.False(model.OnTrust);
@@ -227,12 +227,12 @@ public sealed class ConnectViewModelTests : IDisposable
     {
         var model = Model();
 
-        model.StartAtLogin(new Uri("https://kaldb:5280"), "The server did not accept the stored token.");
+        model.StartAtLogin(new Uri("https://srv01:5280"), "The server did not accept the stored token.");
 
         Assert.True(model.OnLogin);
         Assert.Equal("Log in", model.Heading);
         Assert.Equal("The server did not accept the stored token.", model.Message);
-        Assert.Equal("https://kaldb:5280", model.Address);
+        Assert.Equal("https://srv01:5280", model.Address);
     }
 
     [Fact]
@@ -268,7 +268,7 @@ public sealed class ConnectViewModelTests : IDisposable
                 SystemZone = TimeZoneInfo.Utc,
             };
             var model = new ConnectViewModel(services);
-            model.Address = "kaldb:5280";
+            model.Address = "srv01:5280";
 
             await model.NextCommand.RunAsync();
 

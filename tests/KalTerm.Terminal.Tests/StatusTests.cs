@@ -293,18 +293,18 @@ public sealed class StatusViewModelTests : IDisposable
     public async Task AnUnreachableServerAndAnUntrustedCertificateAreReportedWithTheirOwnWords()
     {
         _model.Attach(_t.Api);
-        _t.Api.StatusFails = new ApiUnavailableException("could not reach kaldb:5280");
+        _t.Api.StatusFails = new ApiUnavailableException("could not reach srv01:5280");
         Exception? reported = null;
         _model.Failed += ex => reported = ex;
 
         await _model.RefreshAsync(Ct);
-        Assert.Equal("could not reach kaldb:5280", _model.Error);
+        Assert.Equal("could not reach srv01:5280", _model.Error);
         Assert.IsType<ApiUnavailableException>(reported);
         Assert.False(_model.Loading);   // there is a reason to show instead of "Loading"
 
-        _t.Api.StatusFails = new TlsTrustException(TrustFailure.Changed, "kaldb:5280", Samples.Fingerprint, Samples.Fingerprint, new InvalidOperationException());
+        _t.Api.StatusFails = new TlsTrustException(TrustFailure.Changed, "srv01:5280", Samples.Fingerprint, Samples.Fingerprint, new InvalidOperationException());
         await _model.RefreshAsync(Ct);
-        Assert.StartsWith("WARNING: the certificate of kaldb:5280 CHANGED", _model.Error, StringComparison.Ordinal);
+        Assert.StartsWith("WARNING: the certificate of srv01:5280 CHANGED", _model.Error, StringComparison.Ordinal);
     }
 
     [Fact]

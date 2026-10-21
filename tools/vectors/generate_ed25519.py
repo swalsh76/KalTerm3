@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Kalshi.Auth from the Python reference (kalshi_core.auth).
 
-    python tools/vectors/generate_ed25519.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_ed25519.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Needs the ``cryptography`` package (the reference signs with it); the generated JSON is committed, so CI never
 runs Python. Ed25519 (RFC 8032) is deterministic, so a fixed seed and message always give the same signature.

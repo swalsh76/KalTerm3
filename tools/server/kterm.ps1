@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Runs the kterm CLI on the server (kaldb) through remoting, where the API listens on loopback only (decision D5).
+Runs the kterm CLI on the server (srv01) through remoting, where the API listens on loopback only (decision D5).
 
 .DESCRIPTION
 Publishes src/KalTerm.Cli self-contained when asked (or when there is no published copy yet), syncs it by SHA-256 to C:\KalTerm\cli on the server, and runs
@@ -10,7 +10,7 @@ KALTERM_TEST_CRED in your own environment.
 
 Everything after the options below goes to kterm unchanged, so put `--` first if kterm's own options (for example --json) would be mistaken for this script's:
 
-    .\tools\kaldb\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- status --json
+    .\tools\server\kterm.ps1 -ComputerName <host> -CredentialPath <file> -- status --json
 
 .PARAMETER Publish
 Publish the CLI again before syncing (otherwise a published copy from an earlier run is reused).

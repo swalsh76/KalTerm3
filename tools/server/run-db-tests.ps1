@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Runs the database-backed test suites on the target server (kaldb) against its real SQL Server instance.
+Runs the database-backed test suites on the target server (srv01) against its real SQL Server instance.
 
 .DESCRIPTION
 Publishes the Data, Ingest and Api test projects self-contained with coverage off (coverlet.MTP is not in a publish's deps.json), copies only

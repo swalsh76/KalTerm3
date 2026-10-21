@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Kalshi.Configuration from the Python reference (kalshi_core.config).
 
-    python tools/vectors/generate_config.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_config.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 The reference's ``config.py`` needs pydantic to import, so it is read statically with ``ast`` instead: the
 URL maps, the field defaults, the constraints and the variable prefix are extracted from the source itself,

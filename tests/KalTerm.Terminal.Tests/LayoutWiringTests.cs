@@ -208,7 +208,7 @@ public sealed class ChartPreferencesTests : IDisposable
 
 public sealed class LayoutWiringTests : IDisposable
 {
-    private static readonly Uri Server = new("https://kaldb:5280");
+    private static readonly Uri Server = new("https://srv01:5280");
 
     private readonly TestServices _t = new();
     private readonly FakeDialogs _dialogs = new();

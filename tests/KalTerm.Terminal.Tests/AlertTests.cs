@@ -246,16 +246,16 @@ public sealed class AlertSettingsTests : IDisposable
     [Fact]
     public void TheNewestFireSeenIsRememberedForEachServerAndTheServerIsKept()
     {
-        Assert.Null(_t.Settings.LoadLastFire("kaldb:5280"));
-        _t.Settings.SaveServer(new Uri("https://kaldb:5280"));
+        Assert.Null(_t.Settings.LoadLastFire("srv01:5280"));
+        _t.Settings.SaveServer(new Uri("https://srv01:5280"));
 
-        _t.Settings.SaveLastFire("kaldb:5280", 41);
+        _t.Settings.SaveLastFire("srv01:5280", 41);
         _t.Settings.SaveLastFire("other:5280", 7);
-        _t.Settings.SaveLastFire("kaldb:5280", 42);
-        _t.Settings.SaveServer(new Uri("https://kaldb:5280"));
+        _t.Settings.SaveLastFire("srv01:5280", 42);
+        _t.Settings.SaveServer(new Uri("https://srv01:5280"));
 
-        Assert.Equal((42L, 7L), (_t.Settings.LoadLastFire("kaldb:5280"), _t.Settings.LoadLastFire("other:5280")));
-        Assert.Equal(new Uri("https://kaldb:5280"), _t.Settings.LoadServer());
+        Assert.Equal((42L, 7L), (_t.Settings.LoadLastFire("srv01:5280"), _t.Settings.LoadLastFire("other:5280")));
+        Assert.Equal(new Uri("https://srv01:5280"), _t.Settings.LoadServer());
         Assert.Null(_t.Settings.LoadLastFire("third:5280"));
     }
 
@@ -268,9 +268,9 @@ public sealed class AlertSettingsTests : IDisposable
         {
             var store = new TerminalSettingsStore(path);
             Assert.Null(store.LoadServer());
-            Assert.Null(store.LoadLastFire("kaldb:5280"));
-            store.SaveLastFire("kaldb:5280", 3);
-            Assert.Equal(3, store.LoadLastFire("kaldb:5280"));
+            Assert.Null(store.LoadLastFire("srv01:5280"));
+            store.SaveLastFire("srv01:5280", 3);
+            Assert.Equal(3, store.LoadLastFire("srv01:5280"));
         }
         finally
         {
@@ -281,7 +281,7 @@ public sealed class AlertSettingsTests : IDisposable
 
 public sealed class AlertNotifierTests : IDisposable
 {
-    private const string Key = "kaldb:5280";
+    private const string Key = "srv01:5280";
 
     private readonly TestServices _t = new();
     private readonly FakeToaster _toaster = new();
@@ -782,7 +782,7 @@ public sealed class AlertsViewModelTests : IDisposable
 
 public sealed class AlertWiringTests : IDisposable
 {
-    private static readonly Uri Server = new("https://kaldb:5280");
+    private static readonly Uri Server = new("https://srv01:5280");
 
     private readonly TestServices _t = new();
     private readonly FakeDialogs _dialogs = new();

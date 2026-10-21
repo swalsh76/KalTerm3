@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Core.Fees from the Python reference (kalshi_core.fees).
 
-    python tools/vectors/generate_fees.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_fees.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Expectation strings: an integer; ``refuse`` (outside the domain: ValueError in the reference); or
 ``overflow`` (Python's unbounded integer result does not fit a signed 64-bit long, so the C# port

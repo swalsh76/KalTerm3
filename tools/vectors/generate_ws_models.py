@@ -1,6 +1,6 @@
 """Generate golden vectors for the WebSocket models in KalTerm.Kalshi from the Python reference (kalshi_core.ws_models).
 
-    python tools/vectors/generate_ws_models.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_ws_models.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Needs pydantic (``pip install pydantic`` in a throwaway venv). The generated JSON is committed, so CI never runs Python.
 

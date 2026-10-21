@@ -186,15 +186,15 @@ public sealed class AdminAccessTests : IDisposable
     public async Task ACertificateIsMadeShownAndNeverSilentlyReplacedByInit()
     {
         var noneYet = await RunAsync("cert", "show");
-        var init = await RunAsync("cert", "init", "--host", "kaldb", "--ip", "192.168.1.20");
+        var init = await RunAsync("cert", "init", "--host", "srv01", "--ip", "203.0.113.20");
         var show = await RunAsync("cert", "show");
-        var again = await RunAsync("cert", "init", "--host", "kaldb");
+        var again = await RunAsync("cert", "init", "--host", "srv01");
 
         Assert.Equal((1, 0, 0, 1), (noneYet, init, show, again));
         Assert.Contains("cert init", _err.ToString(), StringComparison.Ordinal);
         Assert.Contains("there is already a certificate", _err.ToString(), StringComparison.Ordinal);
         var output = _out.ToString();
-        Assert.Contains("names:       kaldb, 192.168.1.20, 127.0.0.1", output, StringComparison.Ordinal);
+        Assert.Contains("names:       srv01, 203.0.113.20, 127.0.0.1", output, StringComparison.Ordinal);
         Assert.Contains("validity:    valid 2026-10-19 to 2028-10-18", output, StringComparison.Ordinal);
         var fingerprints = output.Split('\n').Where(l => l.StartsWith("fingerprint: ", StringComparison.Ordinal)).Select(l => l.Trim()).ToList();
         Assert.Equal(2, fingerprints.Count);
@@ -205,8 +205,8 @@ public sealed class AdminAccessTests : IDisposable
     [Fact]
     public async Task ABadAddressOrLifetimeIsRefusedBeforeAnythingIsWritten()
     {
-        var badIp = await RunAsync("cert", "init", "--host", "kaldb", "--ip", "not-an-ip");
-        var badDays = await RunAsync("cert", "init", "--host", "kaldb", "--days", "0");
+        var badIp = await RunAsync("cert", "init", "--host", "srv01", "--ip", "not-an-ip");
+        var badDays = await RunAsync("cert", "init", "--host", "srv01", "--days", "0");
         var noHost = await RunAsync("cert", "init");
 
         Assert.Equal((1, 1, 1), (badIp, badDays, noHost));
@@ -218,7 +218,7 @@ public sealed class AdminAccessTests : IDisposable
     [Fact]
     public async Task RotatingKeepsTheNamesGivesANewFingerprintAndSaysTheOldOne()
     {
-        await RunAsync("cert", "init", "--host", "kaldb", "--ip", "192.168.1.20");
+        await RunAsync("cert", "init", "--host", "srv01", "--ip", "203.0.113.20");
         using var before = ServerCertificate.Load(Path.Combine(_dir, "tls"));
         _out.GetStringBuilder().Clear();
 

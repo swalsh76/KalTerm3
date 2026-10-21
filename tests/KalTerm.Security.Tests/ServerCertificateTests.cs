@@ -20,17 +20,17 @@ public sealed class ServerCertificateTests : IDisposable
     }
 
     private static X509Certificate2 Make(params string[] names) =>
-        ServerCertificate.Create(names.Length == 0 ? ["kaldb"] : names, [IPAddress.Parse("192.168.1.20")], TimeSpan.FromDays(730), Now);
+        ServerCertificate.Create(names.Length == 0 ? ["srv01"] : names, [IPAddress.Parse("203.0.113.20")], TimeSpan.FromDays(730), Now);
 
     [Fact]
     public void ACertificateNamesTheHostItsAddressAndIsValidForTwoYears()
     {
-        using var certificate = Make("kaldb", "localhost");
+        using var certificate = Make("srv01", "localhost");
 
         var info = CertificateInfo.Of(certificate);
 
-        Assert.Equal("CN=kaldb, O=KalTerm", info.Subject);
-        Assert.Equal(["kaldb", "localhost", "192.168.1.20"], info.Names);
+        Assert.Equal("CN=srv01, O=KalTerm", info.Subject);
+        Assert.Equal(["srv01", "localhost", "203.0.113.20"], info.Names);
         Assert.Equal(Now.UtcDateTime.AddMinutes(-5), info.NotBefore);
         Assert.Equal(Now.UtcDateTime.AddDays(730), info.NotAfter);
         Assert.Equal("valid 2026-10-19 to 2028-10-18", ServerCertificate.Validity(info));
@@ -124,9 +124,9 @@ public sealed class ServerCertificateTests : IDisposable
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => ServerCertificate.Create([], [], TimeSpan.FromDays(1), Now));
         Assert.Throws<ArgumentOutOfRangeException>(() => ServerCertificate.Create([" "], [], TimeSpan.FromDays(1), Now));
-        Assert.Throws<ArgumentOutOfRangeException>(() => ServerCertificate.Create(["kaldb"], [], TimeSpan.Zero, Now));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ServerCertificate.Create(["srv01"], [], TimeSpan.Zero, Now));
         Assert.Throws<ArgumentNullException>(() => ServerCertificate.Create(null!, [], TimeSpan.FromDays(1), Now));
-        Assert.Throws<ArgumentNullException>(() => ServerCertificate.Create(["kaldb"], null!, TimeSpan.FromDays(1), Now));
+        Assert.Throws<ArgumentNullException>(() => ServerCertificate.Create(["srv01"], null!, TimeSpan.FromDays(1), Now));
         Assert.Throws<ArgumentNullException>(() => ServerCertificate.Save(_dir, null!));
         Assert.Throws<ArgumentNullException>(() => CertificateInfo.Of(null!));
         Assert.Throws<ArgumentNullException>(() => ServerCertificate.Validity(null!));

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Runs kalterm-admin (backup and restore) on the server (kaldb) through remoting.
+Runs kalterm-admin (backup and restore) on the server (srv01) through remoting.
 
 .DESCRIPTION
 Publishes src/KalTerm.Admin self-contained when asked (or when there is no published copy yet), syncs it by SHA-256 to C:\KalTerm\admin on the server, and runs
@@ -10,14 +10,14 @@ KALTERM_TEST_CRED in your own environment.
 
 Everything after the options below goes to kalterm-admin unchanged; put `--` first if its own options would be mistaken for this script's:
 
-    .\tools\kaldb\admin.ps1 -- backup list
-    .\tools\kaldb\admin.ps1 -- backup run --full
-    .\tools\kaldb\admin.ps1 -- restore --database KalTerm_check
+    .\tools\server\admin.ps1 -- backup list
+    .\tools\server\admin.ps1 -- backup run --full
+    .\tools\server\admin.ps1 -- restore --database KalTerm_check
 
 To store the credential for the backup share (you type the password here, on your own computer; it travels to the server over the remoting session and is
 stored there protected for that machine, never in a file you can read and never in the repository):
 
-    .\tools\kaldb\admin.ps1 -SetShareCredential
+    .\tools\server\admin.ps1 -SetShareCredential
 
 .PARAMETER Publish
 Publish kalterm-admin again before syncing.

@@ -259,14 +259,14 @@ public sealed class CandleChartViewModelTests : IDisposable
     {
         var chart = await LoadedAsync();
 
-        _t.Api.CandlesFail = new ApiUnavailableException("could not reach kaldb:5280");
+        _t.Api.CandlesFail = new ApiUnavailableException("could not reach srv01:5280");
         await Wait.FireUntilAsync(_t.Time, () => chart.HasError);
         var said = chart.Error;
         var held = chart.Series.Candles.Count;
         _t.Api.CandlesFail = null;
         await Wait.FireUntilAsync(_t.Time, () => !chart.HasError);
 
-        Assert.Equal(("could not reach kaldb:5280", 5, 5), (said, held, chart.Series.Candles.Count));
+        Assert.Equal(("could not reach srv01:5280", 5, 5), (said, held, chart.Series.Candles.Count));
     }
 
     [Fact]

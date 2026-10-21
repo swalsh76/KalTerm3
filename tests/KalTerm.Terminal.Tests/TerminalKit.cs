@@ -560,7 +560,7 @@ internal static class Samples
             new BooksStatusDto(2, 0, 0, 3));
 
     public static ServerIdentity Identity(string fingerprint = Fingerprint) =>
-        new(new CertificateInfo("CN=kaldb, O=KalTerm", fingerprint, new DateTime(2026, 10, 19, 0, 0, 0, DateTimeKind.Utc), new DateTime(2028, 10, 18, 0, 0, 0, DateTimeKind.Utc), ["kaldb", "192.168.1.20"]));
+        new(new CertificateInfo("CN=srv01, O=KalTerm", fingerprint, new DateTime(2026, 10, 19, 0, 0, 0, DateTimeKind.Utc), new DateTime(2028, 10, 18, 0, 0, 0, DateTimeKind.Utc), ["srv01", "203.0.113.20"]));
 
     public const string Token = "kt_0123456789abcdef0123456789abcdef0123456789a";
 
@@ -667,7 +667,7 @@ internal sealed class TestServices : IDisposable
 
     public TimeZoneInfo SystemZone { get; set; } = TimeZoneInfo.Utc;
 
-    public static string Key => "kaldb:5280";
+    public static string Key => "srv01:5280";
 
     public void Dispose()
     {

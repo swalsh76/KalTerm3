@@ -1,6 +1,6 @@
 """Generate golden vectors for KalTerm.Kalshi.OrderBook (the book builder) from the Python reference (kalshi_core.orderbook.BookTracker).
 
-    python tools/vectors/generate_orderbook.py --reference C:\\Users\\stebe\\dev\\KalshiTerm2
+    python tools/vectors/generate_orderbook.py --reference %USERPROFILE%\\dev\\KalshiTerm2
 
 Needs the reference's dependencies (pydantic, pydantic-settings, cryptography, httpx, websockets) in a throwaway venv outside the repo. The
 generated JSON is committed, so CI never runs Python.

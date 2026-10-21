@@ -52,7 +52,7 @@ public sealed class AuthenticationTests : IAsyncDisposable
         }
     }
 
-    private async Task<ApiTestHost> StartAsync(string remote = "192.168.1.50", string local = "192.168.1.20", bool https = true)
+    private async Task<ApiTestHost> StartAsync(string remote = "203.0.113.50", string local = "203.0.113.20", bool https = true)
     {
         _api = await ApiTestHost.StartWithAuthAsync(_users, _time, context =>
         {
@@ -172,7 +172,7 @@ public sealed class AuthenticationTests : IAsyncDisposable
         var httpsStatus = await GetAsync(loopbackHttps, "/v1/status");
         await loopbackHttps.DisposeAsync();
 
-        var forwarded = await StartAsync("192.168.1.50", "127.0.0.1", https: false);
+        var forwarded = await StartAsync("203.0.113.50", "127.0.0.1", https: false);
         var fromElsewhere = await GetAsync(forwarded, "/v1/status");
 
         Assert.Equal(HttpStatusCode.Unauthorized, lan.StatusCode);
@@ -200,7 +200,7 @@ public sealed class AuthenticationTests : IAsyncDisposable
         Assert.Equal(HttpStatusCode.OK, (await GetAsync(api, "/healthz")).StatusCode);   // health stays open
         await api.DisposeAsync();
 
-        var other = await StartAsync("192.168.1.77");
+        var other = await StartAsync("203.0.113.77");
         Assert.Equal(HttpStatusCode.OK, (await GetAsync(other, "/v1/markets", "Bearer " + token)).StatusCode);
     }
 

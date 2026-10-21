@@ -8,7 +8,7 @@ using KalTerm.Data.State;
 
 namespace KalTerm.Api.Tests;
 
-/// <summary>The whole stack with nothing faked: a real database, the real readers, the real pipeline. Skipped where no SQL Server is available (run on kaldb).</summary>
+/// <summary>The whole stack with nothing faked: a real database, the real readers, the real pipeline. Skipped where no SQL Server is available (run on srv01).</summary>
 public sealed class DatabaseEndpointTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
 {
     private static readonly DateTime Day = new(2026, 3, 10, 10, 0, 0, DateTimeKind.Utc);
