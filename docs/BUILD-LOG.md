@@ -1821,3 +1821,5 @@ from the stream. No server change.
 
 Follow-up to 7.4 (owner, after the first look): a small colour legend under the chart (closed at or above its open, closed below its open, data may be missing, volume, last price). The colours live in one place (`ChartColors`): the drawing and the legend
 (`ChartBrushes`) both read it, and a test pins that the swatches are the colours the chart is drawn with.
+
+Follow-up to 7.4 (owner): on a 1-hour chart over a week the vertical grid followed the axis labels, every second hour. `CandleGridTicks` keeps the usual date labels (and their stronger lines) and adds a fainter line at the start of every candle, as the zone's clock shows it; it leaves them out when candles are closer than 5 pixels (1,000 one-minute candles would be a grey wall). ScottPlot's date axis insists on its own tick generator, so the chart uses the plain bottom axis with a generator that wraps the date labels. Looked at on a week of hourly candles (168 lines) and on 1,000 one-minute candles (none).
