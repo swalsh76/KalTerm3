@@ -58,8 +58,6 @@ public sealed record ResetEvent(string Reason) : MarketStreamEvent;
 /// <param name="change">Adds (true) or removes (false) one market of an open stream: the stream's id, what for, the ticker. Without it a change waits for the next connection.</param>
 public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, IAsyncEnumerable<MarketStreamEvent>> open, TimeProvider? time = null, Func<string, StreamKind, string, bool, CancellationToken, Task>? change = null)
 {
-    private static readonly TimeSpan FirstWait = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan LongestWait = TimeSpan.FromSeconds(30);
 
     private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly Lock _sync = new();
@@ -170,7 +168,7 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
 
         string? resume = null;
         var atResume = new HashSet<string>(StringComparer.Ordinal);   // ticks already delivered at the resume moment, which the server sends again (it resumes inclusively)
-        var wait = FirstWait;
+        var wait = StreamReconnect.FirstWait;
         while (!cancellationToken.IsCancellationRequested)
         {
             string[] askedTicks;
@@ -186,7 +184,7 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
                 // Nothing is watched (every market was removed): the server refuses an empty stream, so wait for a market to be added.
                 try
                 {
-                    await Task.Delay(FirstWait, _time, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(StreamReconnect.FirstWait, _time, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -201,7 +199,7 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
             {
                 await foreach (var item in open(new MarketStreamRequest(askedTicks, askedBooks, depth, resume), cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
                 {
-                    wait = FirstWait;
+                    wait = StreamReconnect.FirstWait;
                     switch (item)
                     {
                         case ReadyEvent ready:
@@ -249,22 +247,13 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
             {
                 return;
             }
-            catch (ApiUnavailableException ex)
+            catch (Exception ex) when (StreamReconnect.TryDescribe(ex, out var notice, out var longWait))
             {
-                onNotice(ex.Message);
-            }
-            catch (IOException ex)
-            {
-                onNotice("the connection dropped: " + ex.Message);
-            }
-            catch (ApiException ex) when (ex.Code is "too_many_streams" or "http_error")
-            {
-                onNotice(ex.Code == "too_many_streams" ? "the server has too many streams open for you; waiting" : $"the server answered {(ex.Status is { } status ? (int)status : 0)}; waiting");
-                wait = LongestWait;
-            }
-            catch (JsonException)
-            {
-                onNotice("the server sent something unreadable; reconnecting");
+                onNotice(notice);
+                if (longWait)
+                {
+                    wait = StreamReconnect.LongestWait;
+                }
             }
             finally
             {
@@ -279,16 +268,12 @@ public sealed class MarketWatcher(Func<MarketStreamRequest, CancellationToken, I
                 continue;   // a reset is answered at once: the caller reloads while the new stream opens
             }
 
-            try
-            {
-                await Task.Delay(wait, _time, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
+            if (!await StreamReconnect.WaitAsync(wait, _time, cancellationToken).ConfigureAwait(false))
             {
                 return;
             }
 
-            wait = TimeSpan.FromSeconds(Math.Min(LongestWait.TotalSeconds, wait.TotalSeconds * 2));
+            wait = StreamReconnect.Next(wait);
         }
     }
 

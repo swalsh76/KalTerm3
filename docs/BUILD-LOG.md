@@ -1948,3 +1948,10 @@ The whole-codebase review of PLAN 6.9, in three batches, risk first. Findings th
 - **Named timings.** The analyzers' default intervals and the alert baseline window are named constants.
 - **CI.** A step fails the build when `dotnet list package --vulnerable --include-transitive` finds anything.
 - **Rollout:** the API change (limits) needs an API rollout to the server; nothing else touches the running services.
+
+### 10.2 Duplicates removed (R-1, R-2, R-7; 2026-10-21)
+
+- **R-1:** the two stream watchers (alerts, markets) share `StreamReconnect`: the wording of each failure, the doubling wait (1 s to 30 s) and the cancellable wait. Behavior is unchanged; the existing watcher tests are the oracle.
+- **R-2:** `KalTerm.Client.ValueText` holds the rules for dollars, counts, age and size; the CLI's `Display` and the terminal's `Formatting` call it, so the two cannot drift apart. The risk layer keeps its own text (whole numbers, four or six places) and says so.
+- **R-7:** `FakeKalTermApi` (new test project `KalTerm.TestSupport.Api`, excluded from coverage like `KalTerm.TestSupport`) implements every `IKalTermApi` call as a refusal; the CLI and terminal fakes override what they need, so a new API method is added in one place. It is a separate project because the `KalTerm.Contracts` namespace clashes with the `Contracts` money type in the Core tests.
+- Parked in PLAN section 9: R-3, R-4, R-5, R-6, R-8 (small tidy-ups).

@@ -142,7 +142,7 @@ internal static class VisualTreeKit
 }
 
 /// <summary>An API that answers with what a test gave it. Only the calls the terminal makes so far are real; the rest refuse.</summary>
-internal sealed class FakeApi : IKalTermApi, IDisposable
+internal sealed class FakeApi : FakeKalTermApi, IDisposable
 {
     public StatusDto Status { get; set; } = Samples.Status();
 
@@ -160,19 +160,19 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public bool Disposed { get; private set; }
 
-    public Task<StatusDto> GetStatusAsync(CancellationToken cancellationToken = default)
+    public override Task<StatusDto> GetStatusAsync(CancellationToken cancellationToken = default)
     {
         StatusCalls++;
         return StatusFails is null ? Task.FromResult(Status) : Task.FromException<StatusDto>(StatusFails);
     }
 
-    public Task<MarketPage> GetMarketsAsync(MarketsQuery query, CancellationToken cancellationToken = default) =>
+    public override Task<MarketPage> GetMarketsAsync(MarketsQuery query, CancellationToken cancellationToken = default) =>
         MarketsFail is null ? Task.FromResult(new MarketPage([], null)) : Task.FromException<MarketPage>(MarketsFail);
 
-    public Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) =>
+    public override Task<SettingDto> GetTimeZoneSettingAsync(CancellationToken cancellationToken = default) =>
         ZoneFails is null ? Task.FromResult(new SettingDto("time_zone", StoredZone)) : Task.FromException<SettingDto>(ZoneFails);
 
-    public Task SetTimeZoneSettingAsync(string? zone, CancellationToken cancellationToken = default)
+    public override Task SetTimeZoneSettingAsync(string? zone, CancellationToken cancellationToken = default)
     {
         ZonesStored.Add(zone);
         return ZoneFails is null ? Task.CompletedTask : Task.FromException(ZoneFails);
@@ -184,7 +184,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public Exception? MarketFails { get; set; }
 
-    public Task<MarketDto> GetMarketAsync(string ticker, CancellationToken cancellationToken = default) =>
+    public override Task<MarketDto> GetMarketAsync(string ticker, CancellationToken cancellationToken = default) =>
         MarketFails is null ? Task.FromResult(Market with { Ticker = ticker }) : Task.FromException<MarketDto>(MarketFails);
 
     /// <summary>What the screener answers; by default one page with the rows in <see cref="ScreenerRows"/>.</summary>
@@ -199,7 +199,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public List<ScreenQuery> ScreenQueries { get; } = [];
 
-    public async Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default)
+    public override async Task<ScreenerPage> GetScreenerAsync(ScreenQuery query, CancellationToken cancellationToken = default)
     {
         ScreenQueries.Add(query);
         if (ScreenerFails is not null)
@@ -237,7 +237,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         }
     }
 
-    public Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default)
+    public override Task<WatchlistListDto> GetWatchlistsAsync(CancellationToken cancellationToken = default)
     {
         ListCall("list");
         if (ListReadFails is not null)
@@ -248,34 +248,34 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Task.FromResult(new WatchlistListDto([.. Lists.Select(l => new WatchlistSummaryDto(l.Key, l.Value.Count, "2026-10-20T00:00:00+00:00"))]));
     }
 
-    public Task<WatchlistDto> GetWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    public override Task<WatchlistDto> GetWatchlistAsync(string name, CancellationToken cancellationToken = default)
     {
         ListCall($"get {name}");
         return Task.FromResult(new WatchlistDto(name, "2026-10-20T00:00:00+00:00", [.. Lists[name]]));
     }
 
-    public Task<WatchlistDto> CreateWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    public override Task<WatchlistDto> CreateWatchlistAsync(string name, CancellationToken cancellationToken = default)
     {
         ListCall($"create {name}");
         Lists[name] = [];
         return Task.FromResult(new WatchlistDto(name, "2026-10-20T00:00:00+00:00", []));
     }
 
-    public Task DeleteWatchlistAsync(string name, CancellationToken cancellationToken = default)
+    public override Task DeleteWatchlistAsync(string name, CancellationToken cancellationToken = default)
     {
         ListCall($"delete {name}");
         _ = Lists.Remove(name);
         return Task.CompletedTask;
     }
 
-    public Task AddToWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
+    public override Task AddToWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
     {
         ListCall($"add {name} {ticker}");
         Lists[name].Add(ticker);
         return Task.CompletedTask;
     }
 
-    public Task RemoveFromWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
+    public override Task RemoveFromWatchlistAsync(string name, string ticker, CancellationToken cancellationToken = default)
     {
         ListCall($"remove {name} {ticker}");
         _ = Lists[name].Remove(ticker);
@@ -301,13 +301,13 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         }
     }
 
-    public Task<LayoutListDto> GetLayoutsAsync(CancellationToken cancellationToken = default)
+    public override Task<LayoutListDto> GetLayoutsAsync(CancellationToken cancellationToken = default)
     {
         LayoutCall("list");
         return Task.FromResult(new LayoutListDto([.. LayoutRows.Keys.Order(StringComparer.Ordinal).Select(n => new LayoutSummaryDto(n, "2026-10-20T00:00:00+00:00"))]));
     }
 
-    public Task<LayoutDto> GetLayoutAsync(string name, CancellationToken cancellationToken = default)
+    public override Task<LayoutDto> GetLayoutAsync(string name, CancellationToken cancellationToken = default)
     {
         LayoutCall($"get {name}");
         return LayoutRows.TryGetValue(name, out var body)
@@ -318,7 +318,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
     /// <summary>When set, saving a layout does not answer until the test completes this (or the call is cancelled).</summary>
     public TaskCompletionSource? LayoutPutHold { get; set; }
 
-    public async Task<LayoutDto> PutLayoutAsync(string name, System.Text.Json.JsonElement body, CancellationToken cancellationToken = default)
+    public override async Task<LayoutDto> PutLayoutAsync(string name, System.Text.Json.JsonElement body, CancellationToken cancellationToken = default)
     {
         LayoutCall($"put {name}");
         if (LayoutPutHold is { } hold)
@@ -330,7 +330,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return new LayoutDto(name, "2026-10-20T00:00:00+00:00", body);
     }
 
-    public Task DeleteLayoutAsync(string name, CancellationToken cancellationToken = default)
+    public override Task DeleteLayoutAsync(string name, CancellationToken cancellationToken = default)
     {
         LayoutCall($"delete {name}");
         _ = LayoutRows.Remove(name);
@@ -367,13 +367,13 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         }
     }
 
-    public Task<AlertListDto> GetAlertsAsync(CancellationToken cancellationToken = default)
+    public override Task<AlertListDto> GetAlertsAsync(CancellationToken cancellationToken = default)
     {
         AlertCall("list");
         return Task.FromResult(new AlertListDto([.. AlertRows]));
     }
 
-    public Task<AlertDto> CreateAlertAsync(CreateAlertRequest request, CancellationToken cancellationToken = default)
+    public override Task<AlertDto> CreateAlertAsync(CreateAlertRequest request, CancellationToken cancellationToken = default)
     {
         AlertCall($"create {request.Ticker} {request.Kind} {request.Threshold} {request.CooldownSeconds}");
         var made = new AlertDto((AlertRows.Count == 0 ? 0 : AlertRows.Max(a => a.Id)) + 1, request.Ticker, request.Kind, request.Threshold, request.CooldownSeconds ?? 60, false, "2026-10-20T00:00:00+00:00", null, null);
@@ -381,21 +381,21 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Task.FromResult(made);
     }
 
-    public Task SetAlertPausedAsync(int id, bool paused, CancellationToken cancellationToken = default)
+    public override Task SetAlertPausedAsync(int id, bool paused, CancellationToken cancellationToken = default)
     {
         AlertCall($"{(paused ? "pause" : "resume")} {id}");
         AlertRows[AlertRows.FindIndex(a => a.Id == id)] = AlertRows.Find(a => a.Id == id)! with { Paused = paused };
         return Task.CompletedTask;
     }
 
-    public Task DeleteAlertAsync(int id, CancellationToken cancellationToken = default)
+    public override Task DeleteAlertAsync(int id, CancellationToken cancellationToken = default)
     {
         AlertCall($"delete {id}");
         _ = AlertRows.RemoveAll(a => a.Id == id);
         return Task.CompletedTask;
     }
 
-    public Task<AlertFiresPage> GetAlertFiresAsync(long? after = null, int? limit = null, CancellationToken cancellationToken = default)
+    public override Task<AlertFiresPage> GetAlertFiresAsync(long? after = null, int? limit = null, CancellationToken cancellationToken = default)
     {
         AlertCall($"fires {after} {limit}");
         var matching = after is { } from ? FireRows.Where(f => f.Id > from).Take(limit ?? 50) : FireRows.TakeLast(limit ?? 50);
@@ -403,7 +403,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return Task.FromResult(new AlertFiresPage(page, page.Count == 0 ? null : page.Max(f => f.Id)));
     }
 
-    public async IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public override async IAsyncEnumerable<AlertStreamEvent> StreamAlertFiresAsync(long? after, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         AlertStreamOpens.Add(after);
         if (AlertStreamFails is not null)
@@ -429,7 +429,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public Exception? StreamFails { get; set; }
 
-    public async IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public override async IAsyncEnumerable<MarketStreamEvent> StreamMarketsAsync(MarketStreamRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         StreamOpens.Add(request);
         if (StreamFails is not null)
@@ -443,9 +443,9 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         }
     }
 
-    public Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("add", kind, ticker);
+    public override Task AddStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("add", kind, ticker);
 
-    public Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("remove", kind, ticker);
+    public override Task RemoveStreamMarketAsync(string streamId, StreamKind kind, string ticker, CancellationToken cancellationToken = default) => Change("remove", kind, ticker);
 
     private Task Change(string verb, StreamKind kind, string ticker)
     {
@@ -459,7 +459,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public int MetricsCalls { get; private set; }
 
-    public Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default)
+    public override Task<MetricsDto> GetMetricsAsync(string ticker, CancellationToken cancellationToken = default)
     {
         MetricsCalls++;
         return MetricsFail is null ? Task.FromResult(Metrics with { Ticker = ticker }) : Task.FromException<MetricsDto>(MetricsFail);
@@ -472,7 +472,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public List<WindowQuery> TickQueries { get; } = [];
 
-    public Task<TickPage> GetTicksAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
+    public override Task<TickPage> GetTicksAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
     {
         TickQueries.Add(query);
         return TicksFail is null ? Task.FromResult(new TickPage([.. TickHistory], null)) : Task.FromException<TickPage>(TicksFail);
@@ -490,7 +490,7 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public List<(string Ticker, string Interval, WindowQuery Query)> CandleQueries { get; } = [];
 
-    public async Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default)
+    public override async Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default)
     {
         CandleQueries.Add((ticker, interval, query));
         if (CandlesFail is not null)
@@ -519,13 +519,11 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public int TradeCalls { get; private set; }
 
-    public Task<TradePage> GetTradesAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
+    public override Task<TradePage> GetTradesAsync(string ticker, WindowQuery query, CancellationToken cancellationToken = default)
     {
         TradeCalls++;
         return TradesFail is null ? Task.FromResult(new TradePage([.. TradeHistory], null)) : Task.FromException<TradePage>(TradesFail);
     }
-
-    public Task<OrderBookPage> GetOrderBooksAsync(int? depth = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
     public OrderBookDto? BookAnswer { get; set; }
 
@@ -533,13 +531,13 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public List<(string Ticker, int? Depth)> BookQueries { get; } = [];
 
-    public Task<OrderBookDto> GetOrderBookAsync(string ticker, int? depth = null, CancellationToken cancellationToken = default)
+    public override Task<OrderBookDto> GetOrderBookAsync(string ticker, int? depth = null, CancellationToken cancellationToken = default)
     {
         BookQueries.Add((ticker, depth));
         return BookFails is not null ? Task.FromException<OrderBookDto>(BookFails) : Task.FromResult((BookAnswer ?? Samples.Book(ticker)) with { Ticker = ticker });
     }
 
-    public Task<GapPage> GetGapsAsync(WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public override Task<GapPage> GetGapsAsync(WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 }
 
 internal static class Samples

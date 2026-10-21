@@ -15,7 +15,7 @@
 param(
     [Parameter(Mandatory)][string]$Path,
     [ValidateRange(0, 100)][double]$MinLinePercent = 90,
-    [string[]]$Exclude = @('KalTerm.TestSupport'),
+    [string[]]$Exclude = @('KalTerm.TestSupport', 'KalTerm.TestSupport.Api'),
     [string[]]$Include = @('KalTerm.*', 'kterm', 'kalterm-admin'),   # kterm and kalterm-admin are console tools: their assemblies are named after the command
     [hashtable]$AssemblyMinimum = @{ 'KalTerm.Core' = 95; 'KalTerm.Data' = 95 }
 )

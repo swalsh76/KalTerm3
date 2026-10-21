@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using KalTerm.Client;
 
 namespace KalTerm.Terminal.Services;
 
@@ -8,7 +9,7 @@ namespace KalTerm.Terminal.Services;
 internal sealed partial class Formatting(TimeZoneInfo zone)
 {
     /// <summary>Shown where there is no value.</summary>
-    public const string None = "-";
+    public const string None = ValueText.None;
 
     private TimeZoneInfo _zone = zone;
 
@@ -55,75 +56,20 @@ internal sealed partial class Formatting(TimeZoneInfo zone)
     }
 
     /// <summary>How long ago, coarsely: <c>45s ago</c>, <c>12m ago</c>, <c>5h ago</c>, <c>3d ago</c>.</summary>
-    public static string Age(long? seconds) => seconds switch
-    {
-        null => None,
-        < 120 => $"{seconds}s ago",
-        < 7_200 => $"{seconds / 60}m ago",
-        < 172_800 => $"{seconds / 3_600}h ago",
-        _ => $"{seconds / 86_400}d ago",
-    };
+    public static string Age(long? seconds) => ValueText.Age(seconds);
 
     /// <summary>A byte count as <c>264.0 MB</c>.</summary>
-    public static string Size(long? bytes)
-    {
-        if (bytes is not { } value)
-        {
-            return None;
-        }
-
-        foreach (var (unit, step) in new (string, long)[] { ("GB", 1L << 30), ("MB", 1L << 20), ("kB", 1L << 10) })
-        {
-            if (value >= step)
-            {
-                return string.Create(CultureInfo.InvariantCulture, $"{(double)value / step:0.0} {unit}");
-            }
-        }
-
-        return $"{value} B";
-    }
+    public static string Size(long? bytes) => ValueText.Size(bytes);
 
     /// <summary>Dollars without trailing zeros but with at least two decimals: <c>0.560000</c> gives <c>0.56</c>, <c>1.000000</c> gives <c>1.00</c>. The API sends exact decimal text; this only shortens it. Same rules as the CLI.</summary>
-    public static string Dollars(string? value)
-    {
-        if (value is null)
-        {
-            return None;
-        }
-
-        var match = DecimalText().Match(value);
-        if (!match.Success)
-        {
-            return value;
-        }
-
-        var fraction = match.Groups["fraction"].Value.TrimEnd('0').PadRight(2, '0');
-        return $"{match.Groups["sign"].Value}{match.Groups["whole"].Value}.{fraction}";
-    }
+    public static string Dollars(string? value) => ValueText.Dollars(value);
 
     /// <summary>Dollars with a sign for a change: <c>+0.02</c>, <c>-0.01</c>, and a plain <c>0.00</c> for none.</summary>
     public static string Signed(string? value) =>
         value is null ? None : value.StartsWith('-') || Dollars(value) is "0.00" ? Dollars(value) : "+" + Dollars(value);
 
     /// <summary>Contracts with thousands separators; a whole number loses its <c>.00</c>: <c>1234.00</c> gives <c>1,234</c>, <c>20.50</c> stays <c>20.50</c>.</summary>
-    public static string Count(string? value)
-    {
-        if (value is null)
-        {
-            return None;
-        }
-
-        var match = DecimalText().Match(value);
-        if (!match.Success)
-        {
-            return value;
-        }
-
-        var whole = match.Groups["whole"].Value.TrimStart('0');
-        whole = whole.Length == 0 ? "0" : System.Numerics.BigInteger.Parse(whole, CultureInfo.InvariantCulture).ToString("N0", CultureInfo.InvariantCulture);
-        var fraction = match.Groups["fraction"].Value;
-        return fraction.TrimEnd('0').Length == 0 ? $"{match.Groups["sign"].Value}{whole}" : $"{match.Groups["sign"].Value}{whole}.{fraction}";
-    }
+    public static string Count(string? value) => ValueText.Count(value);
 
     /// <summary>The distance between two dollar prices as dollar text (<c>0.570000</c> minus <c>0.550000</c> is <c>0.020000</c>), worked out in whole millionths so nothing is rounded; <see langword="null"/> when either is missing or not a price.</summary>
     public static string? Difference(string? high, string? low)
@@ -168,7 +114,7 @@ internal sealed partial class Formatting(TimeZoneInfo zone)
     /// <summary>Count text as whole hundredths, or <see langword="null"/> when it is not a count with at most two decimals.</summary>
     public static long? Hundredths(string? value)
     {
-        if (value is null || DecimalText().Match(value) is not { Success: true } match || match.Groups["fraction"].Value.Length > 2 || match.Groups["sign"].Value.Length > 0)
+        if (value is null || ValueText.DecimalText().Match(value) is not { Success: true } match || match.Groups["fraction"].Value.Length > 2 || match.Groups["sign"].Value.Length > 0)
         {
             return null;
         }
@@ -181,7 +127,7 @@ internal sealed partial class Formatting(TimeZoneInfo zone)
     /// <summary>Dollar text as whole millionths, or <see langword="null"/> when it is not dollar text with at most six decimals.</summary>
     private static long? Micros(string? value)
     {
-        if (value is null || DecimalText().Match(value) is not { Success: true } match || match.Groups["fraction"].Value.Length > 6)
+        if (value is null || ValueText.DecimalText().Match(value) is not { Success: true } match || match.Groups["fraction"].Value.Length > 6)
         {
             return null;
         }
@@ -194,9 +140,6 @@ internal sealed partial class Formatting(TimeZoneInfo zone)
         var micros = (whole * 1_000_000) + long.Parse(match.Groups["fraction"].Value.PadRight(6, '0'), NumberStyles.None, CultureInfo.InvariantCulture);
         return match.Groups["sign"].Value.Length > 0 ? -micros : micros;
     }
-
-    [GeneratedRegex(@"^(?<sign>-?)(?<whole>[0-9]+)\.(?<fraction>[0-9]+)$", RegexOptions.CultureInvariant)]
-    private static partial Regex DecimalText();
 
     /// <summary>Part of a whole as a percentage with one decimal, using integers only: <c>0.3%</c>.</summary>
     public static string Percent(long part, long whole)
