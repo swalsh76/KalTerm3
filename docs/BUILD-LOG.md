@@ -1759,3 +1759,8 @@ Approved by the owner 2026-10-20 with the three recommended choices: the screene
   answers, failures, age, opening a detail, detaching); the detail (all parts, live ticks, duplicates, the cap, timers, failures, zones); the real views with binding errors captured; the main window showing the page. Terminal 202, line
   coverage 96.9%.
 - **Rollout:** the API (for `q`). The terminal itself is run by the owner; the live check after the rollout runs the search against the real screener and the owner looks at the window.
+
+Rolled out 2026-10-20 (API release host-bd54eed; ingest untouched; `/readyz` 200). Live check of the new `q` against the real screener (GET only): with no search, 50 rows ranked by volume; a lowercase 6-character piece of the
+top market's ticker returned 50 rows, including that market, every one containing the text in its ticker or yes label; the yes label of the top market typed in capitals matched 50 rows, every one containing it; the text `%%` matched
+0 rows (the wildcards are literal); search plus status `active` plus rank by spread ascending returned 50 rows, all active; a one-character search was refused with `422 invalid_parameter (q)`. The window itself (live prices, the
+detail page) is for the owner to look at.
