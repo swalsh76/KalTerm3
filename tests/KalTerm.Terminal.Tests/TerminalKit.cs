@@ -286,7 +286,39 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
         return TicksFail is null ? Task.FromResult(new TickPage([.. TickHistory], null)) : Task.FromException<TickPage>(TicksFail);
     }
 
-    public Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    /// <summary>What the candle endpoint answers: by default the candles in <see cref="CandleRows"/> (oldest first), the last <c>Limit</c> of them.</summary>
+    public Func<string, WindowQuery, CandlePage>? CandleAnswer { get; set; }
+
+    public List<CandleDto> CandleRows { get; } = [];
+
+    public Exception? CandlesFail { get; set; }
+
+    /// <summary>When set, the candles are not answered until the test completes this.</summary>
+    public TaskCompletionSource<CandlePage>? CandleHold { get; set; }
+
+    public List<(string Ticker, string Interval, WindowQuery Query)> CandleQueries { get; } = [];
+
+    public async Task<CandlePage> GetCandlesAsync(string ticker, string interval, WindowQuery query, CancellationToken cancellationToken = default)
+    {
+        CandleQueries.Add((ticker, interval, query));
+        if (CandlesFail is not null)
+        {
+            throw CandlesFail;
+        }
+
+        if (CandleHold is { } hold)
+        {
+            return await hold.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        if (CandleAnswer is { } answer)
+        {
+            return answer(interval, query);
+        }
+
+        var limit = query.Limit ?? 200;
+        return new CandlePage(interval, "stored " + interval, [.. CandleRows.Skip(Math.Max(0, CandleRows.Count - limit))], null);
+    }
 
     /// <summary>Oldest first, as the server sends them.</summary>
     public List<TradeDto> TradeHistory { get; } = [];
@@ -303,7 +335,17 @@ internal sealed class FakeApi : IKalTermApi, IDisposable
 
     public Task<OrderBookPage> GetOrderBooksAsync(int? depth = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
-    public Task<OrderBookDto> GetOrderBookAsync(string ticker, int? depth = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public OrderBookDto? BookAnswer { get; set; }
+
+    public Exception? BookFails { get; set; }
+
+    public List<(string Ticker, int? Depth)> BookQueries { get; } = [];
+
+    public Task<OrderBookDto> GetOrderBookAsync(string ticker, int? depth = null, CancellationToken cancellationToken = default)
+    {
+        BookQueries.Add((ticker, depth));
+        return BookFails is not null ? Task.FromException<OrderBookDto>(BookFails) : Task.FromResult((BookAnswer ?? Samples.Book(ticker)) with { Ticker = ticker });
+    }
 
     public Task<GapPage> GetGapsAsync(WindowQuery query, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 }
@@ -337,6 +379,27 @@ internal static class Samples
 
     public static TickDto Tick(string time = "2026-10-18T22:59:30.250000+00:00", string? price = "0.570000", string? bid = "0.560000", string? ask = "0.580000", string? openInterest = "100.00") =>
         new(time, price, bid, ask, "5.00", "6.00", "5000.00", openInterest, null);
+
+    /// <summary>A candle that starts the given number of hours after 2026-10-20 00:00 UTC, with the given prices; null prices make a candle with no trades.</summary>
+    public static CandleDto Candle(int hour, string? open = "0.500000", string? high = "0.550000", string? low = "0.450000", string? close = "0.520000", string volume = "100.00", bool partial = false, string? gapKind = null, int? gapSeconds = null, int trades = 7) =>
+        new(new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc).AddHours(hour).ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'+00:00'", System.Globalization.CultureInfo.InvariantCulture), open, high, low, close, volume, trades, "0.510000", "0.530000", "99.00", partial, partial, false, gapKind, gapSeconds);
+
+    /// <summary>A book: yes bids best first, no bids best first (so the yes asks are 1 minus those).</summary>
+    public static OrderBookDto Book(string ticker, bool stale = false, bool approximate = false, params (string Side, string Price, string Quantity)[] levels)
+    {
+        var all = levels.Length > 0
+            ? levels
+            : [("yes", "0.550000", "10.00"), ("yes", "0.540000", "20.50"), ("yes", "0.530000", "5.00"), ("no", "0.430000", "7.00"), ("no", "0.420000", "12.00"), ("no", "0.400000", "1.00")];
+        return new OrderBookDto(
+            ticker,
+            "2026-10-18T22:59:58.000000+00:00",
+            "2026-10-18T22:59:59.000000+00:00",
+            1,
+            stale,
+            approximate,
+            [.. all.Where(l => l.Side == "yes").Select(l => new BookLevelDto(l.Price, l.Quantity))],
+            [.. all.Where(l => l.Side == "no").Select(l => new BookLevelDto(l.Price, l.Quantity))]);
+    }
 
     public static MarketTickDto MarketTick(string ticker, TickDto? tick = null) => new(ticker, tick ?? Tick());
 

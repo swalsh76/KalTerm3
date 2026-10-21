@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <RootNamespace>KalTerm.Terminal</RootNamespace>
     <AssemblyName>KalTerm.Terminal</AssemblyName>
@@ -12,6 +12,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KalTerm.Client\KalTerm.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ScottPlot.WPF" />
   </ItemGroup>
 
   <ItemGroup>

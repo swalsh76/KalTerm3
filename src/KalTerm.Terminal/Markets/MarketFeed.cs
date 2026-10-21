@@ -20,17 +20,21 @@ internal enum FeedState
 }
 
 /// <summary>
-/// The terminal's one market stream. Pages say which markets they want (<see cref="SetWanted"/>, each by its own name); the feed watches the union on a single stream, adding and removing markets live
-/// as the pages change their minds, and hands every tick to <see cref="Tick"/>. Events are raised on the UI thread when the feed is started from it. A tick is delivered once, even across a reconnect.
+/// The terminal's one market stream. Pages say which markets they want, for ticks (<see cref="SetWanted"/>) and for order books (<see cref="SetWantedBooks"/>), each by its own name; the feed watches the union on a
+/// single stream, adding and removing markets live as the pages change their minds, and hands every tick to <see cref="Tick"/> and every book to <see cref="Book"/>. Events are raised on the UI thread when the feed is
+/// started from it. A tick is delivered once, even across a reconnect.
 /// </summary>
 internal sealed class MarketFeed : IDisposable
 {
+    /// <summary>How many price levels each side of a book the stream carries (the depth is fixed when the stream opens; a page shows as many of them as it likes).</summary>
+    public const int BookDepth = 50;
+
     private readonly IKalTermApi _api;
     private readonly TimeProvider _time;
     private readonly SynchronizationContext? _context;
     private readonly Lock _sync = new();
-    private readonly Dictionary<string, HashSet<string>> _wanted = new(StringComparer.Ordinal);
-    private readonly HashSet<string> _applied = new(StringComparer.Ordinal);   // what the stream has been told to watch
+    private readonly Dictionary<StreamKind, Dictionary<string, HashSet<string>>> _wanted = new() { [StreamKind.Ticks] = new(StringComparer.Ordinal), [StreamKind.Books] = new(StringComparer.Ordinal) };
+    private readonly Dictionary<StreamKind, HashSet<string>> _applied = new() { [StreamKind.Ticks] = new(StringComparer.Ordinal), [StreamKind.Books] = new(StringComparer.Ordinal) };   // what the stream has been told to watch
     private readonly SemaphoreSlim _changes = new(1, 1);
     private MarketWatcher? _watcher;
     private CancellationTokenSource? _stop;
@@ -53,6 +57,9 @@ internal sealed class MarketFeed : IDisposable
 
     /// <summary>A ticker update arrived.</summary>
     public event Action<MarketTickDto>? Tick;
+
+    /// <summary>A book arrived (the whole book: replace what you hold).</summary>
+    public event Action<OrderBookDto>? Book;
 
     /// <summary>The state changed; the text says why when there is something to say.</summary>
     public event Action<FeedState, string>? StateChanged;
@@ -81,7 +88,8 @@ internal sealed class MarketFeed : IDisposable
     private void Launch()
     {
         MarketWatcher watcher;
-        string[] initial;
+        string[] ticks;
+        string[] books;
         CancellationToken token;
         lock (_sync)
         {
@@ -90,8 +98,9 @@ internal sealed class MarketFeed : IDisposable
                 return;
             }
 
-            initial = Union();
-            if (initial.Length == 0)
+            ticks = Union(StreamKind.Ticks);
+            books = Union(StreamKind.Books);
+            if (ticks.Length == 0 && books.Length == 0)
             {
                 return;
             }
@@ -102,12 +111,13 @@ internal sealed class MarketFeed : IDisposable
                 (request, streamToken) => _api.StreamMarketsAsync(request, streamToken),
                 _time,
                 (streamId, kind, ticker, add, changeToken) => add ? _api.AddStreamMarketAsync(streamId, kind, ticker, changeToken) : _api.RemoveStreamMarketAsync(streamId, kind, ticker, changeToken));
-            _applied.UnionWith(initial);
+            _applied[StreamKind.Ticks].UnionWith(ticks);
+            _applied[StreamKind.Books].UnionWith(books);
             _run = Task.CompletedTask;   // taken: a change made from here on is applied to the watcher, which has not begun yet
         }
 
         Post(() => Change(FeedState.Connecting, string.Empty));   // before the run begins: a refusal that comes at once must be the last word, not the first
-        var run = RunAsync(watcher, initial, token);
+        var run = RunAsync(watcher, ticks, books, token);
         lock (_sync)
         {
             if (!_disposed)
@@ -117,10 +127,17 @@ internal sealed class MarketFeed : IDisposable
         }
     }
 
-    /// <summary>Says which markets one page wants (replacing what it wanted before). A market several pages want is watched once.</summary>
+    /// <summary>Says which markets one page wants ticks for (replacing what it wanted before). A market several pages want is watched once.</summary>
     /// <param name="owner">The page.</param>
     /// <param name="tickers">The markets.</param>
-    public void SetWanted(string owner, IReadOnlyCollection<string> tickers)
+    public void SetWanted(string owner, IReadOnlyCollection<string> tickers) => Want(StreamKind.Ticks, owner, tickers);
+
+    /// <summary>Says which markets one page wants order books for (replacing what it wanted before). Only the markets the server publishes books for have one.</summary>
+    /// <param name="owner">The page.</param>
+    /// <param name="tickers">The markets.</param>
+    public void SetWantedBooks(string owner, IReadOnlyCollection<string> tickers) => Want(StreamKind.Books, owner, tickers);
+
+    private void Want(StreamKind kind, string owner, IReadOnlyCollection<string> tickers)
     {
         ArgumentNullException.ThrowIfNull(owner);
         ArgumentNullException.ThrowIfNull(tickers);
@@ -129,11 +146,11 @@ internal sealed class MarketFeed : IDisposable
         {
             if (tickers.Count == 0)
             {
-                _wanted.Remove(owner);
+                _wanted[kind].Remove(owner);
             }
             else
             {
-                _wanted[owner] = new HashSet<string>(tickers, StringComparer.Ordinal);
+                _wanted[kind][owner] = new HashSet<string>(tickers, StringComparer.Ordinal);
             }
 
             running = _run is not null;
@@ -167,11 +184,11 @@ internal sealed class MarketFeed : IDisposable
         (_api as IDisposable)?.Dispose();
     }
 
-    private string[] Union()
+    private string[] Union(StreamKind kind)
     {
         lock (_sync)
         {
-            return [.. _wanted.Values.SelectMany(set => set).Distinct(StringComparer.Ordinal)];
+            return [.. _wanted[kind].Values.SelectMany(set => set).Distinct(StringComparer.Ordinal)];
         }
     }
 
@@ -194,38 +211,9 @@ internal sealed class MarketFeed : IDisposable
         await _changes.WaitAsync(token).ConfigureAwait(false);
         try
         {
-            var wanted = Union().ToHashSet(StringComparer.Ordinal);
-            string[] add;
-            string[] drop;
-            lock (_sync)
+            foreach (var kind in new[] { StreamKind.Ticks, StreamKind.Books })
             {
-                add = [.. wanted.Where(t => !_applied.Contains(t))];
-                drop = [.. _applied.Where(t => !wanted.Contains(t))];
-            }
-
-            foreach (var ticker in drop)
-            {
-                await watcher.RemoveAsync(StreamKind.Ticks, ticker, token).ConfigureAwait(false);
-                lock (_sync)
-                {
-                    _applied.Remove(ticker);
-                }
-            }
-
-            foreach (var ticker in add)
-            {
-                try
-                {
-                    await watcher.AddAsync(StreamKind.Ticks, ticker, token).ConfigureAwait(false);
-                    lock (_sync)
-                    {
-                        _applied.Add(ticker);
-                    }
-                }
-                catch (ApiException ex) when (ex.Code == "too_many_markets")
-                {
-                    Post(() => Change(State, "too many markets are watched at once; some are not live"));
-                }
+                await ApplyKindAsync(watcher, kind, token).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -249,14 +237,51 @@ internal sealed class MarketFeed : IDisposable
         }
     }
 
-    private async Task RunAsync(MarketWatcher watcher, string[] initial, CancellationToken token)
+    private async Task ApplyKindAsync(MarketWatcher watcher, StreamKind kind, CancellationToken token)
+    {
+        var wanted = Union(kind).ToHashSet(StringComparer.Ordinal);
+        string[] add;
+        string[] drop;
+        lock (_sync)
+        {
+            add = [.. wanted.Where(t => !_applied[kind].Contains(t))];
+            drop = [.. _applied[kind].Where(t => !wanted.Contains(t))];
+        }
+
+        foreach (var ticker in drop)
+        {
+            await watcher.RemoveAsync(kind, ticker, token).ConfigureAwait(false);
+            lock (_sync)
+            {
+                _applied[kind].Remove(ticker);
+            }
+        }
+
+        foreach (var ticker in add)
+        {
+            try
+            {
+                await watcher.AddAsync(kind, ticker, token).ConfigureAwait(false);
+                lock (_sync)
+                {
+                    _applied[kind].Add(ticker);
+                }
+            }
+            catch (ApiException ex) when (ex.Code == "too_many_markets")
+            {
+                Post(() => Change(State, "too many markets are watched at once; some are not live"));
+            }
+        }
+    }
+
+    private async Task RunAsync(MarketWatcher watcher, string[] ticks, string[] books, CancellationToken token)
     {
         try
         {
             await watcher.RunAsync(
-                initial,
-                [],
-                null,
+                ticks,
+                books,
+                BookDepth,
                 item =>
                 {
                     switch (item)
@@ -266,6 +291,9 @@ internal sealed class MarketFeed : IDisposable
                             break;
                         case TickEvent tick:
                             Post(() => Tick?.Invoke(tick.Tick));
+                            break;
+                        case BookEvent book:
+                            Post(() => Book?.Invoke(book.Book));
                             break;
                         case ResetEvent:
                             Post(() => Reset?.Invoke());

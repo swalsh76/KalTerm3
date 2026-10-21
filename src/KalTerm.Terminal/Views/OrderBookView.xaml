@@ -1,0 +1,84 @@
+<UserControl x:Class="KalTerm.Terminal.Views.OrderBookView"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:markets="clr-namespace:KalTerm.Terminal.Markets">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="Visible" />
+        <DataTemplate x:Key="Level" DataType="{x:Type markets:BookRow}">
+            <Grid Height="22">
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding Fraction, Mode=OneWay}" Background="Transparent" BorderThickness="0" FlowDirection="RightToLeft">
+                    <ProgressBar.Style>
+                        <Style TargetType="ProgressBar">
+                            <Setter Property="Foreground" Value="#332E9E5B" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Side}" Value="Ask">
+                                    <Setter Property="Foreground" Value="#33D64545" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ProgressBar.Style>
+                </ProgressBar>
+                <Grid Margin="8,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Price}" FontWeight="SemiBold" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="#2E9E5B" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Side}" Value="Ask">
+                                        <Setter Property="Foreground" Value="#D64545" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Grid.Column="1" Text="{Binding Size}" TextAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Total}" TextAlignment="Right" Foreground="Gray" VerticalAlignment="Center" />
+                </Grid>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+    <DockPanel Margin="0,8,0,0" Width="480" HorizontalAlignment="Left">
+        <DockPanel DockPanel.Dock="Top" LastChildFill="False">
+            <TextBlock Text="Levels" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox Width="70" ItemsSource="{x:Static markets:OrderBookViewModel.Depths}" SelectedItem="{Binding Depth}" />
+            <TextBlock DockPanel.Dock="Right" Text="{Binding AsOf}" Foreground="Gray" VerticalAlignment="Center" />
+        </DockPanel>
+        <Border DockPanel.Dock="Top" Margin="0,8,0,0" Padding="8,4" Background="#22D49A1B" Visibility="{Binding HasWarning, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding Warning}" TextWrapping="Wrap" />
+        </Border>
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="Firebrick" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+        <TextBlock DockPanel.Dock="Top" Text="No order book is published for this market. The server keeps books only for the markets on its watch list." Foreground="Gray"
+                   TextWrapping="Wrap" Margin="0,16,0,0" Visibility="{Binding NoBook, Converter={StaticResource Visible}}" />
+        <TextBlock DockPanel.Dock="Top" Text="Loading…" Foreground="Gray" Margin="0,16,0,0" Visibility="{Binding Loading, Converter={StaticResource Visible}}" />
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0" Visibility="{Binding HasBook, Converter={StaticResource Visible}}">
+            <StackPanel>
+                <Grid Margin="8,0,8,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Yes price" Foreground="Gray" />
+                    <TextBlock Grid.Column="1" Text="Contracts" Foreground="Gray" TextAlignment="Right" />
+                    <TextBlock Grid.Column="2" Text="Total" Foreground="Gray" TextAlignment="Right" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Asks}" ItemTemplate="{StaticResource Level}" />
+                <Border Margin="0,4" Padding="8,6" BorderThickness="0,1" BorderBrush="{x:Static SystemColors.ControlDarkBrush}">
+                    <TextBlock>
+                        <Run Text="Bid" Foreground="Gray" /> <Run Text="{Binding BestBid, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text="    Ask" Foreground="Gray" /> <Run Text="{Binding BestAsk, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text="    Spread" Foreground="Gray" /> <Run Text="{Binding Spread, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text="    Middle" Foreground="Gray" /> <Run Text="{Binding Middle, Mode=OneWay}" FontWeight="SemiBold" />
+                    </TextBlock>
+                </Border>
+                <ItemsControl ItemsSource="{Binding Bids}" ItemTemplate="{StaticResource Level}" />
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
