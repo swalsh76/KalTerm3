@@ -9,11 +9,11 @@ namespace KalTerm.Terminal.Markets;
 /// </summary>
 internal static class CandlePlotBuilder
 {
-    private static readonly Color Rising = Color.FromHex("#2E9E5B");
-    private static readonly Color Falling = Color.FromHex("#D64545");
-    private static readonly Color Gap = Color.FromHex("#D49A1B");
-    private static readonly Color Volume = Color.FromHex("#7C93B8");
-    private static readonly Color LastLine = Color.FromHex("#6B6B6B");
+    private static readonly Color Rising = Color.FromHex(ChartColors.Rising);
+    private static readonly Color Falling = Color.FromHex(ChartColors.Falling);
+    private static readonly Color Gap = Color.FromHex(ChartColors.Gap);
+    private static readonly Color Volume = Color.FromHex(ChartColors.Volume);
+    private static readonly Color LastLine = Color.FromHex(ChartColors.LastPrice);
 
     /// <summary>The share of the plot's height the tallest volume bar takes.</summary>
     private const double VolumeShare = 0.22;
@@ -52,7 +52,7 @@ internal static class CandlePlotBuilder
 
             if (candle.Volume > 0)
             {
-                bars.Add(new Bar { Position = start.ToOADate() + (span.TotalDays / 2), Value = candle.Volume, Size = span.TotalDays * 0.7, FillColor = Volume.WithAlpha(0.55), LineColor = Colors.Transparent });
+                bars.Add(new Bar { Position = start.ToOADate() + (span.TotalDays / 2), Value = candle.Volume, Size = span.TotalDays * 0.7, FillColor = Volume.WithAlpha(ChartColors.VolumeOpacity), LineColor = Colors.Transparent });
             }
         }
 
@@ -74,8 +74,8 @@ internal static class CandlePlotBuilder
             var gaps = plot.Add.Candlestick(partial);
             gaps.RisingColor = Gap;
             gaps.FallingColor = Gap;
-            gaps.RisingFillStyle.Color = Gap.WithAlpha(0.3);   // the package draws no outline on a body, so "hollow" is a pale fill
-            gaps.FallingFillStyle.Color = Gap.WithAlpha(0.3);
+            gaps.RisingFillStyle.Color = Gap.WithAlpha(ChartColors.GapOpacity);   // the package draws no outline on a body, so "hollow" is a pale fill
+            gaps.FallingFillStyle.Color = Gap.WithAlpha(ChartColors.GapOpacity);
             gaps.RisingLineStyle.Color = Gap;
             gaps.FallingLineStyle.Color = Gap;
             gaps.RisingLineStyle.Width = 1.5f;
