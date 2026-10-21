@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using KalTerm.Client;
+using KalTerm.Terminal.Alerts;
 using KalTerm.Terminal.Connect;
 using KalTerm.Terminal.Markets;
 using KalTerm.Terminal.Mvvm;
@@ -50,17 +51,25 @@ internal sealed class MainViewModel : ObservableObject
     private ZoneChoice _zone;
     private bool _asking;
     private bool _applyingZone;
+    private readonly AlertNotifier _notifier;
+    private string? _pendingTicker;
+    private bool _marketsReady;
     private IKalTermApi? _api;
 
-    public MainViewModel(ClientServices services, TerminalSettingsStore settings, IDialogs dialogs, Formatting format, StatusViewModel status, MarketsViewModel markets)
+    public MainViewModel(ClientServices services, TerminalSettingsStore settings, IDialogs dialogs, Formatting format, StatusViewModel status, MarketsViewModel markets, AlertsViewModel alerts, AlertNotifier notifier, IToaster toaster)
     {
+        ArgumentNullException.ThrowIfNull(alerts);
+        ArgumentNullException.ThrowIfNull(notifier);
+        ArgumentNullException.ThrowIfNull(toaster);
+        Alerts = alerts;
+        _notifier = notifier;
         _services = services;
         _settings = settings;
         _dialogs = dialogs;
         _format = format;
         Status = status;
         Markets = markets;
-        Navigation = [new NavigationItem(status.Title, status), new NavigationItem(markets.Title, markets)];
+        Navigation = [new NavigationItem(status.Title, status), new NavigationItem(markets.Title, markets), new NavigationItem(alerts.Title, alerts)];
         _selected = Navigation[0];
         Zones = new ObservableCollection<ZoneChoice>(BuildZones(services.SystemZone));
         _zone = Zones[0];
@@ -69,11 +78,19 @@ internal sealed class MainViewModel : ObservableObject
         RetryCommand = new AsyncCommand(RetryAsync, ex => StateText = ex.Message);
         Status.Succeeded += OnStatusSucceeded;
         Status.Failed += OnStatusFailed;
+        Markets.AlertRequested += OnAlertRequested;
+        _notifier.Fired += Alerts.OnFire;
+        toaster.Activated += OnToastActivated;
     }
+
+    /// <summary>The window should come to the front (a toast was clicked).</summary>
+    public event Action? ActivationRequested;
 
     public StatusViewModel Status { get; }
 
     public MarketsViewModel Markets { get; }
+
+    public AlertsViewModel Alerts { get; }
 
     public IReadOnlyList<NavigationItem> Navigation { get; }
 
@@ -178,6 +195,7 @@ internal sealed class MainViewModel : ObservableObject
             _settings.SaveServer(_server);
             _ = LoadZoneAsync();
             _ = OpenMarketsAsync(_server);
+            _ = OpenAlertsAsync(_server);
         }
     }
 
@@ -215,6 +233,9 @@ internal sealed class MainViewModel : ObservableObject
         {
             Status.Detach();
             Markets.Detach();
+            _marketsReady = false;
+            _notifier.Stop();
+            Alerts.Detach();
             var connect = new ConnectViewModel(_services, _server);
             switch (reason)
             {
@@ -252,10 +273,52 @@ internal sealed class MainViewModel : ObservableObject
         {
             Markets.Attach(() => _services.CreateApi(server));
             await Markets.LoadAsync().ConfigureAwait(true);
+            _marketsReady = true;
+            if (_pendingTicker is { } ticker)
+            {
+                _pendingTicker = null;
+                await Markets.OpenTickerAsync(ticker).ConfigureAwait(true);
+            }
         }
         catch (Exception ex) when (ex is ApiException or ApiUnavailableException or TlsTrustException)
         {
             StateText = "could not open the markets: " + ex.Message;
+        }
+    }
+
+    /// <summary>Points the Alerts page at the server, loads it and starts listening for fires. A failure is shown on the page itself.</summary>
+    private async Task OpenAlertsAsync(Uri server)
+    {
+        Alerts.Attach(_services.CreateApi(server));
+        _notifier.Start(_services.CreateApi(server), EndpointKey.Of(server));
+        await Alerts.LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>An alert was asked for on a market: show the form with the market in it.</summary>
+    private void OnAlertRequested(string ticker)
+    {
+        Alerts.StartNew(ticker);
+        Selected = Navigation.Single(n => ReferenceEquals(n.Page, Alerts));
+    }
+
+    /// <summary>A toast was clicked: bring the window forward and, when it named a market, open it on the Markets page (once the page has a server, if the click started the terminal).</summary>
+    private void OnToastActivated(string? ticker)
+    {
+        ActivationRequested?.Invoke();
+        if (ticker is null)
+        {
+            Selected = Navigation.Single(n => ReferenceEquals(n.Page, Alerts));
+            return;
+        }
+
+        Selected = Navigation.Single(n => ReferenceEquals(n.Page, Markets));
+        if (_marketsReady)
+        {
+            _ = Markets.OpenTickerAsync(ticker);
+        }
+        else
+        {
+            _pendingTicker = ticker;
         }
     }
 

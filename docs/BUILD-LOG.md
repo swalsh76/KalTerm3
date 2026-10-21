@@ -1842,3 +1842,23 @@ keyboard shortcuts); all lists read once when the page attaches. The server alre
   and without confirmation, new, reread, detach, the detail's menu); the real views with binding errors captured (list box, column, grid menu and the right-click selection, the detail button, the shared item style). The fake API now keeps watchlists.
 
 Follow-up to 7.5 (owner): a "Clear filters" button on the Markets page puts the search, the status (back to Active), the minimum volume and the list (back to All markets) at their starting values with one reload; the ranking is not a filter and stays. It is disabled while nothing differs. Found on the way: two tests loading views at the same moment fail now and then with a NullReferenceException inside WPF's package stream list, so `Sta.Run` now runs one test thread at a time.
+
+### 9.9 Slice 7.6: alerts and native toasts (2026-10-20)
+
+Approved by the owner 2026-10-20 after one change of direction: notifications use the Windows native toast hooks, not a window of our own. All four re-assessed choices were approved: the one new package; a click opens the market (and starts the
+terminal when it is closed); a toast on start for the alerts that fired while the terminal was closed; the burst rule with "Alert…" on the detail and in the row menu. The server already had everything (M5: create, pause, delete, 200 alerts, the fire history and
+the push stream), so this slice is terminal only: no server change and no rollout.
+
+- **The package, checked before use.** `CommunityToolkit.WinUI.Notifications` 7.1.2, the maintained successor of `Microsoft.Toolkit.Uwp.Notifications` (MIT; the listing says it supports WPF and apps that are not packaged as MSIX). It adds no other package to the
+  terminal (checked with `dotnet list package --include-transitive` and `--vulnerable`). A throwaway console program sent a real toast through it on this computer, from an unpackaged exe (history count 1), then removed its registration.
+- **`AlertService`** keeps the alerts and the fires in memory, changes them only when the server accepted it, and answers a failure as a sentence (limit of 200, unknown market, a refused threshold, an alert deleted elsewhere), like `WatchlistService`. The sentence for
+  a failed request is now one helper, `ApiProblem` (the watchlist service uses it too).
+- **`AlertNotifier`** listens through the existing `AlertWatcher` (reconnects, replays from the last id, misses nothing). Each fire becomes a toast titled with the market's name (asked once per ticker; the ticker when the server cannot say) and a body such as
+  "price above 0.60 (now 0.61) · 2026-10-20 20:02:11" in the chosen zone. The first 3 fires of a 5-second window get a toast each; the rest of the window become one "N more alerts fired" toast when it ends. On start it asks for the fires after the last one this terminal saw
+  (kept per server in `terminal.json`), says how many in one toast ("100 or more" for a full page) and listens from there so nothing is told twice; with nothing remembered it only remembers where the fires are now.
+- **`IToaster` / `WindowsToaster`:** the Windows part is a thin class behind an interface; the logic is tested against a fake. A click reaches the UI thread whether the terminal was running or was started by the click; the market opens once the Markets page has a server.
+- **Alerts page:** the form shows the unit and what a usable threshold is for the kind as it is typed (price above 0 and below 1, spread up to 1, a whole factor 2 to 1000, at least 1 contract) and the cooldown range; "Sound" decides whether toasts are silent.
+- **Known limits:** the toasts appear only while the terminal is running (the one on start covers the time it was closed); the display name and icon Windows shows on the toast are the app's own and are for the owner to look at.
+- **Tests (84 new, Terminal 460):** words and units, threshold rules per kind, the service (every refusal), settings, the notifier (catch-up, burst rule, names, sound, stop, a refused token), the page (form, add, pause, delete, live fires, zone), the wiring in the main window (listener
+  starts, row and detail entry points, toast clicks before and after the connection), and the real views with binding errors captured. Every test that uses the real toast class is avoided: the composition takes the toaster as a parameter.
+

@@ -16,6 +16,7 @@
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.1" />
     <PackageVersion Include="NSec.Cryptography" Version="26.4.0" />
     <!-- Transitive via Microsoft.Data.SqlClient 7.1.1, which asks for 9.0.18 (known high-severity advisory); pinned to a patched version. -->
+    <PackageVersion Include="CommunityToolkit.WinUI.Notifications" Version="7.1.2" />
     <PackageVersion Include="ScottPlot.WPF" Version="5.1.59" />
     <PackageVersion Include="Spectre.Console" Version="0.57.2" />
     <PackageVersion Include="Spectre.Console.Testing" Version="0.57.2" />

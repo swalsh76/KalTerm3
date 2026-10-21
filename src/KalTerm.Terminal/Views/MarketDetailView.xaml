@@ -35,6 +35,7 @@
     <DockPanel Margin="12">
         <DockPanel DockPanel.Dock="Top" LastChildFill="True">
             <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}" Padding="10,2" />
+            <Button DockPanel.Dock="Right" Content="Alert…" Command="{Binding AlertCommand}" Padding="10,2" VerticalAlignment="Center" Margin="12,0,0,0" ToolTip="Make an alert on this market" />
             <Button DockPanel.Dock="Right" Content="Watchlists ▾" Padding="10,2" VerticalAlignment="Center" Margin="12,0,0,0" Click="OnWatchlistsClick"
                     Visibility="{Binding HasWatchlists, Converter={StaticResource Visible}}" ToolTip="Add this market to a watchlist or take it out">
                 <Button.ContextMenu>

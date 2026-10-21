@@ -172,7 +172,7 @@ public sealed class ViewTests : IDisposable
         var (texts, state, model) = Sta.Run(() =>
         {
             using var errors = BindingErrors.Listen();
-            var window = Composition.Create(_t.Services, _t.Settings);
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
             window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
             VisualTreeKit.Realize(window);
             Assert.Empty(errors.Messages);
@@ -192,13 +192,30 @@ public sealed class ViewTests : IDisposable
     {
         var (pages, zones) = Sta.Run(() =>
         {
-            var window = Composition.Create(_t.Services, _t.Settings);
+            var window = Composition.Create(_t.Services, _t.Settings, new FakeToaster());
             VisualTreeKit.Realize(window);
             return (VisualTreeKit.All<ListBox>(window).First().Items.Count, VisualTreeKit.All<ComboBox>(window).First().Items.Count);
         });
 
-        Assert.Equal(2, pages);
+        Assert.Equal(3, pages);
         Assert.True(zones > 50);
+    }
+
+    [Fact]
+    public void AClickOnAToastBringsAMinimisedWindowBack()
+    {
+        var state = Sta.Run(() =>
+        {
+            var toaster = new FakeToaster();
+            var window = Composition.Create(_t.Services, _t.Settings, toaster);
+            window.WindowState = WindowState.Minimized;
+
+            toaster.Click(null);
+
+            return window.WindowState;
+        });
+
+        Assert.Equal(WindowState.Normal, state);
     }
 
     [Fact]
@@ -227,7 +244,7 @@ public sealed class ViewTests : IDisposable
     [Fact]
     public void TheCompositionBuildsAWindowForTheRealServicesToo()
     {
-        var model = Sta.Run(() => ((MainViewModel)Composition.Create(ClientServices.Real(), new TerminalSettingsStore(Path.Combine(Path.GetTempPath(), "kalterm-none-" + Guid.NewGuid().ToString("N") + ".json"))).DataContext).ServerText);
+        var model = Sta.Run(() => ((MainViewModel)Composition.Create(ClientServices.Real(), new TerminalSettingsStore(Path.Combine(Path.GetTempPath(), "kalterm-none-" + Guid.NewGuid().ToString("N") + ".json")), new FakeToaster()).DataContext).ServerText);
 
         Assert.Equal("no server", model);
     }

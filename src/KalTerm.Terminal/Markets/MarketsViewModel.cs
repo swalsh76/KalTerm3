@@ -103,7 +103,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         _dialogs = dialogs;
         _listFilter = _allMarkets;
         ListChoices = [_allMarkets];
-        Menu = new WatchlistMenu(_watchlists, dialogs, ReportProblem);
+        Menu = new WatchlistMenu(_watchlists, dialogs, ReportProblem, ticker => AlertRequested?.Invoke(ticker));
         _watchlists.Changed += OnWatchlistsChanged;
         NewListCommand = new AsyncCommand(NewListAsync, ex => Error = ex.Message, () => _dialogs is not null && _api is not null);
         DeleteListCommand = new AsyncCommand(DeleteListAsync, ex => Error = ex.Message, () => _dialogs is not null && _listFilter.Name is not null);
@@ -146,6 +146,9 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     }
 
     public string Title { get; } = "Markets";
+
+    /// <summary>The person asked to make an alert on a market (from a row's menu or from the open market).</summary>
+    public event Action<string>? AlertRequested;
 
     public ObservableCollection<MarketRowViewModel> Rows { get; } = [];
 
@@ -599,20 +602,28 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     /// <summary>Opens a market over the list.</summary>
     /// <param name="row">The market.</param>
     /// <returns>A task that completes when its detail has loaded (or failed to).</returns>
-    public async Task OpenAsync(MarketRowViewModel? row)
+    public Task OpenAsync(MarketRowViewModel? row) => row is null ? Task.CompletedTask : OpenTickerAsync(row.Ticker);
+
+    /// <summary>Opens a market over the list by its ticker (from a toast, for example).</summary>
+    /// <param name="ticker">The market.</param>
+    /// <returns>A task that completes when its detail has loaded (or failed to).</returns>
+    public async Task OpenTickerAsync(string ticker)
     {
-        if (row is null || _api is null || _feed is null)
+        if (_api is null || _feed is null)
         {
             return;
         }
 
         CloseDetail();
-        var menu = new WatchlistMenu(_watchlists, _dialogs, ReportProblem) { Ticker = row.Ticker };
-        var detail = new MarketDetailViewModel(row.Ticker, _api, _feed, _format, _time, menu);
+        var menu = new WatchlistMenu(_watchlists, _dialogs, ReportProblem) { Ticker = ticker };
+        var detail = new MarketDetailViewModel(ticker, _api, _feed, _format, _time, menu);
         detail.Closed += CloseDetail;
+        detail.AlertRequested += RaiseAlertRequested;
         Detail = detail;
         await detail.LoadAsync().ConfigureAwait(true);
     }
+
+    private void RaiseAlertRequested(string ticker) => AlertRequested?.Invoke(ticker);
 
     private void CloseDetail()
     {
@@ -623,6 +634,7 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
 
         var detail = _detail;
         detail.Closed -= CloseDetail;
+        detail.AlertRequested -= RaiseAlertRequested;
         Detail = null;
         detail.Dispose();
     }

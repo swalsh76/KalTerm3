@@ -1,6 +1,6 @@
-using System.Net;
 using System.Text.RegularExpressions;
 using KalTerm.Client;
+using KalTerm.Terminal.Services;
 
 namespace KalTerm.Terminal.Markets;
 
@@ -104,9 +104,9 @@ internal sealed partial class WatchlistService
             Changed?.Invoke();
             return null;
         }
-        catch (Exception ex) when (ex is ApiException or ApiUnavailableException or TlsTrustException)
+        catch (Exception ex) when (ApiProblem.IsExpected(ex))
         {
-            return Explain(ex, "read your watchlists");
+            return ApiProblem.Say(ex, "read your watchlists");
         }
     }
 
@@ -188,20 +188,15 @@ internal sealed partial class WatchlistService
         {
             return "The server does not know that market.";
         }
-        catch (Exception ex) when (ex is ApiException or ApiUnavailableException or TlsTrustException)
+        catch (Exception ex) when (ApiProblem.IsExpected(ex))
         {
-            return Explain(ex, doing);
+            return ApiProblem.Say(ex, doing);
         }
 
         apply();
         Changed?.Invoke();
         return null;
     }
-
-    private static string Explain(Exception ex, string doing) =>
-        ex is ApiException { Status: HttpStatusCode.Unauthorized } or ApiException { Code: "unauthorized" }
-            ? "The server did not accept the token."
-            : $"Could not {doing}: {ex.Message}";
 
     [GeneratedRegex(@"^[a-z0-9][a-z0-9._-]*$", RegexOptions.CultureInvariant)]
     private static partial Regex NameShape();

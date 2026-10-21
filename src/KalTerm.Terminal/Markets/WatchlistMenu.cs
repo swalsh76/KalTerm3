@@ -20,14 +20,17 @@ internal sealed class WatchlistMenu : ObservableObject, IDisposable
     private readonly WatchlistService _service;
     private readonly IDialogs? _dialogs;
     private readonly Action<string> _report;
+    private readonly Action<string>? _createAlert;
     private string? _ticker;
 
     /// <summary>Creates the menu.</summary>
     /// <param name="service">The person's lists.</param>
     /// <param name="dialogs">Asks for the new list's name; without it "New watchlist…" does nothing.</param>
     /// <param name="report">Told a sentence when a change failed.</param>
-    public WatchlistMenu(WatchlistService service, IDialogs? dialogs, Action<string> report)
+    /// <param name="createAlert">Told the market when "Create alert…" is chosen; without it the menu has no such line.</param>
+    public WatchlistMenu(WatchlistService service, IDialogs? dialogs, Action<string> report, Action<string>? createAlert = null)
     {
+        _createAlert = createAlert;
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(report);
         _service = service;
@@ -73,6 +76,14 @@ internal sealed class WatchlistMenu : ObservableObject, IDisposable
         }
 
         Choices.Add(new WatchlistChoice("New watchlist…", IsCheckable: false, IsMember: false, NewCommand));
+        if (_createAlert is { } createAlert)
+        {
+            Choices.Add(new WatchlistChoice("Create alert…", IsCheckable: false, IsMember: false, new AsyncCommand(() =>
+            {
+                createAlert(ticker);
+                return Task.CompletedTask;
+            }, ex => _report(ex.Message))));
+        }
     }
 
     private async Task ToggleAsync(string name, string ticker)

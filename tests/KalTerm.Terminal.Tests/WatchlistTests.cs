@@ -296,8 +296,8 @@ public sealed class WatchlistViewModelTests : IDisposable
 
         _model.Selected = _model.Rows[1];
 
-        Assert.Equal([("macro", false), ("sports", true), ("New watchlist…", false)], _model.Menu.Choices.Select(c => (c.Text, c.IsMember)));
-        Assert.Equal([true, true, false], _model.Menu.Choices.Select(c => c.IsCheckable));
+        Assert.Equal([("macro", false), ("sports", true), ("New watchlist…", false), ("Create alert…", false)], _model.Menu.Choices.Select(c => (c.Text, c.IsMember)));
+        Assert.Equal([true, true, false, false], _model.Menu.Choices.Select(c => c.IsCheckable));
 
         await _model.Menu.Choices[0].Command.RunAsync();   // put KX-B in macro
         Assert.Equal([true, true], _model.Menu.Choices.Take(2).Select(c => c.IsMember));
@@ -663,7 +663,7 @@ public sealed class WatchlistViewModelTests : IDisposable
         Assert.Contains("Lists", texts);
         Assert.Contains("macro, sports", texts);
         Assert.Equal("KX-B", selected);
-        Assert.Equal([("macro", true, false), ("sports", true, true), ("New watchlist…", false, false)], lines);
+        Assert.Equal([("macro", true, false), ("sports", true, true), ("New watchlist…", false, false), ("Create alert…", false, false)], lines);
     }
 
     [Fact]
