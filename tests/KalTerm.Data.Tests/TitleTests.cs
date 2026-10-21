@@ -20,7 +20,7 @@ public class TitleTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
     /// <summary>Every event any other test's market mentions gets a stored event, so only the ones this test makes itself can be missing.</summary>
     private Task QuietTheRestAsync() => db.ExecuteAsync(
         "INSERT dbo.market_event (event_ticker, series_ticker, title, sub_title, known, fetched_at) SELECT DISTINCT event_ticker, '', N'other', N'', 1, SYSUTCDATETIME() FROM dbo.market "
-        + "WHERE event_ticker NOT IN ('TT-E-NEW1', 'TT-E-NEW2', 'TT-E-KNOWN', 'TT-E-OLD', 'TT-E-RECENT') AND event_ticker NOT IN (SELECT event_ticker FROM dbo.market_event)");
+        + "WHERE event_ticker NOT IN ('TT-E-NEW1', 'TT-E-NEW2', 'TT-E-KNOWN', 'TT-E-OLD', 'TT-E-RECENT', 'TT-E-PRI-A', 'TT-E-PRI-B', 'TT-E-PRI-C') AND event_ticker NOT IN (SELECT event_ticker FROM dbo.market_event)");
 
     [Fact]
     public async Task AMarketsTitleIsStoredAndChangesWhenKalshiChangesIt()
@@ -101,6 +101,20 @@ public class TitleTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
         Assert.Equal(["TT-E-NEW1", "TT-E-NEW2", "TT-E-OLD"], missing);   // never asked first; a known event and a recently asked unknown one are left alone
         Assert.Equal(["TT-E-NEW1", "TT-E-NEW2"], await Events().MissingAsync(2, Now.AddDays(-7), Ct));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Events().MissingAsync(0, Now, Ct));
+    }
+
+    [Fact]
+    public async Task TheEventsOfTheMostRecentlySeenMarketsAreLookedUpFirst()
+    {
+        db.Require();
+        await QuietTheRestAsync();
+        await Markets().UpsertAsync([Market("TT-M-PRI-B", "TT-E-PRI-B")], Now.AddHours(-30), Ct);
+        await Markets().UpsertAsync([Market("TT-M-PRI-A", "TT-E-PRI-A")], Now, Ct);
+        await Markets().UpsertAsync([Market("TT-M-PRI-C", "TT-E-PRI-C")], Now.AddHours(-90), Ct);
+
+        var missing = await Events().MissingAsync(100, Now.AddDays(-7), Ct);
+
+        Assert.Equal(["TT-E-PRI-A", "TT-E-PRI-B", "TT-E-PRI-C"], missing.Where(t => t.StartsWith("TT-E-PRI-", StringComparison.Ordinal)));
     }
 
     [Fact]

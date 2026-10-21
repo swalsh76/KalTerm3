@@ -27,11 +27,11 @@ public interface IEventStore
     /// <returns>A task that completes when the batch is stored.</returns>
     Task UpsertAsync(IReadOnlyList<EventRecord> events, DateTime fetchedAtUtc, CancellationToken cancellationToken = default);
 
-    /// <summary>The event tickers some stored market mentions that have no event stored (never asked first), or whose event Kalshi did not know when it was last asked before <paramref name="askedBeforeUtc"/>.</summary>
+    /// <summary>The event tickers some stored market mentions that have no event stored (never asked first, the most recently seen first), or whose event Kalshi did not know when it was last asked before <paramref name="askedBeforeUtc"/>.</summary>
     /// <param name="limit">The most to return.</param>
     /// <param name="askedBeforeUtc">An unknown event asked about at or after this moment is left alone.</param>
     /// <param name="cancellationToken">Cancels the work.</param>
-    /// <returns>The event tickers, never-asked ones first.</returns>
+    /// <returns>The event tickers: never-asked ones first, and among them the events whose markets were seen most recently (what a person is looking at now).</returns>
     Task<IReadOnlyList<string>> MissingAsync(int limit, DateTime askedBeforeUtc, CancellationToken cancellationToken = default);
 }
 
@@ -106,10 +106,10 @@ public sealed class EventStore(DataSource source) : IEventStore
         ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
         const string sql = """
             SELECT TOP (@limit) m.event_ticker
-            FROM (SELECT DISTINCT event_ticker FROM dbo.market) m
+            FROM (SELECT event_ticker, MAX(last_seen_at) AS seen FROM dbo.market GROUP BY event_ticker) m
             LEFT JOIN dbo.market_event e ON e.event_ticker = m.event_ticker
             WHERE e.event_ticker IS NULL OR (e.known = 0 AND e.fetched_at < @before)
-            ORDER BY CASE WHEN e.event_ticker IS NULL THEN 0 ELSE 1 END, m.event_ticker
+            ORDER BY CASE WHEN e.event_ticker IS NULL THEN 0 ELSE 1 END, m.seen DESC, m.event_ticker
             """;
         await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = new SqlCommand(sql, connection) { CommandTimeout = 120 };

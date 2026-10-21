@@ -1785,3 +1785,8 @@ context ("Philadelphia vs New York", sub-title "PHI vs NYK (Oct 20)"). The owner
 - **Tests (about 55 new):** the Kalshi title; event discovery (batches, hourly refresh, lookups, the weekly retry, the per-pass limit, failures keep what was read); the runner loop; the stores and readers on real SQL on kaldb (Data 397, Ingest 262, API
   371); the API wire names; the CLI; the terminal's names, row, folded cell and detail heading with their fallbacks.
 - **Rollout (in this order, each asked for):** the ingest (applies migration 0008; a short gap in ticker and order-book data), then the API, then the owner restarts the terminal. Titles of finished markets arrive over the following hours.
+
+Rolled out 2026-10-20 (ingest `host-b38619f` at 20:26, API `host-b38619f` at 20:27; the ingest restart left one `ingest_down` gap of about 15 s). Migration 0008 applied (schema 8); the first event pass read 14,901 open events and looked up 100
+more in 9.3 s, none unknown. Of 25,171 distinct events in the catalog, 10,170 were missing after it, and only 12 of them had an active market: the biggest rows of the Markets page were recent games whose markets had just left the open listing, so
+their events were not in the open list and, with the lookups in ticker order, would have come last. Fix: the one-by-one lookups take the events of the most recently seen markets first (about 100 per 5 minutes, so the whole backlog fills in about 8 hours, the rows
+people look at first).
