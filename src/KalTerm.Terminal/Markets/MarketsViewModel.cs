@@ -108,6 +108,14 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
         NewListCommand = new AsyncCommand(NewListAsync, ex => Error = ex.Message, () => _dialogs is not null && _api is not null);
         DeleteListCommand = new AsyncCommand(DeleteListAsync, ex => Error = ex.Message, () => _dialogs is not null && _listFilter.Name is not null);
         RefreshListsCommand = new AsyncCommand(LoadListsAsync, ex => Error = ex.Message, () => _api is not null);
+        ClearFiltersCommand = new RelayCommand(ClearFilters, () => HasFilters);
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(SearchText) or nameof(MinVolumeText) or nameof(StatusFilter) or nameof(ListFilter))
+            {
+                ClearFiltersCommand.RaiseCanExecuteChanged();
+            }
+        };
         Statuses =
         [
             new StatusChoice(null, "Any status"),
@@ -156,6 +164,12 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
     public AsyncCommand DeleteListCommand { get; }
 
     public AsyncCommand RefreshListsCommand { get; }
+
+    /// <summary>Puts the search, the status, the minimum volume and the list back to their starting values (the ranking is not a filter and stays).</summary>
+    public RelayCommand ClearFiltersCommand { get; }
+
+    /// <summary>Whether any filter differs from its starting value.</summary>
+    public bool HasFilters => _searchText.Length > 0 || _minVolumeText.Length > 0 || !ReferenceEquals(_status, Statuses[1]) || _listFilter.Name is not null;
 
     /// <summary>
     /// Which markets to list: all, or those in one watchlist. Choosing a list shows markets of every status (a list may hold finished ones that "Active" would hide); going back to all markets restores
@@ -376,6 +390,23 @@ internal sealed partial class MarketsViewModel : ObservableObject, IDisposable
 
     /// <summary>The list can be used: no market is open over it.</summary>
     public bool ShowingList => _detail is null;
+
+    private void ClearFilters()
+    {
+        _debounce?.Cancel();
+        _searchText = string.Empty;
+        _minVolumeText = string.Empty;
+        _status = Statuses[1];
+        _statusBeforeList = null;
+        _listFilter = _allMarkets;
+        Raise(nameof(SearchText));
+        Raise(nameof(MinVolumeText));
+        Raise(nameof(MinVolumeInvalid));
+        Raise(nameof(StatusFilter));
+        Raise(nameof(ListFilter));
+        DeleteListCommand.RaiseCanExecuteChanged();
+        ReloadSoon(immediately: true);
+    }
 
     private string? EffectiveSearch => _searchText.Trim().Length >= 2 ? _searchText.Trim() : null;
 

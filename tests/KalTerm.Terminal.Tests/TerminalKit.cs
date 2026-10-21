@@ -15,6 +15,10 @@ namespace KalTerm.Terminal.Tests;
 /// <summary>Runs code on a thread of its own with a single-threaded apartment, the way WPF needs; whatever it throws comes back to the test.</summary>
 internal static class Sta
 {
+    // One at a time: WPF loads a view's XAML from the assembly's resources through a package whose list of open streams is not safe to share between threads, so two tests loading views
+    // together fail now and then with a NullReferenceException in System.IO.Packaging.
+    private static readonly Lock Gate = new();
+
     public static T Run<T>(Func<T> work)
     {
         T result = default!;
@@ -36,8 +40,12 @@ internal static class Sta
             }
         });
         thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
+        lock (Gate)
+        {
+            thread.Start();
+            thread.Join();
+        }
+
         return failure is null ? result : throw new InvalidOperationException("the STA work failed: " + failure.Message, failure);
     }
 

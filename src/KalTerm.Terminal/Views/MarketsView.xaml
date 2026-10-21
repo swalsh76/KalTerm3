@@ -42,6 +42,8 @@
                 <TextBlock Text="Rank by" VerticalAlignment="Center" Margin="12,0,6,0" />
                 <ComboBox Width="170" ItemsSource="{Binding Sorts}" SelectedItem="{Binding Sort}" DisplayMemberPath="Text" />
                 <Button Content="{Binding OrderText}" Command="{Binding ToggleOrderCommand}" Margin="8,0,0,0" Padding="10,2" MinWidth="100" />
+                <Button Content="Clear filters" Command="{Binding ClearFiltersCommand}" Margin="16,0,0,0" Padding="10,2"
+                        ToolTip="Clear the search, the status, the minimum volume and the list (back to all active markets)" />
             </DockPanel>
             <DockPanel DockPanel.Dock="Top" Margin="0,8,0,0" LastChildFill="False">
                 <TextBlock Text="List" VerticalAlignment="Center" Margin="0,0,6,0" />
