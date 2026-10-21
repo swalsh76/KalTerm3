@@ -27,11 +27,19 @@ public interface IEventStore
     /// <returns>A task that completes when the batch is stored.</returns>
     Task UpsertAsync(IReadOnlyList<EventRecord> events, DateTime fetchedAtUtc, CancellationToken cancellationToken = default);
 
-    /// <summary>The event tickers some stored market mentions that have no event stored (never asked first), or whose event Kalshi did not know when it was last asked before <paramref name="askedBeforeUtc"/>.</summary>
+    /// <summary>
+    /// Sets the title of stored markets (matched on ticker). A ticker that is not stored is ignored (the catalog is filled by discovery, not from here), and an empty title never replaces one that is there.
+    /// </summary>
+    /// <param name="titles">The tickers and their titles; a ticker repeated within the batch counts once, the last winning.</param>
+    /// <param name="cancellationToken">Cancels the work.</param>
+    /// <returns>How many markets changed.</returns>
+    Task<int> SetMarketTitlesAsync(IReadOnlyList<(string Ticker, string Title)> titles, CancellationToken cancellationToken = default);
+
+    /// <summary>The event tickers some stored market mentions that have no event stored (never asked first, the most recently seen first), or whose event Kalshi did not know when it was last asked before <paramref name="askedBeforeUtc"/>.</summary>
     /// <param name="limit">The most to return.</param>
     /// <param name="askedBeforeUtc">An unknown event asked about at or after this moment is left alone.</param>
     /// <param name="cancellationToken">Cancels the work.</param>
-    /// <returns>The event tickers, never-asked ones first.</returns>
+    /// <returns>The event tickers: never-asked ones first, and among them the events whose markets were seen most recently (what a person is looking at now).</returns>
     Task<IReadOnlyList<string>> MissingAsync(int limit, DateTime askedBeforeUtc, CancellationToken cancellationToken = default);
 }
 
@@ -106,10 +114,10 @@ public sealed class EventStore(DataSource source) : IEventStore
         ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
         const string sql = """
             SELECT TOP (@limit) m.event_ticker
-            FROM (SELECT DISTINCT event_ticker FROM dbo.market) m
+            FROM (SELECT event_ticker, MAX(last_seen_at) AS seen FROM dbo.market GROUP BY event_ticker) m
             LEFT JOIN dbo.market_event e ON e.event_ticker = m.event_ticker
             WHERE e.event_ticker IS NULL OR (e.known = 0 AND e.fetched_at < @before)
-            ORDER BY CASE WHEN e.event_ticker IS NULL THEN 0 ELSE 1 END, m.event_ticker
+            ORDER BY CASE WHEN e.event_ticker IS NULL THEN 0 ELSE 1 END, m.seen DESC, m.event_ticker
             """;
         await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = new SqlCommand(sql, connection) { CommandTimeout = 120 };
@@ -124,6 +132,56 @@ public sealed class EventStore(DataSource source) : IEventStore
         }
 
         return tickers;
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> SetMarketTitlesAsync(IReadOnlyList<(string Ticker, string Title)> titles, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(titles);
+        var last = new Dictionary<string, string>(titles.Count, StringComparer.Ordinal);
+        foreach (var (ticker, title) in titles)
+        {
+            if (title.Length > 0)
+            {
+                last[ticker] = Truncate(title);
+            }
+        }
+
+        if (last.Count == 0)
+        {
+            return 0;
+        }
+
+        var stage = new DataTable { Locale = System.Globalization.CultureInfo.InvariantCulture };
+        stage.Columns.Add("ticker", typeof(string));
+        stage.Columns.Add("title", typeof(string));
+        foreach (var (ticker, title) in last)
+        {
+            stage.Rows.Add(ticker, title);
+        }
+
+        await using var connection = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using (var create = new SqlCommand("CREATE TABLE #title_stage (ticker varchar(128) NOT NULL PRIMARY KEY, title nvarchar(512) NOT NULL)", connection, transaction))
+        {
+            await create.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        using (var copy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction) { DestinationTableName = "#title_stage", BulkCopyTimeout = 120 })
+        {
+            copy.ColumnMappings.Add("ticker", "ticker");
+            copy.ColumnMappings.Add("title", "title");
+            await copy.WriteToServerAsync(stage, cancellationToken).ConfigureAwait(false);
+        }
+
+        int changed;
+        await using (var update = new SqlCommand("UPDATE m SET m.title = s.title FROM dbo.market m JOIN #title_stage s ON s.ticker = m.ticker WHERE m.title <> s.title", connection, transaction) { CommandTimeout = 120 })
+        {
+            changed = await update.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return changed;
     }
 
     private static DataTable BuildStage(IReadOnlyList<EventRecord> events)

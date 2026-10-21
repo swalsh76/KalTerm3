@@ -151,6 +151,23 @@ public class KalshiRestEndpointTests
     }
 
     [Fact]
+    public async Task AnEventCanBeAskedForWithItsMarketsNestedAndTheyCarryTheirTitles()
+    {
+        var nested = "{\"event\":{\"event_ticker\":\"EV-1\",\"series_ticker\":\"SER\",\"title\":\"Philadelphia vs New York\",\"sub_title\":\"PHI vs NYK (Oct 20)\",\"mutually_exclusive\":true,"
+            + "\"markets\":[{\"ticker\":\"KX-PHI\",\"event_ticker\":\"EV-1\",\"market_type\":\"binary\",\"status\":\"finalized\",\"title\":\"Philadelphia wins\"},"
+            + "{\"ticker\":\"KX-NYK\",\"event_ticker\":\"EV-1\",\"market_type\":\"binary\",\"status\":\"finalized\",\"title\":\"New York wins\"}]}}";
+        var stub = new StubHttpMessageHandler().Respond(HttpStatusCode.OK, nested);
+        using var client = Client(stub, new AutoAdvanceTimeProvider());
+
+        var item = await client.EventWithMarketsAsync("EV-1", TestContext.Current.CancellationToken);
+
+        Assert.Equal(Base + "/events/EV-1?with_nested_markets=true", stub.Requests[0].Uri.AbsoluteUri);
+        Assert.Equal(("Philadelphia vs New York", "PHI vs NYK (Oct 20)"), (item.Title, item.SubTitle));
+        Assert.Equal([("KX-PHI", "Philadelphia wins"), ("KX-NYK", "New York wins")], item.Markets!.Select(m => (m.Ticker, m.Title)));
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => client.EventWithMarketsAsync(string.Empty, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task AnEventAndASeriesAreUnwrappedFromTheirEnvelopes()
     {
         var stub = new StubHttpMessageHandler()

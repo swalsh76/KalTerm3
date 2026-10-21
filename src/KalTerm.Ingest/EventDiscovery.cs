@@ -10,7 +10,8 @@ namespace KalTerm.Ingest;
 /// <param name="LookedUp">Events asked for one by one because a market mentions them and none was stored.</param>
 /// <param name="Unknown">Of those, the ones Kalshi has no event for (remembered, and asked again only after a week).</param>
 /// <param name="Duration">How long the pass took.</param>
-public sealed record EventPassResult(int Refreshed, int LookedUp, int Unknown, TimeSpan Duration);
+/// <param name="MarketTitles">Markets whose title changed because an event that was looked up listed them (a finished market is not in the open listing, so this is how it gets its title).</param>
+public sealed record EventPassResult(int Refreshed, int LookedUp, int Unknown, TimeSpan Duration, int MarketTitles = 0);
 
 /// <summary>Keeps the event titles current.</summary>
 public interface IEventCatalog
@@ -39,7 +40,7 @@ public sealed partial class EventDiscovery : IEventCatalog
     /// <summary>Creates the discovery.</summary>
     /// <param name="store">The event storage.</param>
     /// <param name="listOpen">Lists the open events (normally <c>KalshiRestClient.IterateEventsAsync</c> with <c>status=open</c>).</param>
-    /// <param name="get">Reads one event; <see langword="null"/> when Kalshi has none (normally <c>KalshiRestClient.EventAsync</c>, a 404 becoming <see langword="null"/>).</param>
+    /// <param name="get">Reads one event with its markets nested; <see langword="null"/> when Kalshi has none (normally <c>KalshiRestClient.EventWithMarketsAsync</c>, a 404 becoming <see langword="null"/>).</param>
     /// <param name="time">The clock.</param>
     /// <param name="logger">Receives one line per pass.</param>
     /// <param name="batchSize">How many events go to the database at once.</param>
@@ -84,9 +85,9 @@ public sealed partial class EventDiscovery : IEventCatalog
             _lastRefresh = now;
         }
 
-        var (lookedUp, unknown) = await LookUpMissingAsync(now, cancellationToken).ConfigureAwait(false);
-        var result = new EventPassResult(refreshed, lookedUp, unknown, Stopwatch.GetElapsedTime(started));
-        LogPass(_logger, result.Refreshed, result.LookedUp, result.Unknown, result.Duration.TotalSeconds);
+        var (lookedUp, unknown, marketTitles) = await LookUpMissingAsync(now, cancellationToken).ConfigureAwait(false);
+        var result = new EventPassResult(refreshed, lookedUp, unknown, Stopwatch.GetElapsedTime(started), marketTitles);
+        LogPass(_logger, result.Refreshed, result.LookedUp, result.Unknown, result.MarketTitles, result.Duration.TotalSeconds);
         return result;
     }
 
@@ -114,10 +115,11 @@ public sealed partial class EventDiscovery : IEventCatalog
         return count;
     }
 
-    private async Task<(int LookedUp, int Unknown)> LookUpMissingAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    private async Task<(int LookedUp, int Unknown, int MarketTitles)> LookUpMissingAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
         var missing = await _store.MissingAsync(LookupsPerPass, now.UtcDateTime - RetryUnknownAfter, cancellationToken).ConfigureAwait(false);
         var found = new List<EventRecord>(missing.Count);
+        var titles = new List<(string Ticker, string Title)>();
         var unknown = 0;
         try
         {
@@ -132,6 +134,7 @@ public sealed partial class EventDiscovery : IEventCatalog
                 else
                 {
                     found.Add(ToRecord(item) with { EventTicker = ticker });
+                    titles.AddRange((item.Markets ?? []).Select(market => (market.Ticker, market.Title)));
                 }
             }
         }
@@ -144,11 +147,12 @@ public sealed partial class EventDiscovery : IEventCatalog
             }
         }
 
-        return (found.Count, unknown);
+        var changed = titles.Count > 0 ? await _store.SetMarketTitlesAsync(titles, cancellationToken).ConfigureAwait(false) : 0;
+        return (found.Count, unknown, changed);
     }
 
     private static EventRecord ToRecord(KalshiEvent item) => new(item.EventTicker, item.SeriesTicker, item.Title, item.SubTitle);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "event titles: {Refreshed} open events read, {LookedUp} looked up ({Unknown} unknown to Kalshi), {Seconds:F1} s")]
-    private static partial void LogPass(ILogger logger, int refreshed, int lookedUp, int unknown, double seconds);
+    [LoggerMessage(Level = LogLevel.Information, Message = "event titles: {Refreshed} open events read, {LookedUp} looked up ({Unknown} unknown to Kalshi), {MarketTitles} market titles set, {Seconds:F1} s")]
+    private static partial void LogPass(ILogger logger, int refreshed, int lookedUp, int unknown, int marketTitles, double seconds);
 }

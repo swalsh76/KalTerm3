@@ -154,7 +154,7 @@ public static class IngestComposition
         }
     }
 
-    /// <summary>The event titles: all open events hourly, and the events markets mention one at a time (a 404 means Kalshi has none).</summary>
+    /// <summary>The event titles: all open events hourly, and the events markets mention one at a time with their markets nested, so finished markets get their titles too (a 404 means Kalshi has none).</summary>
     private static EventDiscovery CreateEventCatalog(KalshiRestClient client, IEventStore store, TimeProvider time, ILoggerFactory loggerFactory) =>
         new(
             store,
@@ -163,7 +163,7 @@ public static class IngestComposition
             {
                 try
                 {
-                    return await client.EventAsync(ticker, ct).ConfigureAwait(false);
+                    return await client.EventWithMarketsAsync(ticker, ct).ConfigureAwait(false);
                 }
                 catch (KalshiApiException ex) when (ex.StatusCode == 404)
                 {

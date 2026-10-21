@@ -458,7 +458,7 @@ public class KalshiRestClientTests
     // client's job: nothing here sends anything but a GET.
     private static readonly string[] ApprovedPublicMethods =
     [
-        "AccountLimitsAsync", "BalanceAsync", "ClockSkewAsync", "Dispose", "EndpointCostsAsync", "EventAsync", "EventsPageAsync", "ExchangeStatusAsync", "FillsPageAsync", "IterateEventsAsync", "IterateFillsAsync",
+        "AccountLimitsAsync", "BalanceAsync", "ClockSkewAsync", "Dispose", "EndpointCostsAsync", "EventAsync", "EventWithMarketsAsync", "EventsPageAsync", "ExchangeStatusAsync", "FillsPageAsync", "IterateEventsAsync", "IterateFillsAsync",
         "IterateMarketsAsync", "IterateMarketsUpdatedSinceAsync", "IterateMultivariateEventsAsync", "IterateOpenMarketsAsync", "IterateOrdersAsync", "IteratePositionsAsync", "IterateSettlementsAsync",
         "IterateTradesAsync", "MarketAsync", "MarketsPageAsync", "MultivariateEventsPageAsync", "OrderAsync", "OrderBookAsync", "OrdersPageAsync", "PositionsPageAsync", "QueuePositionsAsync",
         "SeriesAsync", "SeriesListAsync", "SettlementsPageAsync",

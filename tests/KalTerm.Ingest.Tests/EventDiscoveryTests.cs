@@ -29,6 +29,16 @@ internal sealed class FakeEventStore : IEventStore
 
     public IEnumerable<EventRecord> Stored => Upserts.SelectMany(u => u.Events);
 
+    public List<IReadOnlyList<(string Ticker, string Title)>> TitleBatches { get; } = [];
+
+    public int TitlesChanged { get; set; }
+
+    public Task<int> SetMarketTitlesAsync(IReadOnlyList<(string Ticker, string Title)> titles, CancellationToken cancellationToken = default)
+    {
+        TitleBatches.Add([.. titles]);
+        return Task.FromResult(TitlesChanged);
+    }
+
     public Task UpsertAsync(IReadOnlyList<EventRecord> events, DateTime fetchedAtUtc, CancellationToken cancellationToken = default)
     {
         Upserts.Add(([.. events], fetchedAtUtc));
@@ -136,6 +146,36 @@ public sealed class EventDiscoveryTests
         var stored = _store.Upserts[^1].Events;
         Assert.Equal(["EV-A", "EV-B"], stored.Select(e => e.EventTicker));   // keyed by what was asked
         Assert.Equal("Zarate vs Ribero", stored[1].Title);
+    }
+
+    [Fact]
+    public async Task TheMarketsListedInsideALookedUpEventGetTheirTitlesSoAFinishedMarketIsNamedToo()
+    {
+        _store.Missing.AddRange(["EV-A", "EV-B"]);
+        _store.TitlesChanged = 3;
+        _known["EV-A"] = Event("EV-A", "Philadelphia vs New York") with
+        {
+            Markets = [new Market("KX-PHI", "EV-A", "binary", "finalized", Title: "Philadelphia wins"), new Market("KX-NYK", "EV-A", "binary", "finalized", Title: "New York wins")],
+        };
+        _known["EV-B"] = Event("EV-B", "No markets listed");
+
+        var result = await Make().RunAsync(Ct);
+
+        Assert.Equal(3, result.MarketTitles);
+        var batch = Assert.Single(_store.TitleBatches);
+        Assert.Equal([("KX-PHI", "Philadelphia wins"), ("KX-NYK", "New York wins")], batch);
+    }
+
+    [Fact]
+    public async Task NoTitlesAreSetWhenNoLookedUpEventListsAMarket()
+    {
+        _store.Missing.Add("EV-A");
+        _known["EV-A"] = Event("EV-A");
+
+        var result = await Make().RunAsync(Ct);
+
+        Assert.Equal(0, result.MarketTitles);
+        Assert.Empty(_store.TitleBatches);
     }
 
     [Fact]
